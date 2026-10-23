@@ -1,0 +1,28 @@
+@import './tokens.css';
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--color-bg-canvas);
+    color: var(--color-text-primary);
+    font-family: var(--font-family-sans);
+    font-size: var(--font-size-md);
+    line-height: var(--line-height-normal);
+}
+
+button, input, textarea, select {
+    font: inherit;
+}
+
+:focus-visible {
+    outline: var(--focus-width) solid var(--color-focus);
+    outline-offset: var(--focus-offset);
+}
+
+::selection {
+    background: var(--color-selection);
+    color: var(--color-on-selection);
+}

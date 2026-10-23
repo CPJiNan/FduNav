@@ -1,0 +1,186 @@
+/* FduNav · cool workspace. Light palette interpreted from the reference;
+   dark palette and interaction/status colors are designed extensions. */
+:root {
+    color-scheme: light dark;
+
+    /* Shared palette primitives; theme-specific extensions live below. */
+    --palette-white: #ffffff;
+    --palette-ice-50: #f7fafb;
+    --palette-ice-100: #edf5f8;
+    --palette-gray-100: #edf0f1;
+    --palette-gray-200: #e3e8eb;
+    --palette-gray-300: #cbd3d9;
+    --palette-gray-500: #606b75;
+    --palette-gray-600: #515d67;
+    --palette-gray-900: #252c32;
+    --palette-blue-50: #eaf2ff;
+    --palette-blue-200: #bfd6ff;
+    --palette-blue-300: #9cbeff;
+    --palette-blue-400: #82adff;
+    --palette-blue-500: #4d80f5;
+    --palette-blue-600: #3567d6;
+    --palette-blue-700: #2956ba;
+    --palette-blue-800: #234b9f;
+    --palette-blue-950: #10213e;
+    --palette-night-950: #11171c;
+    --palette-night-900: #171e24;
+    --palette-night-850: #1b232b;
+    --palette-night-800: #222c36;
+    --palette-night-750: #283440;
+    --palette-night-700: #32404d;
+    --palette-night-500: #81909e;
+    --palette-night-300: #a5b1bc;
+    --palette-night-200: #c0cad3;
+    --palette-night-50: #eef3f7;
+
+    /* Semantic colors: first argument light, second argument dark. */
+    --color-bg-canvas: light-dark(var(--palette-ice-100), var(--palette-night-950));
+    --color-bg-sidebar: light-dark(var(--palette-ice-50), var(--palette-night-900));
+    --color-bg-surface: light-dark(var(--palette-white), var(--palette-night-850));
+    --color-bg-elevated: light-dark(var(--palette-white), var(--palette-night-800));
+    --color-bg-subtle: light-dark(var(--palette-ice-50), var(--palette-night-800));
+    --color-bg-hover: light-dark(var(--palette-gray-100), var(--palette-night-750));
+    --color-bg-pressed: light-dark(var(--palette-gray-200), var(--palette-night-700));
+    --color-bg-selected: light-dark(#e5ecef, var(--palette-night-750));
+    --color-bg-disabled: light-dark(var(--palette-gray-100), var(--palette-night-800));
+    --color-text-primary: light-dark(var(--palette-gray-900), var(--palette-night-50));
+    --color-text-secondary: light-dark(var(--palette-gray-600), var(--palette-night-200));
+    --color-text-muted: light-dark(var(--palette-gray-500), var(--palette-night-300));
+    --color-text-placeholder: var(--color-text-muted);
+    --color-text-disabled: light-dark(#929ca4, #687582);
+    --color-icon: var(--color-text-secondary);
+    --color-icon-muted: var(--color-text-muted);
+    --color-border-subtle: light-dark(var(--palette-gray-200), var(--palette-night-700));
+    --color-border-default: light-dark(var(--palette-gray-300), #455463);
+    --color-border-control: light-dark(#7b8893, var(--palette-night-500));
+    --color-accent: light-dark(var(--palette-blue-600), var(--palette-blue-400));
+    --color-accent-hover: light-dark(var(--palette-blue-700), var(--palette-blue-300));
+    --color-accent-pressed: light-dark(var(--palette-blue-800), var(--palette-blue-200));
+    --color-on-accent: light-dark(var(--palette-white), var(--palette-blue-950));
+    --color-accent-subtle: light-dark(var(--palette-blue-50), #243651);
+    --color-on-accent-subtle: light-dark(#2d4568, #c9dcff);
+    --color-link: light-dark(var(--palette-blue-700), var(--palette-blue-300));
+    --color-focus: var(--color-accent);
+    --color-selection: light-dark(#dbe9ff, #304c75);
+    --color-on-selection: var(--color-text-primary);
+    --color-success: light-dark(#226b48, #86d6ac);
+    --color-success-subtle: light-dark(#eaf5ee, #203c30);
+    --color-warning: light-dark(#805510, #f0cb7e);
+    --color-warning-subtle: light-dark(#fff5df, #40351f);
+    --color-danger: light-dark(#b43838, #ffa7a7);
+    --color-danger-subtle: light-dark(#ffeded, #452b30);
+    --color-info: var(--color-link);
+    --color-info-subtle: var(--color-accent-subtle);
+    --color-overlay: light-dark(rgb(17 23 28 / 32%), rgb(0 0 0 / 56%));
+
+    /* Typography: native desktop feel, no external font dependency. */
+    --font-family-sans: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    --font-family-mono: "Cascadia Code", Consolas, monospace;
+    --font-size-xs: 0.75rem;
+    --font-size-sm: 0.875rem;
+    --font-size-md: 1rem;
+    --font-size-lg: 1.125rem;
+    --font-size-xl: 1.25rem;
+    --font-size-2xl: 1.5rem;
+    --font-size-3xl: 2rem;
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --line-height-tight: 1.25;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.75;
+    --letter-spacing-normal: 0;
+
+    /* 4 px spacing grid; 2 px reserved for optical adjustments. */
+    --space-0: 0;
+    --space-0-5: 0.125rem;
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.25rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+    --space-10: 2.5rem;
+    --space-12: 3rem;
+    --space-16: 4rem;
+    --radius-none: 0;
+    --radius-xs: 0.25rem;
+    --radius-sm: 0.5rem;
+    --radius-md: 0.75rem;
+    --radius-lg: 1rem;
+    --radius-xl: 1.5rem;
+    --radius-2xl: 2rem;
+    --radius-full: 9999px;
+    --border-width: 1px;
+    --focus-width: 2px;
+    --focus-offset: 3px;
+    --shadow-color-soft: light-dark(rgb(27 44 57 / 4%), rgb(0 0 0 / 16%));
+    --shadow-color-ambient: light-dark(rgb(27 44 57 / 6%), rgb(0 0 0 / 24%));
+    --shadow-none: none;
+    --shadow-sm: 0 2px 6px var(--shadow-color-soft);
+    --shadow-md: 0 4px 16px var(--shadow-color-ambient);
+    --shadow-lg: 0 12px 48px var(--shadow-color-ambient), 0 2px 8px var(--shadow-color-soft);
+
+    --duration-fast: 120ms;
+    --duration-normal: 180ms;
+    --duration-slow: 260ms;
+    --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+    --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+    --z-base: 0;
+    --z-sticky: 10;
+    --z-dropdown: 20;
+    --z-overlay: 30;
+    --z-modal: 40;
+    --z-toast: 50;
+    --z-tooltip: 60;
+
+    /* Component aliases; dimensions are normalized, not screenshot pixels. */
+    --size-icon-sm: 1rem;
+    --size-icon-md: 1.25rem;
+    --size-icon-lg: 1.5rem;
+    --size-control-sm: 2rem;
+    --size-control-md: 2.5rem;
+    --size-touch-target: 2.75rem;
+    --layout-rail-width: 3.5rem;
+    --layout-sidebar-width: 18rem;
+    --layout-content-max: 48rem;
+    --layout-page-gutter: clamp(1rem, 3vw, 2rem);
+    --panel-bg: var(--color-bg-surface);
+    --panel-radius: var(--radius-lg);
+    --panel-border: var(--color-border-subtle);
+    --nav-item-radius: var(--radius-md);
+    --nav-item-active-bg: var(--color-bg-selected);
+    --nav-item-active-text: var(--color-text-primary);
+    --message-user-bg: var(--color-accent-subtle);
+    --message-user-text: var(--color-on-accent-subtle);
+    --message-radius: var(--radius-xl);
+    --composer-bg: var(--color-bg-elevated);
+    --composer-radius: var(--radius-xl);
+    --composer-shadow: var(--shadow-lg);
+    --button-radius: var(--radius-sm);
+    --input-radius: var(--radius-sm);
+    --input-border: var(--color-border-control);
+}
+
+/* Omit data-theme (or use auto) to follow OS preference. Scope is nestable. */
+[data-theme="light"] {
+    color-scheme: light;
+}
+
+[data-theme="dark"] {
+    color-scheme: dark;
+}
+
+[data-theme="auto"] {
+    color-scheme: light dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --duration-fast: 0ms;
+        --duration-normal: 0ms;
+        --duration-slow: 0ms;
+    }
+}

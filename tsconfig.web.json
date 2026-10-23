@@ -18,6 +18,7 @@
     "noEmit": true
   },
   "include": [
+    "src/shared/**/*.ts",
     "src/renderer/src/**/*.ts",
     "src/renderer/src/**/*.tsx"
   ]

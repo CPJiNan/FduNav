@@ -13,9 +13,11 @@
     ],
     "strict": true,
     "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+    "allowImportingTsExtensions": true
   },
   "include": [
+    "src/shared/**/*.ts",
     "electron.vite.config.ts",
     "src/main/**/*.ts",
     "src/preload/**/*.ts"
