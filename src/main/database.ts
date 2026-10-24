@@ -249,7 +249,7 @@ export class AppDatabase {
         this.db.exec('BEGIN IMMEDIATE')
         try {
             const source = this.getSource(sourceId)
-            if (!source || !source.enabled || (expectedRevision !== undefined && source.revision !== expectedRevision)) {
+            if (!source?.enabled || (expectedRevision !== undefined && source.revision !== expectedRevision)) {
                 this.db.exec('ROLLBACK')
                 return false
             }

@@ -108,28 +108,28 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
     }
 
     if (selected) return <article className="notices-page notice-detail">
-        <button className="text-button" onClick={() => setSelected(null)}><Icon name="arrow"/>返回通知列表</button>
+        <button type="button" className="text-button" onClick={() => setSelected(null)}><Icon name="arrow"/>返回通知列表</button>
         <h1>{selected.title}</h1>
         <div className="notice-meta">
             <time dateTime={selected.published}>{selected.published}</time>
             <span>{selected.sourceName}</span>
-            <button className="text-button" onClick={() => void openSource()}>查看学校原文<Icon name="external"/>
+            <button type="button" className="text-button" onClick={() => void openSource()}>查看学校原文<Icon name="external"/>
             </button>
         </div>
         {error && <p className="account-error" role="alert">{error}</p>}
         {detailLoading && <p className="notice-empty" role="status">正在读取通知正文…</p>}
         {detailError && <div className="account-error" role="alert">{detailError}
-            <button className="text-button" onClick={() => setSelected({...selected})}>重试</button>
+            <button type="button" className="text-button" onClick={() => setSelected({...selected})}>重试</button>
         </div>}
         {detail?.requiresLogin && <div className="notice-empty"><h2>登录后查看完整通知</h2>
-            <button className="primary-button" onClick={onLogin}>登录账号</button>
+            <button type="button" className="primary-button" onClick={onLogin}>登录账号</button>
         </div>}
         {detail && !detail.requiresLogin && <>
             <NoticeBody key={`${selected.sourceId}:${selected.url}`} detail={detail} notice={selected}/>
             {detail.attachmentError && <p className="account-error" role="alert">{detail.attachmentError}</p>}
             {!!detail.attachments.length && <ul className="notice-attachments" aria-label="通知附件">
                 {detail.attachments.map(attachment => <li key={attachment.url}>
-                    <button className="text-button" onClick={() => void openAttachment(attachment.url)}>
+                    <button type="button" className="text-button" onClick={() => void openAttachment(attachment.url)}>
                         {attachment.name}<Icon name="external"/>
                     </button>
                 </li>)}
@@ -151,7 +151,7 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
                 {list.sources.filter(source => source.enabled).map(source => <option key={source.id}
                                                                                      value={source.id}>{source.name}</option>)}
             </select>
-                <button className="secondary-button" disabled={loading || !api} onClick={() => void refresh()}><Icon
+                <button type="button" className="secondary-button" disabled={loading || !api} onClick={() => void refresh()}><Icon
                     name="refresh"/>{loading ? '刷新中…' : '刷新通知'}</button>
             </div>
         </div>
@@ -163,7 +163,7 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
                               key={source.id}>{source.name}：{source.lastError}</p>)}
         <div className="notice-list" aria-busy={loading}>
             {items.map(item => <div className="notice-row" key={`${item.sourceId}:${item.url}`}>
-                <button className="notice-open" onClick={() => setSelected(item)}>
+                <button type="button" className="notice-open" onClick={() => setSelected(item)}>
                     <time dateTime={item.published}>
                         <strong>{item.published.slice(5)}</strong><span>{item.published.slice(0, 4)}</span></time>
                     <div><h2><span className="notice-source-badge">{item.sourceName}</span>{item.title}</h2></div>

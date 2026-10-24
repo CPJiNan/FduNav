@@ -87,9 +87,9 @@ export function AccountPanel({account, onChange}: {
         </form>}
         {account?.username && <>
             <div className="account-actions">
-                {account.status === 'unverified' && <button className="secondary-button" disabled={!!busy || !api}
+                {account.status === 'unverified' && <button type="button" className="secondary-button" disabled={!!busy || !api}
                                                             onClick={() => api && void perform('正在验证会话…', () => api.verify())}>验证会话</button>}
-                <button className="secondary-button" disabled={!!busy || !api}
+                <button type="button" className="secondary-button" disabled={!!busy || !api}
                         onClick={() => api && void perform('正在退出…', () => api.logout())}>退出登录
                 </button>
             </div>

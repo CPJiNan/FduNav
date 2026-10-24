@@ -51,7 +51,7 @@ export function CalendarEventDialog({date, item, create, onClose, onSaved, onRem
         onCancel={event => { if (busy) event.preventDefault() }} onClose={onClose}
         onClick={event => { if (!busy && event.target === dialog.current) onClose() }}>
         <div className="calendar-dialog-header"><strong>{editing ? (create ? '新建日程' : '编辑日程') : item?.title}</strong>
-            <button className="icon-button" aria-label="关闭日程" disabled={busy} onClick={onClose}><Icon name="close"/></button></div>
+            <button type="button" className="icon-button" aria-label="关闭日程" disabled={busy} onClick={onClose}><Icon name="close"/></button></div>
         {editing ? <form className="calendar-event-form" onSubmit={save}>
             <label>名称<input autoFocus value={draft.title} required maxLength={200} disabled={busy} onChange={event => change('title', event.target.value)}/></label>
             <label className="calendar-all-day-field"><span>全天</span><input type="checkbox" checked={draft.allDay} disabled={busy} onChange={event => change('allDay', event.target.checked)}/></label>
@@ -75,10 +75,10 @@ export function CalendarEventDialog({date, item, create, onClose, onSaved, onRem
             </dl>
             {error && <p className="account-error" role="alert">{error}</p>}
             {item?.event && <div className="calendar-dialog-actions">{confirmDelete ? <>
-                <button className="secondary-button" disabled={busy} onClick={() => setConfirmDelete(false)}>取消删除</button>
-                <button className="primary-button calendar-delete" disabled={busy} onClick={() => void remove()}>{busy ? '正在删除…' : '确认删除'}</button>
-            </> : <><button className="secondary-button" onClick={() => setConfirmDelete(true)}>删除</button>
-                <button className="primary-button" onClick={() => setEditing(true)}>编辑</button></>}</div>}
+                <button type="button" className="secondary-button" disabled={busy} onClick={() => setConfirmDelete(false)}>取消删除</button>
+                <button type="button" className="primary-button calendar-delete" disabled={busy} onClick={() => void remove()}>{busy ? '正在删除…' : '确认删除'}</button>
+            </> : <><button type="button" className="secondary-button" onClick={() => setConfirmDelete(true)}>删除</button>
+                <button type="button" className="primary-button" onClick={() => setEditing(true)}>编辑</button></>}</div>}
         </>}
     </dialog>
 }

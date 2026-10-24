@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useRef, useState, type KeyboardEvent} from 'react'
+import {useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent} from 'react'
 import {dateAfter, type Timetable} from '../../shared/timetable'
 import {calendarDate, calendarOccurrences, calendarRange, calendarViews, dayDifference, localToday,
     shiftCalendarDate, weekStartDate, type CalendarEvent, type CalendarOccurrence, type CalendarView} from '../../shared/calendar'
@@ -27,7 +27,7 @@ export function CalendarPage() {
     const previousFocus = useRef<HTMLElement | null>(null)
     const page = useRef<HTMLElement | null>(null)
 
-    async function loadTimetable(refresh = false, semesterId?: string) {
+    const loadTimetable = useCallback(async (refresh = false, semesterId?: string, showSemesterStart = false) => {
         if (pending.current) return
         if (!window.timetable) { setError('请在桌面应用中获取课表。'); return }
         pending.current = true
@@ -40,14 +40,14 @@ export function CalendarPage() {
             if (!result.ok) setError(result.error)
             else {
                 setTimetable(result.data)
-                if (semesterId && semesterId !== timetable?.semesterId && result.data.startDate) setDate(result.data.startDate)
+                if (showSemesterStart && result.data.startDate) setDate(result.data.startDate)
                 if (!result.data.startDate) setSettingsOpen(true)
             }
         } catch { if (id === requestId.current) setError('无法连接课表服务，请重试。') }
         finally { if (id === requestId.current) { pending.current = false; setBusy(false) } }
-    }
+    }, [])
 
-    async function loadEvents() {
+    const loadEvents = useCallback(async () => {
         if (!window.calendar) { setEventError('日程服务未加载，请重启应用。'); return }
         const id = ++eventRequestId.current
         setEventsLoading(true)
@@ -59,13 +59,13 @@ export function CalendarPage() {
             else setEventError(result.error)
         } catch { if (id === eventRequestId.current) setEventError('无法读取个人日程，请重试。') }
         finally { if (id === eventRequestId.current) setEventsLoading(false) }
-    }
+    }, [])
 
     useEffect(() => {
         const timer = window.setTimeout(() => { void loadTimetable(); void loadEvents() }, 0)
         const todayTimer = window.setInterval(() => setToday(localToday()), 60_000)
         return () => { window.clearTimeout(timer); window.clearInterval(todayTimer); requestId.current++; eventRequestId.current++; pending.current = false }
-    }, [])
+    }, [loadTimetable, loadEvents])
     useEffect(() => { setAgendaDays(30) }, [date, view])
     useEffect(() => { page.current?.querySelector('.calendar-view')?.scrollTo({top: 0}) }, [date, view])
     useEffect(() => {
@@ -135,23 +135,23 @@ export function CalendarPage() {
                 <input type="date" min="1900-01-01" max="2100-12-31" aria-label="选择日期" value={date} onChange={event => chooseDate(event.target.value)}/>
             </label>
             <div className="calendar-actions">
-                <button className="icon-button" aria-label="课表设置" title="课表设置" aria-expanded={settingsOpen}
+                <button type="button" className="icon-button" aria-label="课表设置" title="课表设置" aria-expanded={settingsOpen}
                         onClick={() => setSettingsOpen(value => !value)}><Icon name="settings"/></button>
-                <button className="icon-button" aria-label="今天" title="今天" onClick={goToToday}><Icon name="map-pin"/></button>
-                <button className="icon-button" aria-label="刷新日历" title="刷新日历" disabled={busy || eventsLoading}
+                <button type="button" className="icon-button" aria-label="今天" title="今天" onClick={goToToday}><Icon name="map-pin"/></button>
+                <button type="button" className="icon-button" aria-label="刷新日历" title="刷新日历" disabled={busy || eventsLoading}
                         onClick={() => { void loadTimetable(true, timetable?.semesterId || undefined); void loadEvents() }}><Icon name="refresh"/></button>
-                <button className="icon-button" aria-label="新建日程" title="新建日程"
+                <button type="button" className="icon-button" aria-label="新建日程" title="新建日程"
                         onClick={() => openItem(null)}><Icon name="plus"/></button>
             </div>
         </div>
         {settingsOpen && <div className="calendar-settings">
-            {!!timetable?.semesters.length && <label>学期<select aria-label="学期" value={timetable.semesterId} disabled={busy} onChange={event => void loadTimetable(true, event.target.value)}>
+            {!!timetable?.semesters.length && <label>学期<select aria-label="学期" value={timetable.semesterId} disabled={busy} onChange={event => void loadTimetable(true, event.target.value, true)}>
                 {timetable.semesters.map(semester => <option key={semester.id} value={semester.id}>{semester.name}</option>)}</select></label>}
             {timetable && <label>开学日期<input type="date" aria-label="开学日期" value={timetable.startDate ?? ''} disabled={busy} onChange={event => void changeStartDate(event.target.value)}/></label>}
         </div>}
         <div className="calendar-view-bar">
             <div className="calendar-view-tabs" role="tablist" aria-label="日历视图">{calendarViews.map((item, index) =>
-                <button key={item.id} id={`calendar-tab-${item.id}`} role="tab" aria-selected={view === item.id} tabIndex={view === item.id ? 0 : -1}
+                <button type="button" key={item.id} id={`calendar-tab-${item.id}`} role="tab" aria-selected={view === item.id} tabIndex={view === item.id ? 0 : -1}
                         aria-controls={`calendar-panel-${view}`} onKeyDown={event => tabKey(event, index)} onClick={() => setView(item.id)}>{item.label}</button>)}</div>
             {timetable?.startDate && <select aria-label="教学周" className={`calendar-teaching-week ${view !== 'week' ? 'is-hidden' : ''}`} value={week && week >= 1 && week <= weekCount ? week : ''}
                 onChange={event => chooseDate(dateAfter(timetable.startDate!, (Number(event.target.value) - 1) * 7))}>

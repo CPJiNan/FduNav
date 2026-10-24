@@ -15,9 +15,11 @@ export function parseSemesters(html: string): {semesters: Semester[]; defaultId:
             : expression.slice(1, -1).replace(/\\([\\'"/])/g, '$1').replace(/\\x([0-9a-f]{2})/gi, (_m, hex) => String.fromCharCode(parseInt(hex, 16)))
         rows = JSON.parse(text)
     } catch { throw invalid() }
-    if (!Array.isArray(rows) || !rows.length) throw invalid()
-    const semesters: Semester[] = rows.map(row => {
-        if (!row || !/^\d+$/.test(String(row.id)) || typeof row.name !== 'string') throw invalid()
+    const entries = array(rows)
+    if (!entries.length) throw invalid()
+    const semesters: Semester[] = entries.map(value => {
+        const row = record(value)
+        if (!/^\d+$/.test(String(row.id)) || typeof row.name !== 'string') throw invalid()
         const date = typeof row.startDate === 'string' ? row.startDate.slice(0, 10) : ''
         // JWGL uses Sunday as the start of a teaching week; the UI starts on Monday.
         const startDate = validDate(date) ? dateAfter(date, new Date(`${date}T00:00:00Z`).getUTCDay() === 0 ? 1 : 0) : null
@@ -28,11 +30,22 @@ export function parseSemesters(html: string): {semesters: Semester[]; defaultId:
     return {semesters, defaultId}
 }
 
-function json(text: string): any {
+function json(text: string): unknown {
     try { return JSON.parse(text) } catch { throw invalid() }
 }
 
+function record(value: unknown): Record<string, unknown> {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) throw invalid()
+    return value as Record<string, unknown>
+}
+
+function array(value: unknown): unknown[] {
+    if (!Array.isArray(value)) throw invalid()
+    return value
+}
+
 function integer(value: unknown, min: number, max: number): number {
+    if (typeof value !== 'number' && (typeof value !== 'string' || !value.trim())) throw invalid()
     const number = Number(value)
     if (!Number.isInteger(number) || number < min || number > max) throw invalid()
     return number
@@ -45,29 +58,31 @@ function text(value: unknown, optional = false): string {
 }
 
 export function parseUndergraduateCourses(body: string): TimetableCourse[] {
-    const response = json(body)
-    if (!Array.isArray(response?.studentTableVms) || !response.studentTableVms.length) throw invalid()
-    const activities = response.studentTableVms[0]?.activities
-    if (!Array.isArray(activities)) throw invalid()
-    return activities.map((activity, index) => {
-        if (!activity || !Array.isArray(activity.weekIndexes) || !Array.isArray(activity.teachers)) throw invalid()
+    const response = record(json(body))
+    const tables = array(response.studentTableVms)
+    if (!tables.length) throw invalid()
+    const activities = array(record(tables[0]).activities)
+    return activities.map((value, index) => {
+        const activity = record(value)
+        const weeks = array(activity.weekIndexes)
+        const teachers = array(activity.teachers)
         const weekday = integer(activity.weekday, 1, 7)
         const startUnit = integer(activity.startUnit, 1, 15)
         const endUnit = integer(activity.endUnit, startUnit, 15)
         return {
             id: `${activity.lessonId ?? ''}-${activity.lessonCode ?? ''}-${index}`,
-            name: text(activity.courseName), teachers: activity.teachers.map((value: unknown) => text(value)),
+            name: text(activity.courseName), teachers: teachers.map(value => text(value)),
             room: text(activity.room, true), weekday, startUnit, endUnit,
-            weeks: [...new Set<number>(activity.weekIndexes.map((week: unknown) => integer(week, 1, 60) - (weekday === 7 ? 1 : 0)))].sort((a, b) => a - b),
+            weeks: [...new Set(weeks.map(week => integer(week, 1, 60) - (weekday === 7 ? 1 : 0)))].sort((a, b) => a - b),
         }
     })
 }
 
 export function parsePostgraduateCourses(body: string): TimetableCourse[] {
-    const response = json(body)
-    if (!Array.isArray(response?.results)) throw invalid()
-    const courses: TimetableCourse[] = response.results.map((row: any, index: number) => {
-        if (!row || typeof row.ZCBH !== 'string' || !/^[01]{1,60}$/.test(row.ZCBH)) throw invalid()
+    const response = record(json(body))
+    const courses: TimetableCourse[] = array(response.results).map((value, index) => {
+        const row = record(value)
+        if (typeof row.ZCBH !== 'string' || !/^[01]{1,60}$/.test(row.ZCBH)) throw invalid()
         const startUnit = integer(row.KSJCDM, 1, 15)
         return {
             id: `pg-${index}`, name: text(row.KCMC), room: text(row.JASMC, true),
