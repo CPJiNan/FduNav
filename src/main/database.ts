@@ -1,6 +1,7 @@
 import {DatabaseSync} from 'node:sqlite'
 import type {Theme} from '../shared/accounts'
 import type {Notice, NoticeList, ParsedNotice} from '../shared/notices'
+import type {Timetable} from '../shared/timetable'
 import {defaultSources, type MessageSource, type SourceId} from '../shared/sources.ts'
 import {
     emptyMessagePreferences,
@@ -34,6 +35,10 @@ export class AppDatabase {
             PRAGMA busy_timeout = 5000;
             PRAGMA secure_delete = ON;
             CREATE TABLE IF NOT EXISTS preferences (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS timetable_cache (
+                username TEXT NOT NULL, kind TEXT NOT NULL, data TEXT NOT NULL,
+                PRIMARY KEY (username, kind)
+            );
             CREATE TABLE IF NOT EXISTS account (
                 id INTEGER PRIMARY KEY CHECK (id = 1),
                 username TEXT NOT NULL, cookies BLOB NOT NULL,
@@ -162,7 +167,18 @@ export class AppDatabase {
     }
 
     clearAccount() {
-        this.db.exec('DELETE FROM account; PRAGMA wal_checkpoint(TRUNCATE);')
+        this.db.exec('DELETE FROM account; DELETE FROM timetable_cache; PRAGMA wal_checkpoint(TRUNCATE);')
+    }
+
+    getTimetable(username: string, kind: Timetable['kind']): Timetable | null {
+        const row = this.db.prepare('SELECT data FROM timetable_cache WHERE username = ? AND kind = ?').get(username, kind)
+        if (!row) return null
+        try { return JSON.parse(String(row.data)) as Timetable } catch { return null }
+    }
+
+    saveTimetable(username: string, timetable: Timetable) {
+        this.db.prepare('INSERT INTO timetable_cache (username, kind, data) VALUES (?, ?, ?) ON CONFLICT(username, kind) DO UPDATE SET data = excluded.data')
+            .run(username, timetable.kind, JSON.stringify(timetable))
     }
 
     getTheme(): Theme | null {

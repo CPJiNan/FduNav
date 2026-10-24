@@ -149,6 +149,33 @@ export class AccountService {
         return readAuthenticatedImage(url, referer, this.jar)
     }
 
+    async withServiceSession<T>(work: (read: <R>(url: string, parse: (text: string) => R) => Promise<R>) => Promise<T>, parent?: BrowserWindow): Promise<T> {
+        return this.exclusive(async () => {
+            if (this.state.status !== 'signed-in' || !this.jar) throw new AuthError('请先登录账号。')
+            let jar = CookieJar.deserializeSync(this.jar.serializeSync()!)
+            const result = await work(async <R>(url: string, parse: (text: string) => R): Promise<R> => {
+                let page = await new FudanTransport(jar).request(url)
+                if (isAuthUrl(page.url)) {
+                    jar = await completeInteractiveAuthentication(new AdditionalAuthenticationRequired(page.url, url), jar, parent, async transport => {
+                        const verified = await transport.request(url)
+                        if (isAuthUrl(verified.url) || new URL(verified.url).origin !== new URL(url).origin) return false
+                        parse(verified.text)
+                        return true
+                    })
+                    page = await new FudanTransport(jar).request(url)
+                }
+                if (isAuthUrl(page.url) || new URL(page.url).origin !== new URL(url).origin) {
+                    throw new AuthError('课表会话已失效，请重试。')
+                }
+                return parse(page.text)
+            })
+            this.db.saveAccount({username: this.state.username!, target: this.target, last_login: this.state.lastLogin!,
+                cookies: await secureStorage.encrypt(JSON.stringify(jar.serializeSync()))})
+            this.jar = jar
+            return result
+        })
+    }
+
     private async exclusive<T>(work: () => Promise<T>): Promise<T> {
         if (this.busy) throw new AuthError('账号操作正在进行，请等待完成。')
         this.busy = true

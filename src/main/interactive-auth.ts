@@ -1,11 +1,12 @@
 import {randomUUID} from 'node:crypto'
 import {BrowserWindow, session} from 'electron'
 import type {CookieJar} from 'tough-cookie'
-import {AdditionalAuthenticationRequired, AuthError, FudanTransport, validateUrl, verifySession} from './fudan-auth.ts'
+import {AdditionalAuthenticationRequired, AuthError, FudanTransport, validateUrl, verifySession, type Transport} from './fudan-auth.ts'
 import {browserCookies, browserCookieJar} from './auth-cookies.ts'
 
 export async function completeInteractiveAuthentication(
     challenge: AdditionalAuthenticationRequired, jar: CookieJar, parent?: BrowserWindow,
+    verify: (transport: Transport) => Promise<boolean> = transport => verifySession(transport, challenge.target),
 ): Promise<CookieJar> {
     const loginUrl = validateUrl(challenge.loginUrl)
     const target = validateUrl(challenge.target)
@@ -85,8 +86,8 @@ export async function completeInteractiveAuthentication(
                     if (settled) return
                     // A host redirect alone does not prove login succeeded. Use a fresh timeout after manual verification.
                     const transport = new FudanTransport(cookies, AbortSignal.any([controller.signal, AbortSignal.timeout(30_000)]))
-                    if (!await verifySession(transport, target)) {
-                        throw new AuthError('认证后未能建立教务网站会话，请重新登录。')
+                    if (!await verify(transport)) {
+                        throw new AuthError('认证后未能建立目标网站会话，请重新登录。')
                     }
                     finish(undefined, cookies)
                 } catch (error) {

@@ -3,6 +3,7 @@ import {Icon} from './Icon'
 import {WindowTitlebar} from './WindowTitlebar'
 import {AccountPanel} from './AccountPanel'
 import {NoticesPage} from './NoticesPage'
+import {TimetablePage} from './TimetablePage'
 import {MessagePreferencesPanel} from './MessagePreferencesPanel'
 import {SourcesPanel} from './SourcesPanel'
 import {LlmPanel} from './LlmPanel'
@@ -25,10 +26,12 @@ const tabs = [
 ] as const
 type Tab = typeof tabs[number]['id']
 const noticesNavigation = {label: '通知', icon: 'notices'} as const
+const timetableNavigation = {label: '课表', icon: 'timetable'} as const
 
 export default function App() {
     const [theme, setTheme] = useState<Theme>(readTheme)
     const [settings, setSettings] = useState(false)
+    const [page, setPage] = useState<'notices' | 'timetable'>('notices')
     const [tab, setTab] = useState<Tab>('theme')
     const [storageError, setStorageError] = useState(false)
     const [account, setAccount] = useState<AccountState | null>(null)
@@ -38,7 +41,8 @@ export default function App() {
     const needsPreferences = account?.status === 'signed-in' && !validateRequiredMessagePreferences(preferences).ok
     const needsSetup = needsLogin || needsPreferences
     const showSettings = settings || needsSetup
-    const showNoticesPage = !showSettings
+    const showNoticesPage = !showSettings && page === 'notices'
+    const showTimetablePage = !showSettings && page === 'timetable'
     const settingsButton = useRef<HTMLButtonElement>(null)
     const settingsWasOpen = useRef(false)
 
@@ -84,7 +88,8 @@ export default function App() {
         setStorageError(!await saveTheme(next))
     }
 
-    function openNoticesPage() {
+    function openPage(next: 'notices' | 'timetable') {
+        setPage(next)
         if (needsLogin) {
             setTab('account')
             setSettings(true)
@@ -107,7 +112,10 @@ export default function App() {
             <nav className="app-rail" aria-label="应用导航">
                 <button className={`icon-button rail-button ${showNoticesPage ? 'is-active' : ''}`} aria-label={noticesNavigation.label}
                         title={noticesNavigation.label} aria-current={showNoticesPage ? 'page' : undefined}
-                        onClick={openNoticesPage}><Icon name={noticesNavigation.icon}/></button>
+                        onClick={() => openPage('notices')}><Icon name={noticesNavigation.icon}/></button>
+                <button className={`icon-button rail-button ${showTimetablePage ? 'is-active' : ''}`} aria-label={timetableNavigation.label}
+                        title={timetableNavigation.label} aria-current={showTimetablePage ? 'page' : undefined}
+                        onClick={() => openPage('timetable')}><Icon name={timetableNavigation.icon}/></button>
                 <div className="rail-bottom">
                     <button ref={settingsButton}
                             className={`icon-button rail-button ${showSettings ? 'is-active' : ''}`}
@@ -182,6 +190,8 @@ export default function App() {
                                 setTab('account');
                                 setSettings(true)
                             }}/>}
+                        {showTimetablePage && accountLoaded && (!window.accounts || account?.status === 'signed-in') &&
+                            <TimetablePage key={`${account?.username}-${preferences?.educationLevel}`}/>}
                     </main>
                 </div>
             </div>

@@ -4,6 +4,13 @@ import type {NoticesAPI} from '../shared/notices'
 import type {MessagePreferencesAPI} from '../shared/message-preferences'
 import type {SourcesAPI} from '../shared/sources'
 import type {LlmAPI} from '../shared/llm'
+import type {TimetableAPI} from '../shared/timetable'
+
+const timetable: TimetableAPI = {
+    get: options => ipcRenderer.invoke('timetable:get', options),
+    setStartDate: date => ipcRenderer.invoke('timetable:set-start-date', date),
+}
+contextBridge.exposeInMainWorld('timetable', timetable)
 
 const llm: LlmAPI = {
     get: () => ipcRenderer.invoke('llm:get'),
