@@ -38,6 +38,6 @@ function pastelColor(hue: number, saturation: number): string {
         [0, chroma, intermediate], [0, intermediate, chroma],
         [intermediate, 0, chroma], [chroma, 0, intermediate],
     ]
-    return '#' + sectors[Math.floor(hue / 60)]
-        .map(value => Math.round((value + minimum) * 255).toString(16).padStart(2, '0')).join('')
+    return `#${sectors[Math.floor(hue / 60)]
+        .map(value => Math.round((value + minimum) * 255).toString(16).padStart(2, '0')).join('')}`
 }

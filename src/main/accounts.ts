@@ -1,6 +1,6 @@
 import {BrowserWindow, ipcMain, type IpcMainInvokeEvent} from 'electron'
 import {CookieJar} from 'tough-cookie'
-import {AppDatabase} from './database'
+import type {AppDatabase} from './database'
 import {AdditionalAuthenticationRequired, authenticate, AuthError, FudanTransport, isAuthUrl, verifySession} from './fudan-auth'
 import {completeInteractiveAuthentication} from './interactive-auth'
 import {clearReaderSession, readAuthenticatedPage, readAuthenticatedImage} from './authenticated-page'
