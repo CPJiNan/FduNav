@@ -2,6 +2,7 @@ import {useEffect, useRef, type CSSProperties} from 'react'
 import {asDate, calendarWeekdays, layoutCalendarDay, lunarDate, monthDates, timeLabel, weekStartDate, type CalendarOccurrence} from '../../shared/calendar'
 import {dateAfter} from '../../shared/timetable'
 import {courseColor} from './timetable-colors'
+import {Icon} from './Icon'
 
 export const occurrenceColor = (item: CalendarOccurrence) => courseColor(item.course ?? {name: `日程:${item.event?.id}`, teachers: []})
 const occurrenceBackground = (item: CalendarOccurrence) => item.event ? 'var(--palette-white)' : occurrenceColor(item)
@@ -19,6 +20,18 @@ interface ViewProps {
     items: CalendarOccurrence[]
     onDate: (date: string) => void
     onOpen: (item: CalendarOccurrence) => void
+}
+
+interface PeriodNavigationProps {
+    onNavigate: (amount: number) => void
+}
+
+function CalendarPeriodButton({date, direction, onNavigate}: PeriodNavigationProps & {
+    date: string; direction: -1 | 1
+}) {
+    const label = direction < 0 ? '上一周' : '下一周'
+    return <button className={`calendar-period-button ${direction < 0 ? 'is-previous' : ''}`} aria-label={label} title={label}
+        disabled={date === (direction < 0 ? '1900-01-01' : '2100-12-31')} onClick={() => onNavigate(direction)}><Icon name="chevron"/></button>
 }
 
 export function CalendarYear({date, today, items, onMonth}: Omit<ViewProps, 'onDate' | 'onOpen'> & {onMonth: (date: string) => void}) {
@@ -41,7 +54,9 @@ export function CalendarYear({date, today, items, onMonth}: Omit<ViewProps, 'onD
 export function CalendarMonth({date, today, items, onDate, onOpen}: ViewProps) {
     const groups = groupByDate(items.filter(item => item.event))
     return <div className="calendar-month">
-        <div className="calendar-month-weekdays">{calendarWeekdays.map(day => <span key={day}>{day}</span>)}</div>
+        <div className="calendar-month-weekdays">{calendarWeekdays.map(day => <div className="calendar-weekday-cell" key={day}>
+            <span>{day}</span>
+        </div>)}</div>
         <div className="calendar-month-grid">{monthDates(date).map(day => {
             const events = groups.get(day) ?? []
             return <div className={`calendar-month-cell ${day.slice(0, 7) !== date.slice(0, 7) ? 'is-outside' : ''}`} key={day}>
@@ -61,18 +76,18 @@ export function CalendarMonth({date, today, items, onDate, onOpen}: ViewProps) {
     </div>
 }
 
-export function CalendarDateStrip({date, today, onDate}: Pick<ViewProps, 'date' | 'today' | 'onDate'>) {
+export function CalendarDateStrip({date, today, onDate, onNavigate}: Pick<ViewProps, 'date' | 'today' | 'onDate'> & Partial<PeriodNavigationProps>) {
     const first = weekStartDate(date)
     return <div className="calendar-date-strip"><span aria-hidden="true"/>{calendarWeekdays.map((day, index) => {
         const dayDate = dateAfter(first, index)
-        return <button key={day} className={`calendar-date-button ${dayDate === today ? 'is-today' : ''} ${dayDate === date ? 'is-selected' : ''}`}
+        return <div className="calendar-weekday-cell" key={day}><button className={`calendar-date-button ${dayDate === today ? 'is-today' : ''} ${dayDate === date ? 'is-selected' : ''}`}
                        aria-label={dateLabel(dayDate)} aria-pressed={dayDate === date} onClick={() => onDate(dayDate)}>
             <small>{day}</small><span>{Number(dayDate.slice(8))}</span><small>{lunarDate(dayDate)}</small>
-        </button>
+        </button>{onNavigate && (index === 0 || index === 6) && <CalendarPeriodButton date={date} direction={index === 0 ? -1 : 1} onNavigate={onNavigate}/>}</div>
     })}</div>
 }
 
-export function CalendarTimeline({date, today, items, onDate, onOpen, mode}: ViewProps & {mode: 'week' | 'day'}) {
+export function CalendarTimeline({date, today, items, onDate, onOpen, mode, onNavigate}: ViewProps & PeriodNavigationProps & {mode: 'week' | 'day'}) {
     const scroll = useRef<HTMLDivElement>(null)
     const start = mode === 'week' ? weekStartDate(date) : date
     const dates = Array.from({length: mode === 'week' ? 7 : 1}, (_, index) => dateAfter(start, index))
@@ -83,7 +98,7 @@ export function CalendarTimeline({date, today, items, onDate, onOpen, mode}: Vie
         <div className="calendar-time-scroll" ref={scroll} tabIndex={0} aria-label={mode === 'week' ? '每周课表' : '当天时间轴'}>
             <div className="calendar-time-content" style={{'--calendar-days': dates.length} as CSSProperties}>
                 <div className="calendar-time-heading">
-                    <CalendarDateStrip date={date} today={today} onDate={onDate}/>
+                    <CalendarDateStrip date={date} today={today} onDate={onDate} onNavigate={onNavigate}/>
                     <div className="calendar-time-columns calendar-all-day"><span>全天</span>
                         {dates.map(day => <div key={day}>{items.filter(item => item.date === day && item.allDay).map(item =>
                             <button key={item.key} className="calendar-event calendar-all-day-event" style={{backgroundColor: occurrenceBackground(item)}}

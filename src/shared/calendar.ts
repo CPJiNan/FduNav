@@ -50,7 +50,10 @@ export const dayDifference = (left: string, right: string) => Math.round((asDate
 
 export function monthDates(date: string) {
     const first = weekStartDate(`${date.slice(0, 7)}-01`)
-    return Array.from({length: 42}, (_, index) => dateAfter(first, index))
+    const current = asDate(date)
+    const last = dateString(new Date(Date.UTC(current.getUTCFullYear(), current.getUTCMonth() + 1, 0)))
+    const length = Math.ceil((dayDifference(last, first) + 1) / 7) * 7
+    return Array.from({length}, (_, index) => dateAfter(first, index))
 }
 
 export function shiftCalendarDate(date: string, view: CalendarView, amount: number) {
@@ -68,7 +71,7 @@ export function shiftCalendarDate(date: string, view: CalendarView, amount: numb
 
 export function calendarRange(date: string, view: CalendarView): [string, string] {
     if (view === 'year') return [`${date.slice(0, 4)}-01-01`, `${date.slice(0, 4)}-12-31`]
-    if (view === 'month') { const days = monthDates(date); return [days[0], days[41]] }
+    if (view === 'month') { const days = monthDates(date); return [days[0], days[days.length - 1]] }
     if (view === 'week') { const start = weekStartDate(date); return [start, dateAfter(start, 6)] }
     return [date, view === 'agenda' ? dateAfter(date, 29) : date]
 }

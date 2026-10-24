@@ -43,6 +43,17 @@
 .calendar-mini-day.has-events::after { content: ''; position: absolute; width: 3px; height: 3px; border-radius: 50%; bottom: 1px; background: currentColor; }
 .calendar-month-weekdays, .calendar-month-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
 .calendar-month-weekdays { color: var(--color-text-muted); font-size: var(--font-size-sm); text-align: center; padding: var(--space-2) 0 var(--space-3); }
+.calendar-weekday-cell { position: relative; min-width: 0; }
+.calendar-month-weekdays .calendar-weekday-cell { display: grid; place-items: center; min-height: 28px; }
+.calendar-weekday-cell > .calendar-date-button { width: 100%; }
+.calendar-period-button { position: absolute; top: 4px; bottom: 4px; right: 2px; width: 20px; display: grid; place-items: center; padding: 0; border: 0; border-radius: var(--radius-xs); background: var(--color-bg-subtle); color: var(--color-text-secondary); opacity: 0; pointer-events: none; }
+.calendar-period-button.is-previous { left: 2px; right: auto; }
+.calendar-period-button .icon { width: 16px; height: 16px; }
+.calendar-period-button.is-previous .icon { transform: rotate(180deg); }
+.calendar-weekday-cell:hover > .calendar-period-button, .calendar-weekday-cell:focus-within > .calendar-period-button { opacity: 1; pointer-events: auto; }
+.calendar-period-button:hover { background: var(--color-bg-hover); color: var(--color-accent); }
+.calendar-period-button:disabled { cursor: default; color: var(--color-text-muted); }
+@media (hover: none) { .calendar-period-button { opacity: 1; pointer-events: auto; } }
 .calendar-month-cell { min-width: 0; min-height: 144px; padding: var(--space-2) var(--space-1); border-bottom: 1px solid var(--color-border-subtle); }
 .calendar-month-cell.is-outside { opacity: .45; }
 .calendar-month-cell > .calendar-date-button { width: 100%; margin-bottom: var(--space-2); }

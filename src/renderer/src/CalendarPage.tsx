@@ -1,7 +1,7 @@
 import {useEffect, useMemo, useRef, useState, type KeyboardEvent} from 'react'
 import {dateAfter, type Timetable} from '../../shared/timetable'
 import {calendarDate, calendarOccurrences, calendarRange, calendarViews, dayDifference, localToday,
-    weekStartDate, type CalendarEvent, type CalendarOccurrence, type CalendarView} from '../../shared/calendar'
+    shiftCalendarDate, weekStartDate, type CalendarEvent, type CalendarOccurrence, type CalendarView} from '../../shared/calendar'
 import {CalendarAgenda, CalendarMonth, CalendarTimeline, CalendarYear} from './CalendarViews'
 import {CalendarEventDialog} from './CalendarEventDialog'
 import {Icon} from './Icon'
@@ -11,6 +11,7 @@ export function CalendarPage() {
     const [view, setView] = useState<CalendarView>('week')
     const [date, setDate] = useState(localToday)
     const [today, setToday] = useState(localToday)
+    const [todayJump, setTodayJump] = useState(0)
     const [timetable, setTimetable] = useState<Timetable | null>(null)
     const [events, setEvents] = useState<CalendarEvent[]>([])
     const [busy, setBusy] = useState(false)
@@ -67,6 +68,16 @@ export function CalendarPage() {
     }, [])
     useEffect(() => { setAgendaDays(30) }, [date, view])
     useEffect(() => { page.current?.querySelector('.calendar-view')?.scrollTo({top: 0}) }, [date, view])
+    useEffect(() => {
+        if (!todayJump) return
+        const frame = requestAnimationFrame(() => {
+            const content = page.current?.querySelector('.calendar-view')
+            const target = content?.querySelector(view === 'year' ? '.is-current-month' : '.calendar-date-button.is-today')
+            if (target) target.scrollIntoView({block: 'nearest', inline: 'center'})
+            else content?.scrollTo({top: 0})
+        })
+        return () => cancelAnimationFrame(frame)
+    }, [todayJump])
 
     async function changeStartDate(value: string) {
         if (!window.timetable || pending.current || !value) return
@@ -95,6 +106,13 @@ export function CalendarPage() {
         setDate(next)
         if (nextView) setView(nextView)
     }
+    function goToToday() {
+        const current = localToday()
+        setToday(current)
+        setDate(current)
+        setAgendaDays(30)
+        setTodayJump(value => value + 1)
+    }
     function openItem(item: CalendarOccurrence | null) {
         previousFocus.current = document.activeElement as HTMLElement
         setEditor({item, create: !item})
@@ -119,6 +137,7 @@ export function CalendarPage() {
             <div className="calendar-actions">
                 <button className="icon-button" aria-label="课表设置" title="课表设置" aria-expanded={settingsOpen}
                         onClick={() => setSettingsOpen(value => !value)}><Icon name="settings"/></button>
+                <button className="icon-button" aria-label="今天" title="今天" onClick={goToToday}><Icon name="map-pin"/></button>
                 <button className="icon-button" aria-label="刷新日历" title="刷新日历" disabled={busy || eventsLoading}
                         onClick={() => { void loadTimetable(true, timetable?.semesterId || undefined); void loadEvents() }}><Icon name="refresh"/></button>
             </div>
@@ -143,8 +162,8 @@ export function CalendarPage() {
         {timetable && !timetable.startDate && <p className="account-error" role="alert">请设置开学日期以显示课程。</p>}
         <div className="calendar-view" role="tabpanel" id={`calendar-panel-${view}`} aria-labelledby={`calendar-tab-${view}`}>
             {view === 'year' && <CalendarYear date={date} today={today} items={items} onMonth={value => chooseDate(value, 'month')}/>}
-            {view === 'month' && <CalendarMonth date={date} today={today} items={items} onDate={value => chooseDate(value, 'day')} onOpen={openItem}/>}
-            {(view === 'week' || view === 'day') && <CalendarTimeline mode={view} date={date} today={today} items={items} onDate={value => chooseDate(value, view === 'week' ? 'day' : undefined)} onOpen={openItem}/>}
+            {view === 'month' && <CalendarMonth date={date} today={today} items={items} onDate={value => chooseDate(value, value.slice(0, 7) === date.slice(0, 7) ? 'day' : 'month')} onOpen={openItem}/>}
+            {(view === 'week' || view === 'day') && <CalendarTimeline mode={view} date={date} today={today} items={items} onDate={value => chooseDate(value, view === 'week' ? 'day' : undefined)} onOpen={openItem} onNavigate={amount => chooseDate(shiftCalendarDate(date, 'week', amount))}/>}
             {view === 'agenda' && <CalendarAgenda items={items} onOpen={openItem} onMore={agendaDays < 360 ? () => setAgendaDays(value => value + 30) : undefined}/>}
         </div>
         {editor && <CalendarEventDialog date={date} item={editor.item} create={editor.create} onClose={closeEditor}
