@@ -2,6 +2,14 @@ import {contextBridge, ipcRenderer, type IpcRendererEvent} from 'electron'
 import type {AccountAPI} from '../shared/accounts'
 import type {NoticesAPI} from '../shared/notices'
 import type {MessagePreferencesAPI} from '../shared/message-preferences'
+import type {SourcesAPI} from '../shared/sources'
+
+const sources: SourcesAPI = {
+    list: () => ipcRenderer.invoke('sources:list'),
+    save: input => ipcRenderer.invoke('sources:save', input),
+    remove: id => ipcRenderer.invoke('sources:remove', id),
+}
+contextBridge.exposeInMainWorld('sources', sources)
 
 const messagePreferences: MessagePreferencesAPI = {
     get: () => ipcRenderer.invoke('preferences:get-messages'),
@@ -11,8 +19,9 @@ contextBridge.exposeInMainWorld('messagePreferences', messagePreferences)
 
 const notices: NoticesAPI = {
     list: refresh => ipcRenderer.invoke('notices:list', refresh),
-    detail: url => ipcRenderer.invoke('notices:detail', url),
-    openSource: url => ipcRenderer.invoke('notices:open-source', url),
+    detail: notice => ipcRenderer.invoke('notices:detail', notice),
+    openSource: notice => ipcRenderer.invoke('notices:open-source', notice),
+    openAttachment: notice => ipcRenderer.invoke('notices:open-attachment', notice),
 }
 contextBridge.exposeInMainWorld('notices', notices)
 

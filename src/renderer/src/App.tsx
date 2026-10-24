@@ -4,6 +4,7 @@ import {WindowTitlebar} from './WindowTitlebar'
 import {AccountPanel} from './AccountPanel'
 import {NoticesPage} from './NoticesPage'
 import {MessagePreferencesPanel} from './MessagePreferencesPanel'
+import {SourcesPanel} from './SourcesPanel'
 import type {AccountState} from '../../shared/accounts'
 import {readTheme, saveTheme, type Theme} from './theme'
 import './styles/app.css'
@@ -17,6 +18,7 @@ const tabs = [
     {id: 'account', label: '账号', icon: 'user'},
     {id: 'theme', label: '主题', icon: 'sun'},
     {id: 'messages', label: '消息偏好', icon: 'tag'},
+    {id: 'sources', label: '消息来源', icon: 'folder'},
 ] as const
 type Tab = typeof tabs[number]['id']
 
@@ -72,8 +74,8 @@ export default function App() {
     return <><WindowTitlebar/>
         <div className="app-shell">
             <nav className="app-rail" aria-label="应用导航">
-                <button className={`icon-button rail-button ${!settings ? 'is-active' : ''}`} aria-label="教务处通知"
-                        title="教务处通知" aria-current={!settings ? 'page' : undefined}
+                <button className={`icon-button rail-button ${!settings ? 'is-active' : ''}`} aria-label="通知"
+                        title="通知" aria-current={!settings ? 'page' : undefined}
                         onClick={() => setSettings(false)}><Icon name="home"/></button>
                 <div className="rail-bottom">
                     <button ref={settingsButton} className={`icon-button rail-button ${settings ? 'is-active' : ''}`}
@@ -131,6 +133,7 @@ export default function App() {
                                                             role="alert">主题已生效，但无法保存偏好。</p>}
                                     </>}
                                     <div hidden={tab !== 'messages'}><MessagePreferencesPanel/></div>
+                                    <div hidden={tab !== 'sources'}><SourcesPanel active={settings && tab === 'sources'}/></div>
                                 </section>
                             </div>
                         </div>

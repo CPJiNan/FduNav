@@ -4,9 +4,20 @@
     padding: var(--space-6);
 }
 
-.notices-filter > button {
+.notice-actions > button {
     flex-shrink: 0;
 }
+
+.notice-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-left: auto;
+    min-width: 0;
+}
+
+.notice-attachments { list-style: none; padding: 0; margin-top: var(--space-5); }
+.notice-attachments .text-button { overflow-wrap: anywhere; text-align: left; }
 
 .notices-filter {
     display: flex;
@@ -39,6 +50,29 @@
 
 .notice-search input::placeholder {
     color: var(--color-text-placeholder);
+}
+
+.notice-source-select {
+    min-width: 0;
+    max-width: 12rem;
+    min-height: var(--size-touch-target);
+    padding: var(--space-2);
+    border: var(--border-width) solid var(--input-border);
+    border-radius: var(--input-radius);
+    background: var(--color-bg-surface);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+}
+
+.notice-source-badge {
+    display: inline-block;
+    padding: var(--space-0-5) var(--space-2);
+    margin-right: var(--space-2);
+    border-radius: var(--radius-xs);
+    background: var(--color-bg-selected);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs);
+    vertical-align: middle;
 }
 
 .notice-row {

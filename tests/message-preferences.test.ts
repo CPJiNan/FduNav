@@ -65,7 +65,7 @@ test('preferences survive database reopening, update and clear without changing 
         db.setMessagePreferences(emptyMessagePreferences())
         assert.deepEqual(db.getMessagePreferences(), emptyMessagePreferences())
         assert.equal(db.getTheme(), 'dark')
-        assert.deepEqual(db.getNotices().items.map(item => ({...item})), notices)
+        assert.deepEqual(db.getNotices().items.map(item => ({...item})), notices.map(item => ({...item, sourceId: 'jwc', sourceName: '教务处'})))
     } finally {
         db.close()
         rmSync(directory, {recursive: true, force: true})
