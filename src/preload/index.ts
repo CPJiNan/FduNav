@@ -5,6 +5,14 @@ import type {MessagePreferencesAPI} from '../shared/message-preferences'
 import type {SourcesAPI} from '../shared/sources'
 import type {LlmAPI} from '../shared/llm'
 import type {TimetableAPI} from '../shared/timetable'
+import type {CalendarAPI} from '../shared/calendar'
+
+const calendar: CalendarAPI = {
+    list: () => ipcRenderer.invoke('calendar:list'),
+    save: input => ipcRenderer.invoke('calendar:save', input),
+    remove: id => ipcRenderer.invoke('calendar:remove', id),
+}
+contextBridge.exposeInMainWorld('calendar', calendar)
 
 const timetable: TimetableAPI = {
     get: options => ipcRenderer.invoke('timetable:get', options),

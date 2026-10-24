@@ -2,6 +2,7 @@ import {DatabaseSync} from 'node:sqlite'
 import type {Theme} from '../shared/accounts'
 import type {Notice, NoticeList, ParsedNotice} from '../shared/notices'
 import type {Timetable} from '../shared/timetable'
+import type {CalendarEvent} from '../shared/calendar'
 import {defaultSources, type MessageSource, type SourceId} from '../shared/sources.ts'
 import {
     emptyMessagePreferences,
@@ -38,6 +39,10 @@ export class AppDatabase {
             CREATE TABLE IF NOT EXISTS timetable_cache (
                 username TEXT NOT NULL, kind TEXT NOT NULL, data TEXT NOT NULL,
                 PRIMARY KEY (username, kind)
+            );
+            CREATE TABLE IF NOT EXISTS calendar_events (
+                username TEXT NOT NULL, id TEXT NOT NULL, data TEXT NOT NULL,
+                PRIMARY KEY (username, id)
             );
             CREATE TABLE IF NOT EXISTS account (
                 id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -184,6 +189,24 @@ export class AppDatabase {
     getTheme(): Theme | null {
         const value = this.db.prepare("SELECT value FROM preferences WHERE key = 'theme'").get()?.value
         return value === 'light' || value === 'dark' || value === 'auto' ? value : null
+    }
+
+    getCalendarEvents(username: string): CalendarEvent[] {
+        return this.db.prepare('SELECT data FROM calendar_events WHERE username = ? ORDER BY id').all(username)
+            .map(row => JSON.parse(String(row.data)) as CalendarEvent)
+    }
+
+    hasCalendarEvent(username: string, id: string) {
+        return !!this.db.prepare('SELECT 1 FROM calendar_events WHERE username = ? AND id = ?').get(username, id)
+    }
+
+    saveCalendarEvent(username: string, event: CalendarEvent) {
+        this.db.prepare('INSERT INTO calendar_events (username, id, data) VALUES (?, ?, ?) ON CONFLICT(username, id) DO UPDATE SET data = excluded.data')
+            .run(username, event.id, JSON.stringify(event))
+    }
+
+    removeCalendarEvent(username: string, id: string) {
+        this.db.prepare('DELETE FROM calendar_events WHERE username = ? AND id = ?').run(username, id)
     }
 
     setTheme(theme: Theme) {
