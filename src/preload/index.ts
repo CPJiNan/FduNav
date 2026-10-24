@@ -1,6 +1,13 @@
 import {contextBridge, ipcRenderer, type IpcRendererEvent} from 'electron'
 import type {AccountAPI} from '../shared/accounts'
 import type {NoticesAPI} from '../shared/notices'
+import type {MessagePreferencesAPI} from '../shared/message-preferences'
+
+const messagePreferences: MessagePreferencesAPI = {
+    get: () => ipcRenderer.invoke('preferences:get-messages'),
+    save: input => ipcRenderer.invoke('preferences:set-messages', input),
+}
+contextBridge.exposeInMainWorld('messagePreferences', messagePreferences)
 
 const notices: NoticesAPI = {
     list: refresh => ipcRenderer.invoke('notices:list', refresh),

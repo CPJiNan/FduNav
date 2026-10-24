@@ -3,6 +3,7 @@ import {Icon} from './Icon'
 import {WindowTitlebar} from './WindowTitlebar'
 import {AccountPanel} from './AccountPanel'
 import {NoticesPage} from './NoticesPage'
+import {MessagePreferencesPanel} from './MessagePreferencesPanel'
 import type {AccountState} from '../../shared/accounts'
 import {readTheme, saveTheme, type Theme} from './theme'
 import './styles/app.css'
@@ -12,7 +13,11 @@ const themes = [
     {value: 'dark', label: '深色主题', icon: 'moon'},
     {value: 'auto', label: '跟随系统', icon: 'monitor'},
 ] as const
-const tabs = [{id: 'account', label: '账号', icon: 'user'}, {id: 'theme', label: '主题', icon: 'sun'}] as const
+const tabs = [
+    {id: 'account', label: '账号', icon: 'user'},
+    {id: 'theme', label: '主题', icon: 'sun'},
+    {id: 'messages', label: '消息偏好', icon: 'tag'},
+] as const
 type Tab = typeof tabs[number]['id']
 
 export default function App() {
@@ -80,7 +85,7 @@ export default function App() {
             <div className="workspace-shell">
                 <div className="main-shell">
                     <main className="main-content">
-                        {settings ? <div className="settings-page">
+                        <div className="settings-page" hidden={!settings}>
                             <div className="settings-layout">
                                 <div className="settings-tabs" role="tablist" aria-label="设置分类"
                                      aria-orientation="vertical">
@@ -91,11 +96,12 @@ export default function App() {
                                                                        onKeyDown={event => tabKey(event, index)}
                                                                        onClick={() => setTab(item.id)}
                                                                        className={`settings-tab ${tab === item.id ? 'is-active' : ''}`}>
-                                        <Icon name={item.icon}/>{item.label}</button>)}
+                                        <Icon name={item.icon}/><span>{item.label}</span></button>)}
                                 </div>
                                 <section className="settings-panel" role="tabpanel" id={`settings-panel-${tab}`}
                                          aria-labelledby={`settings-tab-${tab}`} tabIndex={0}>
-                                    {tab === 'account' ? <AccountPanel account={account} onChange={setAccount}/> : <>
+                                    {tab === 'account' && <AccountPanel account={account} onChange={setAccount}/>}
+                                    {tab === 'theme' && <>
                                         <fieldset className="theme-options" aria-label="外观模式">
                                             <div className="theme-grid">{themes.map(item => <label
                                                 className={`theme-option ${theme === item.value ? 'is-selected' : ''}`}
@@ -124,9 +130,11 @@ export default function App() {
                                         {storageError && <p className="save-status has-error"
                                                             role="alert">主题已生效，但无法保存偏好。</p>}
                                     </>}
+                                    <div hidden={tab !== 'messages'}><MessagePreferencesPanel/></div>
                                 </section>
                             </div>
-                        </div> : <NoticesPage onLogin={() => {
+                        </div>
+                        {!settings && <NoticesPage onLogin={() => {
                             setTab('account');
                             setSettings(true)
                         }}/>}

@@ -1,6 +1,7 @@
 import {DatabaseSync} from 'node:sqlite'
 import type {Theme} from '../shared/accounts'
 import type {Notice, NoticeList} from '../shared/notices'
+import {emptyMessagePreferences, readSavedMessagePreferences, validateMessagePreferences, type MessagePreferences} from '../shared/message-preferences.ts'
 
 export interface SavedAccount {
     username: string
@@ -51,6 +52,23 @@ export class AppDatabase {
 
     setTheme(theme: Theme) {
         this.db.prepare("INSERT INTO preferences (key, value) VALUES ('theme', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(theme)
+    }
+
+    getMessagePreferences(): MessagePreferences {
+        const row = this.db.prepare("SELECT value FROM preferences WHERE key = 'message_preferences'").get()
+        if (!row) return emptyMessagePreferences()
+        const result = readSavedMessagePreferences(JSON.parse(String(row.value)))
+        if (!result.ok) throw new Error('Invalid saved message preferences')
+        if (JSON.stringify(result.data) !== row.value) this.setMessagePreferences(result.data)
+        return result.data
+    }
+
+    setMessagePreferences(input: MessagePreferences): MessagePreferences {
+        const result = validateMessagePreferences(input)
+        if (!result.ok) throw new Error(result.error)
+        this.db.prepare("INSERT INTO preferences (key, value) VALUES ('message_preferences', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+            .run(JSON.stringify(result.data))
+        return result.data
     }
 
     getNotices(): NoticeList {

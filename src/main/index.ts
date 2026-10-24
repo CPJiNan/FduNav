@@ -5,6 +5,7 @@ import {pathToFileURL} from 'node:url'
 import {AppDatabase} from './database'
 import {registerAccountHandlers} from './accounts'
 import {registerNoticeHandlers} from './notices'
+import {registerMessagePreferenceHandlers} from './message-preferences'
 
 let database: AppDatabase | undefined
 
@@ -83,6 +84,7 @@ app.whenReady().then(() => {
         const trusted = (event: IpcMainInvokeEvent) => !!senderWindow(event) && isAppUrl(event.senderFrame?.url ?? '')
         const accounts = registerAccountHandlers(database, trusted)
         registerNoticeHandlers(database, accounts, trusted)
+        registerMessagePreferenceHandlers(database, trusted)
     } catch {
         dialog.showErrorBox('无法打开应用数据', 'SQLite 数据库初始化失败，请检查应用数据目录的访问权限。')
         app.quit()
