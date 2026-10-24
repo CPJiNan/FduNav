@@ -24,7 +24,7 @@ export class AccountService {
                 username: saved.username,
                 lastLogin: saved.last_login,
                 status: 'unverified',
-                message: '登录过期，请验证会话或重新登录。'
+                message: '登录已过期，请验证会话或重新登录。'
             }
             try {
                 if (!await secureStorage.available()) throw new Error()

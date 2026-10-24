@@ -12,7 +12,7 @@ export function parseNotices(html: string, baseUrl: string, sourceId: SourceId,
     $(rule.link).each((_index, element) => {
         const link = $(element), row = link.closest(rule.row)
         if (!row.length) return
-        const links = row.find('a[href]')
+        const links = row.find(rule.link)
         if (new Set(links.map((_i, a) => $(a).attr('href')).get()).size !== 1) return
         const copy = row.clone();
         copy.find('a').remove()
@@ -32,10 +32,11 @@ export function parseNotices(html: string, baseUrl: string, sourceId: SourceId,
         } catch {
             return
         }
-        if (url.protocol !== 'https:' || url.origin !== origin || url.username || url.password || url.port ||
+        const external = rule.external && (url.hostname === 'fudan.edu.cn' || url.hostname.endsWith('.fudan.edu.cn'))
+        if (url.protocol !== 'https:' || (url.origin !== origin && !external) || url.username || url.password || url.port ||
             /\.(?:pdf|docx?|xlsx?|zip|jpe?g|png)(?:$|\?)/i.test(url.pathname)) return
         url.hash = ''
-        const title = (link.attr('title') || link.text()).trim()
+        const title = (rule.title ? row.find(rule.title).first().text() : (link.attr('title') || link.text())).trim()
         if (title) found.set(url.href, {url: url.href, title, published})
     })
     return [...found.values()].sort((a, b) => b.published.localeCompare(a.published) || a.title.localeCompare(b.title, 'zh-CN'))

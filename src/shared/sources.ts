@@ -12,6 +12,51 @@ export const defaultSources = [
     {id: 'dfll', name: '外国语言文学学院', url: 'https://dfll.fudan.edu.cn/27751/list.htm', enabled: false},
     {id: 'xwxy', name: '新闻学院', url: 'https://xwxy.fudan.edu.cn/ggl/list.htm', enabled: false},
     {id: 'history', name: '历史学系', url: 'https://history.fudan.edu.cn/xwzx/tzgg.htm', enabled: false},
+    {id: 'philosophy', name: '哲学学院', url: 'https://philosophy.fudan.edu.cn/tzgg_20877/list.htm', enabled: false},
+    {id: 'sirpa', name: '国际关系与公共事务学院', url: 'https://sirpa.fudan.edu.cn/35036/list.htm', enabled: false},
+    {id: 'math', name: '数学科学学院', url: 'https://math.fudan.edu.cn/30286/list.htm', enabled: false},
+    {id: 'phys', name: '物理学系', url: 'https://phys.fudan.edu.cn/7453/list.htm', enabled: false},
+    {id: 'chemistry', name: '化学系', url: 'https://chemistry.fudan.edu.cn/45208/list.htm', enabled: false},
+    {id: 'law', name: '法学院', url: 'https://law.fudan.edu.cn/28093/list.htm', enabled: false},
+    {id: 'imp', name: '核科学与技术系', url: 'https://imp.fudan.edu.cn/48897/list.htm', enabled: false},
+    {id: 'polymer', name: '高分子科学系', url: 'https://polymer.fudan.edu.cn/31394/list.htm', enabled: false},
+    {id: 'tourism', name: '旅游学系', url: 'https://tourism.fudan.edu.cn/xwzx/tzgg.htm', enabled: false},
+    {id: 'chm', name: '文物与博物馆学系', url: 'https://www.chm.fudan.edu.cn/tzgg/list.htm', enabled: false},
+    {id: 'fisf', name: '国际金融学院', url: 'https://fisf.fudan.edu.cn/lists-notice.html', enabled: false},
+    {id: 'econ', name: '经济学院', url: 'https://econ.fudan.edu.cn/xwzx/tzgg.htm', enabled: false},
+    {id: 'life', name: '生命科学学院', url: 'https://life.fudan.edu.cn/28139/list.htm', enabled: false},
+    {
+        id: 'environment',
+        name: '环境科学与工程系',
+        url: 'https://environment.fudan.edu.cn/26493/list.htm',
+        enabled: false
+    },
+    {id: 'fdty', name: '体育教学部', url: 'https://fdty.fudan.edu.cn/29222/list.htm', enabled: false},
+    {id: 'ices', name: '国际文化交流学院', url: 'https://ices.fudan.edu.cn/6758/list.htm', enabled: false},
+    {id: 'sds', name: '大数据学院', url: 'https://sds.fudan.edu.cn/zytz/list.htm', enabled: false},
+    {id: 'xianghui', name: '相辉学堂', url: 'https://xianghui.fudan.edu.cn/cate/81', enabled: false},
+    {id: 'basicmed', name: '基础医学院', url: 'https://basicmed.fudan.edu.cn/30927/list.htm', enabled: false},
+    {id: 'sph', name: '公共卫生学院', url: 'https://sph.fudan.edu.cn/ac/7', enabled: false},
+    {id: 'spfdu', name: '药学院', url: 'https://spfdu.fudan.edu.cn/28477/list.htm', enabled: false},
+    {id: 'nursing', name: '护理学院', url: 'https://nursing.fudan.edu.cn/tzgg/list.htm', enabled: false},
+    {id: 'sfms', name: '法医学与法庭科学学院', url: 'https://sfms.fudan.edu.cn/51779/list.htm', enabled: false},
+    {id: 'atmsci', name: '大气与海洋科学系', url: 'https://atmsci.fudan.edu.cn/annoucement/list.htm', enabled: false},
+    {id: 'icmne', name: '集成电路与微纳电子创新学院', url: 'https://icmne.fudan.edu.cn/tzgg/list.htm', enabled: false},
+    {id: 'ai', name: '计算与智能创新学院', url: 'https://ai.fudan.edu.cn/24257/list.htm', enabled: false},
+    {
+        id: 'bme',
+        name: '生物医学工程与技术创新学院',
+        url: 'https://bme-college.fudan.edu.cn/tzgg/list.htm',
+        enabled: false
+    },
+    {
+        id: 'ciram',
+        name: '智能机器人与先进制造创新学院',
+        url: 'https://ciram.fudan.edu.cn/tzgg/list.htm',
+        enabled: false
+    },
+    {id: 'icome', name: '智能材料与未来能源创新学院', url: 'https://icome.fudan.edu.cn/49262/list.htm', enabled: false},
+    {id: 'fit', name: '未来信息创新学院', url: 'https://fit.fudan.edu.cn/Data/List/event', enabled: false},
 ] as const
 
 export type SourceId = typeof defaultSources[number]['id']

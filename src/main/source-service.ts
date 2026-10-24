@@ -16,18 +16,19 @@ export async function collectSource(source: MessageSource, requestPage: RequestP
         return rule.detailDate && items.length ? fillMissingDates(items, rule.detailDate, requestPage) : items
     }
 
+    const items = await parseList(page.text, page.url)
+    if (items.length) return {items, listUrl: page.url}
+
     const candidates = discoverNoticeLists(page.text, page.url)
     for (const candidate of candidates) {
         try {
             const list = await requestPage(candidate)
-            const items = await parseList(list.text, list.url)
-            if (items.length) return {items, listUrl: list.url}
+            const parsed = await parseList(list.text, list.url)
+            if (parsed.length) return {items: parsed, listUrl: list.url}
         } catch (cause) {
             error = cause instanceof Error ? cause.message : '来源加载失败。'
         }
     }
-    const items = await parseList(page.text, page.url)
-    if (items.length) return {items, listUrl: page.url}
     throw new Error(error || '未解析到通知，请检查来源网址或改用通知列表页。')
 }
 
