@@ -1,12 +1,8 @@
-/* FduNav · cool workspace. Light palette interpreted from the reference;
-   dark palette and interaction/status colors are designed extensions. */
 :root {
     color-scheme: light dark;
 
-    /* Shared palette primitives; theme-specific extensions live below. */
     --palette-white: #ffffff;
-    --palette-ice-50: #f7fafb;
-    --palette-ice-100: #edf5f8;
+    --palette-gray-50: #f7fafb;
     --palette-gray-100: #edf0f1;
     --palette-gray-200: #e3e8eb;
     --palette-gray-300: #cbd3d9;
@@ -33,12 +29,11 @@
     --palette-night-200: #c0cad3;
     --palette-night-50: #eef3f7;
 
-    /* Semantic colors: first argument light, second argument dark. */
-    --color-bg-canvas: light-dark(var(--palette-ice-100), var(--palette-night-950));
-    --color-bg-sidebar: light-dark(var(--palette-ice-50), var(--palette-night-900));
+    --color-bg-canvas: light-dark(var(--palette-gray-100), var(--palette-night-950));
+    --color-bg-sidebar: light-dark(var(--palette-gray-50), var(--palette-night-900));
     --color-bg-surface: light-dark(var(--palette-white), var(--palette-night-850));
     --color-bg-elevated: light-dark(var(--palette-white), var(--palette-night-800));
-    --color-bg-subtle: light-dark(var(--palette-ice-50), var(--palette-night-800));
+    --color-bg-subtle: light-dark(var(--palette-gray-50), var(--palette-night-800));
     --color-bg-hover: light-dark(var(--palette-gray-100), var(--palette-night-750));
     --color-bg-pressed: light-dark(var(--palette-gray-200), var(--palette-night-700));
     --color-bg-selected: light-dark(#e5ecef, var(--palette-night-750));
@@ -73,7 +68,6 @@
     --color-info-subtle: var(--color-accent-subtle);
     --color-overlay: light-dark(rgb(17 23 28 / 32%), rgb(0 0 0 / 56%));
 
-    /* Typography: native desktop feel, no external font dependency. */
     --font-family-sans: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
     --font-family-mono: "Cascadia Code", Consolas, monospace;
     --font-size-xs: 0.75rem;
@@ -92,7 +86,6 @@
     --line-height-relaxed: 1.75;
     --letter-spacing-normal: 0;
 
-    /* 4 px spacing grid; 2 px reserved for optical adjustments. */
     --space-0: 0;
     --space-0-5: 0.125rem;
     --space-1: 0.25rem;
@@ -136,7 +129,6 @@
     --z-toast: 50;
     --z-tooltip: 60;
 
-    /* Component aliases; dimensions are normalized, not screenshot pixels. */
     --size-icon-sm: 1rem;
     --size-icon-md: 1.25rem;
     --size-icon-lg: 1.5rem;
@@ -164,7 +156,6 @@
     --input-border: var(--color-border-control);
 }
 
-/* Omit data-theme (or use auto) to follow OS preference. Scope is nestable. */
 [data-theme="light"] {
     color-scheme: light;
 }
