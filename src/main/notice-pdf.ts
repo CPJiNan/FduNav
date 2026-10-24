@@ -39,6 +39,9 @@ export async function readNoticePdfs(detail: NoticeDetail): Promise<NoticeDetail
     }
     return {
         ...detail, content: contents.filter(Boolean).join('\n\n'),
+        ...(detail.body ? {body: [...detail.body, ...contents.slice(1).map(text => ({
+            type: 'element' as const, tag: 'pre' as const, children: [{type: 'text' as const, text}],
+        }))]} : {}),
         ...(failed ? {attachmentError: '部分 PDF 正文未能提取，请打开附件查看。'} : {})
     }
 }

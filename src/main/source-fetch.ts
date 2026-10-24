@@ -21,7 +21,7 @@ export function isPublicAddress(address: string): boolean {
 }
 
 export async function requestSourcePage(value: string): Promise<SourcePage> {
-    const {bytes, type, url} = await requestSource(value, false)
+    const {bytes, type, url} = await requestSource(value, 'page')
     const charset = /charset\s*=\s*["']?([\w-]+)/i.exec(type)?.[1] ??
         /charset\s*=\s*["']?([\w-]+)/i.exec(bytes.subarray(0, 2048).toString('ascii'))?.[1] ?? 'utf-8'
     try {
@@ -32,12 +32,17 @@ export async function requestSourcePage(value: string): Promise<SourcePage> {
 }
 
 export async function requestSourcePdf(value: string): Promise<Uint8Array> {
-    const {bytes} = await requestSource(value, true)
+    const {bytes} = await requestSource(value, 'pdf')
     if (!bytes.subarray(0, 1024).includes(Buffer.from('%PDF-'))) throw new Error('附件不是有效的 PDF。')
     return new Uint8Array(bytes)
 }
 
-async function requestSource(value: string, pdf: boolean) {
+export async function requestSourceImage(value: string, referer: string): Promise<Uint8Array> {
+    const {bytes} = await requestSource(value, 'image', referer)
+    return bytes
+}
+
+async function requestSource(value: string, kind: 'page' | 'pdf' | 'image', referer?: string) {
     let url = sourceUrl(value)
     const signal = AbortSignal.timeout(25_000)
     for (let redirects = 0; redirects < 6; redirects++) {
@@ -50,7 +55,7 @@ async function requestSource(value: string, pdf: boolean) {
         const response = await new Promise<{ location?: string; bytes: Buffer; type: string }>((resolve, reject) => {
             const req = request(parsed, {
                 method: 'GET', agent: false, signal,
-                headers: {'User-Agent': 'Mozilla/5.0 FduNav/0.1', 'Accept-Encoding': 'identity'},
+                headers: {'User-Agent': 'Mozilla/5.0 FduNav/0.1', 'Accept-Encoding': 'identity', ...(referer ? {Referer: referer} : {})},
 
                 lookup: (_hostname, options, callback) => {
                     if (options.all) callback(null, [address])
@@ -70,7 +75,9 @@ async function requestSource(value: string, pdf: boolean) {
                     return
                 }
                 const type = res.headers['content-type'] ?? ''
-                if (type && !(pdf ? /application\/(pdf|octet-stream)/i : /text\/|application\/(xhtml\+xml|xml)/i).test(type)) {
+                const allowedType = kind === 'pdf' ? /application\/(pdf|octet-stream)/i
+                    : kind === 'image' ? /image\/|application\/octet-stream/i : /text\/|application\/(xhtml\+xml|xml)/i
+                if (type && !allowedType.test(type)) {
                     res.resume()
                     reject(new Error('来源网址未返回网页。'))
                     return
@@ -79,7 +86,7 @@ async function requestSource(value: string, pdf: boolean) {
                 let size = 0
                 res.on('data', (chunk: Buffer) => {
                     size += chunk.length
-                    if (size > (pdf ? 20 : 4) * 1024 * 1024) {
+                    if (size > (kind === 'pdf' ? 20 : kind === 'image' ? 12 : 4) * 1024 * 1024) {
                         res.destroy(new Error('来源文件过大。'))
                     } else chunks.push(chunk)
                 })

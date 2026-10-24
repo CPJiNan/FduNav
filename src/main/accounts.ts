@@ -2,7 +2,7 @@ import {ipcMain, type IpcMainInvokeEvent} from 'electron'
 import {CookieJar} from 'tough-cookie'
 import {AppDatabase} from './database'
 import {authenticate, AuthError, FudanTransport, isAuthUrl, verifySession} from './fudan-auth'
-import {clearReaderSession, readAuthenticatedPage} from './authenticated-page'
+import {clearReaderSession, readAuthenticatedPage, readAuthenticatedImage} from './authenticated-page'
 import type {AccountState, LoginInput, Result, Theme} from '../shared/accounts'
 import {secureStorage} from './secure-storage'
 
@@ -136,6 +136,10 @@ export class AccountService {
 
     async readPageWithBrowser(url: string): Promise<string | null> {
         return readAuthenticatedPage(url, this.jar)
+    }
+
+    async readImage(url: string, referer: string): Promise<string> {
+        return readAuthenticatedImage(url, referer, this.jar)
     }
 
     private async exclusive<T>(work: () => Promise<T>): Promise<T> {

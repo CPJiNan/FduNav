@@ -4,7 +4,7 @@ type IconName =
     | 'external'
     | 'chevron'
     | 'user'
-    | 'home'
+    | 'notices'
     | 'settings'
     | 'processor'
     | 'tag'
@@ -29,7 +29,7 @@ const paths: Record<IconName, string> = {
     external: 'M14 3h7v7m0-7L10 14M10 3H4v17h17v-6',
     chevron: 'm9 5 7 7-7 7',
     user: 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM4 21v-2a8 8 0 0 1 16 0v2',
-    home: 'm3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z',
+    notices: 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4',
     settings: 'm9 3-.5 2-2 1-2-.5-2 3 1.5 1.5v3L2.5 15l2 3 2-.5 2 1L9 21h6l.5-2.5 2-1 2 .5 2-3-1.5-2v-3L21.5 9l-2-3-2 .5-2-1L15 3Z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0',
     tag: 'M3 3h8l10 10-8 8L3 11V3Zm4 4h.01',
     panel: 'M4 4h16a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1ZM9 4v16',

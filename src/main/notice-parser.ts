@@ -2,6 +2,7 @@ import {load} from 'cheerio'
 import type {NoticeDetail, ParsedNotice} from '../shared/notices'
 import type {SourceId} from '../shared/sources'
 import {sourceReadingRules} from './source-reading-rules.ts'
+import {parseNoticeBody, noticeImageUrls} from './notice-body.ts'
 
 export function parseNotices(html: string, baseUrl: string, sourceId: SourceId,
                              allowMissingDate = false): ParsedNotice[] {
@@ -101,11 +102,12 @@ export function parseNoticeDetail(html: string, baseUrl: string | undefined, sou
         } catch {
         }
     })
+    const body = parseNoticeBody(article.contents().toArray(), baseUrl)
     article.find('script, style, iframe, noscript').remove()
-    const imageCount = article.find('img').length
+    const imageCount = noticeImageUrls(body).length
     article.find('br').replaceWith('\n')
     article.find('td, th').append('\t')
     article.find('p, div, li, tr, h1, h2, h3, h4').append('\n')
     const content = article.text().replace(/\u00a0/g, ' ').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim()
-    return content || imageCount || attachments.length ? {content, imageCount, requiresLogin: false, attachments} : null
+    return content || imageCount || attachments.length ? {content, body, imageCount, requiresLogin: false, attachments} : null
 }
