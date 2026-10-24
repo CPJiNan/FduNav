@@ -1,11 +1,10 @@
 import {useEffect, useRef, type CSSProperties} from 'react'
 import {asDate, calendarWeekdays, layoutCalendarDay, lunarDate, monthDates, timeLabel, weekStartDate, type CalendarOccurrence} from '../../shared/calendar'
 import {dateAfter} from '../../shared/timetable'
-import {courseColor} from './timetable-colors'
+import {calendarEventColor, courseColor} from './timetable-colors'
 import {Icon} from './Icon'
 
-export const occurrenceColor = (item: CalendarOccurrence) => courseColor(item.course ?? {name: `日程:${item.event?.id}`, teachers: []})
-const occurrenceBackground = (item: CalendarOccurrence) => item.event ? 'var(--palette-white)' : occurrenceColor(item)
+export const occurrenceColor = (item: CalendarOccurrence) => item.course ? courseColor(item.course) : calendarEventColor(item.event?.id ?? item.key)
 export const eventTime = (item: CalendarOccurrence) => item.allDay ? '全天' : `${timeLabel(item.startMinute)}–${timeLabel(item.endMinute)}`
 const dateLabel = (date: string) => `${Number(date.slice(0, 4))}年${Number(date.slice(5, 7))}月${Number(date.slice(8))}日`
 const groupByDate = (items: CalendarOccurrence[]) => {
@@ -65,7 +64,7 @@ export function CalendarMonth({date, today, items, onDate, onOpen}: ViewProps) {
                     <span>{Number(day.slice(8))}</span><small>{lunarDate(day)}</small>
                 </button>
                 <div className="calendar-month-events">{events.slice(0, 3).map(item => <button key={item.key}
-                    className="calendar-event calendar-month-event" style={{backgroundColor: occurrenceBackground(item)}}
+                    className="calendar-event calendar-month-event" style={{backgroundColor: occurrenceColor(item)}}
                     aria-label={`${eventTime(item)} ${item.title}`} onClick={() => onOpen(item)}>
                     <span>{item.title}</span>
                 </button>)}
@@ -101,7 +100,7 @@ export function CalendarTimeline({date, today, items, onDate, onOpen, mode, onNa
                     <CalendarDateStrip date={date} today={today} onDate={onDate} onNavigate={onNavigate}/>
                     <div className="calendar-time-columns calendar-all-day"><span>全天</span>
                         {dates.map(day => <div key={day}>{items.filter(item => item.date === day && item.allDay).map(item =>
-                            <button key={item.key} className="calendar-event calendar-all-day-event" style={{backgroundColor: occurrenceBackground(item)}}
+                            <button key={item.key} className="calendar-event calendar-all-day-event" style={{backgroundColor: occurrenceColor(item)}}
                                     onClick={() => onOpen(item)}><span>{item.title}</span></button>)}</div>)}
                     </div>
                 </div>
@@ -111,7 +110,7 @@ export function CalendarTimeline({date, today, items, onDate, onOpen, mode, onNa
                         {Array.from({length: 24}, (_, hour) => <div className="calendar-hour-line" key={hour}/>) }
                         {layoutCalendarDay(items.filter(item => item.date === day && !item.allDay)).map(({item, lane, lanes}) =>
                             <button className="calendar-event calendar-timed-event" key={item.key} onClick={() => onOpen(item)}
-                                style={{backgroundColor: occurrenceBackground(item), top: `calc(${item.startMinute / 60} * var(--calendar-hour-height) + 2px)`,
+                                style={{backgroundColor: occurrenceColor(item), top: `calc(${item.startMinute / 60} * var(--calendar-hour-height) + 2px)`,
                                     height: `max(24px, calc(${(item.endMinute - item.startMinute) / 60} * var(--calendar-hour-height) - 4px))`,
                                     left: `calc(${100 * lane / lanes}% + 3px)`, width: `calc(${100 / lanes}% - 6px)`}}
                                 aria-label={`${item.title}，${eventTime(item)}，${item.location}`}>
@@ -131,7 +130,8 @@ export function CalendarAgenda({items, onOpen, onMore}: Pick<ViewProps, 'items' 
         {[...groupByDate(items)].map(([date, events]) => <section className="calendar-agenda-group" key={date}>
             <div className="calendar-agenda-date">{Number(date.slice(5, 7))}月{Number(date.slice(8))}日 星期{calendarWeekdays[(asDate(date).getUTCDay() + 6) % 7]}
                 <span>农历{lunarDate(date, true)}</span></div>
-            <div className="calendar-agenda-card">{events.map(item => <button key={item.key} className="calendar-agenda-event" onClick={() => onOpen(item)}>
+            <div className="calendar-agenda-card">{events.map(item => <button key={item.key} className="calendar-agenda-event"
+                style={{backgroundColor: `color-mix(in srgb, ${occurrenceColor(item)} 70%, var(--palette-white))`}} onClick={() => onOpen(item)}>
                 <span className="calendar-agenda-time">{item.allDay ? '全天' : timeLabel(item.startMinute)}{!item.allDay && <small>{timeLabel(item.endMinute)}</small>}</span>
                 <span className="calendar-agenda-bar" style={{backgroundColor: occurrenceColor(item)}}/>
                 <span className="calendar-agenda-text"><strong>{item.title}</strong>{item.location && <span>{item.location}</span>}</span>

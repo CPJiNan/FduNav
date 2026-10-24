@@ -23,7 +23,8 @@ export function CalendarEventDialog({date, item, create, onClose, onSaved, onRem
     }
     async function save(event: FormEvent) {
         event.preventDefault()
-        if (busy || !window.calendar) return
+        if (busy) return
+        if (!window.calendar) { setError('日程服务未加载，请重启应用后再保存。'); return }
         const validated = validateCalendarEvent(draft)
         if (!validated.ok) { setError(validated.error); return }
         setBusy(true)
@@ -62,7 +63,7 @@ export function CalendarEventDialog({date, item, create, onClose, onSaved, onRem
             <label>备注<textarea value={draft.notes} maxLength={5000} rows={3} disabled={busy} onChange={event => change('notes', event.target.value)}/></label>
             {error && <p className="account-error" role="alert">{error}</p>}
             <div className="calendar-dialog-actions"><button type="button" className="secondary-button" disabled={busy} onClick={onClose}>取消</button>
-                <button type="submit" className="primary-button" disabled={busy || !window.calendar}>{busy ? '正在保存…' : '保存'}</button></div>
+                <button type="submit" className="primary-button" disabled={busy}>{busy ? '正在保存…' : '保存'}</button></div>
         </form> : <>
             <dl className="calendar-event-details">
                 <dt>日期</dt><dd>{item?.event ? `${item.event.startDate}${item.event.endDate !== item.event.startDate ? ` — ${item.event.endDate}` : ''}` : item?.date}</dd>

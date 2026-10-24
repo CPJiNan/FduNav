@@ -48,7 +48,7 @@ export function CalendarPage() {
     }
 
     async function loadEvents() {
-        if (!window.calendar) return
+        if (!window.calendar) { setEventError('日程服务未加载，请重启应用。'); return }
         const id = ++eventRequestId.current
         setEventsLoading(true)
         setEventError('')
@@ -140,6 +140,8 @@ export function CalendarPage() {
                 <button className="icon-button" aria-label="今天" title="今天" onClick={goToToday}><Icon name="map-pin"/></button>
                 <button className="icon-button" aria-label="刷新日历" title="刷新日历" disabled={busy || eventsLoading}
                         onClick={() => { void loadTimetable(true, timetable?.semesterId || undefined); void loadEvents() }}><Icon name="refresh"/></button>
+                <button className="icon-button" aria-label="新建日程" title="新建日程"
+                        onClick={() => openItem(null)}><Icon name="plus"/></button>
             </div>
         </div>
         {settingsOpen && <div className="calendar-settings">
