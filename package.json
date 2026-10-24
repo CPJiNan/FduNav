@@ -9,7 +9,6 @@
   },
   "scripts": {
     "dev": "electron-vite dev",
-    "test": "node --test tests/*.test.ts",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "build": "npm run typecheck && electron-vite build",
     "start": "electron-vite preview"

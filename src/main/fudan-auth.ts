@@ -10,6 +10,17 @@ const LIST_URL = 'https://jwc.fudan.edu.cn/9397/list.htm'
 export class AuthError extends Error {
 }
 
+export class AdditionalAuthenticationRequired extends AuthError {
+    readonly loginUrl: string
+    readonly target: string
+
+    constructor(loginUrl: string, target: string) {
+        super('请在学校认证窗口完成验证。')
+        this.loginUrl = validateUrl(loginUrl)
+        this.target = validateUrl(target)
+    }
+}
+
 export function validateUrl(value: string): string {
     let url: URL
     try {
@@ -78,7 +89,12 @@ export interface Transport {
 }
 
 export class FudanTransport implements Transport {
-    constructor(readonly jar = new CookieJar(), private signal = AbortSignal.timeout(90_000)) {
+    readonly jar: CookieJar
+    private signal: AbortSignal
+
+    constructor(jar = new CookieJar(), signal = AbortSignal.timeout(90_000)) {
+        this.jar = jar
+        this.signal = signal
     }
 
     async request(value: string, payload?: Record<string, unknown>, form = false): Promise<Page> {
@@ -159,12 +175,19 @@ export async function findLogin(transport: Transport) {
 
 export async function authenticate(transport: Transport, username: string, password: string) {
     const {loginUrl, target} = await findLogin(transport)
-    const params = authParameters(loginUrl)
+    const additionalAuthentication = () => new AdditionalAuthenticationRequired(loginUrl, target)
+    let params: ReturnType<typeof authParameters>
+    try {
+        params = authParameters(loginUrl)
+    } catch (error) {
+        if (error instanceof AuthError) throw additionalAuthentication()
+        throw error
+    }
     const methods = await transport.post('/idp/authn/queryAuthMethods', params)
-    if (methods.second) throw new AuthError('学校要求二次验证，当前密码登录暂不支持此验证方式。')
+    if (methods.second) throw additionalAuthentication()
     const entries = Array.isArray(methods.data) ? methods.data : []
     const chain = entries.find(item => item && item.moduleCode === 'userAndPwd')?.authChainCode
-    if (typeof chain !== 'string' || !chain) throw new AuthError('学校未提供用户名密码登录方式。')
+    if (typeof chain !== 'string' || !chain) throw additionalAuthentication()
     const key = (await transport.post('/idp/authn/getJsPublicKey', {})).data
     if (typeof key !== 'string') throw new AuthError('认证服务未返回有效公钥。')
     const result = await transport.post('/idp/authn/authExecute', {
@@ -172,13 +195,23 @@ export async function authenticate(transport: Transport, username: string, passw
         authPara: {loginName: username, password: encryptPassword(password, key), verifyCode: ''},
     })
     const message = typeof result.message === 'string' ? result.message : ''
-    if (result.second || message.includes('验证码')) throw new AuthError('学校要求验证码或二次验证，当前登录暂不支持；已停止尝试。')
+    if (result.second || /验证码|二次验证|二次认证/.test(message)) throw additionalAuthentication()
     if (typeof result.loginToken !== 'string' || !result.loginToken) {
-        throw new AuthError(/密码|用户名/.test(message) ? '学号或密码不正确，请检查后重试。' : '认证未完成，可能需要额外验证；已停止尝试。')
+        if (/(?:密码|用户名|账号|帐号).*(?:错误|不正确|有误|不存在)|invalid credentials/i.test(message)) {
+            throw new AuthError('学号或密码不正确，请检查后重试。')
+        }
+        throw additionalAuthentication()
     }
     const page = await transport.request(`${ID_BASE}/idp/authCenter/authnEngine`, {loginToken: result.loginToken}, true)
-    await transport.request(ticketUrl(page.text, page.url))
-    if (!await verifySession(transport, target)) throw new AuthError('认证后仍返回登录页，未能建立教务网站会话。')
+    let ticket: string
+    try {
+        ticket = ticketUrl(page.text, page.url)
+    } catch (error) {
+        if (error instanceof AuthError && isAuthUrl(page.url)) throw additionalAuthentication()
+        throw error
+    }
+    await transport.request(ticket)
+    if (!await verifySession(transport, target)) throw additionalAuthentication()
     return target
 }
 
