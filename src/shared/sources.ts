@@ -7,6 +7,11 @@ export const defaultSources = [
     {id: 'zwc', name: '总务处', url: 'https://zongwuchu.fudan.edu.cn/16531/list.htm', enabled: false},
     {id: 'cwc', name: '财务处', url: 'https://cwc.fudan.edu.cn/12185/list.htm', enabled: false},
     {id: 'cec', name: '英语教学部', url: 'https://cec.fudan.edu.cn/23080/list.htm', enabled: false},
+    {id: 'som', name: '马克思主义学院', url: 'https://som.fudan.edu.cn/15048/list.htm', enabled: false},
+    {id: 'chinese', name: '中国语言文学系', url: 'https://chinese.fudan.edu.cn/tzgg/list.htm', enabled: false},
+    {id: 'dfll', name: '外国语言文学学院', url: 'https://dfll.fudan.edu.cn/27751/list.htm', enabled: false},
+    {id: 'xwxy', name: '新闻学院', url: 'https://xwxy.fudan.edu.cn/ggl/list.htm', enabled: false},
+    {id: 'history', name: '历史学系', url: 'https://history.fudan.edu.cn/xwzx/tzgg.htm', enabled: false},
 ] as const
 
 export type SourceId = typeof defaultSources[number]['id']

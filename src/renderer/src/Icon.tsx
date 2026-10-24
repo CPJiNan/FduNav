@@ -20,8 +20,8 @@ type IconName =
     | 'compass'
     | 'close'
     | 'minimize'
-    | 'fullscreen'
-    | 'exitFullscreen'
+    | 'maximize'
+    | 'restore'
 const paths: Record<IconName, string> = {
     search: 'M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Zm-2 5 6 6',
     processor: 'M6 6h12v12H6ZM9 9h6v6H9ZM9 3v3m6-3v3M9 18v3m6-3v3M3 9h3m-3 6h3m12-6h3m-3 6h3',
@@ -44,8 +44,8 @@ const paths: Record<IconName, string> = {
     compass: 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-6-3-2 4-4 2 2-4Z',
     close: 'm6 6 12 12M6 18 18 6',
     minimize: 'M5 12h14',
-    fullscreen: 'M9 4H4v5m11-5h5v5M4 15v5h5m11-5v5h-5',
-    exitFullscreen: 'M4 9h5V4m6 0v5h5M9 20v-5H4m11 5v-5h5',
+    maximize: 'M5 5h14v14H5Z',
+    restore: 'M8 8V4h12v12h-4M4 8h12v12H4Z',
 }
 
 export function Icon({name, className = ''}: { name: IconName; className?: string }) {

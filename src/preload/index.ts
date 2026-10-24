@@ -46,12 +46,12 @@ contextBridge.exposeInMainWorld('accounts', accounts)
 
 contextBridge.exposeInMainWorld('windowControls', {
     minimize: () => ipcRenderer.send('window:minimize'),
-    toggleFullscreen: () => ipcRenderer.send('window:toggle-fullscreen'),
+    toggleMaximize: () => ipcRenderer.send('window:toggle-maximize'),
     close: () => ipcRenderer.send('window:close'),
-    isFullscreen: (): Promise<boolean> => ipcRenderer.invoke('window:is-fullscreen'),
-    onFullscreenChanged: (callback: (fullscreen: boolean) => void) => {
-        const listener = (_event: IpcRendererEvent, fullscreen: boolean) => callback(fullscreen)
-        ipcRenderer.on('window:fullscreen-changed', listener)
-        return () => ipcRenderer.removeListener('window:fullscreen-changed', listener)
+    isMaximized: (): Promise<boolean> => ipcRenderer.invoke('window:is-maximized'),
+    onMaximizedChanged: (callback: (maximized: boolean) => void) => {
+        const listener = (_event: IpcRendererEvent, maximized: boolean) => callback(maximized)
+        ipcRenderer.on('window:maximized-changed', listener)
+        return () => ipcRenderer.removeListener('window:maximized-changed', listener)
     },
 })

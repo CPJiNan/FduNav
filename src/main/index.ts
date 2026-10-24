@@ -27,12 +27,14 @@ function senderWindow(event: IpcMainEvent | IpcMainInvokeEvent): BrowserWindow |
 }
 
 ipcMain.on('window:minimize', event => senderWindow(event)?.minimize())
-ipcMain.on('window:toggle-fullscreen', event => {
+ipcMain.on('window:toggle-maximize', event => {
     const window = senderWindow(event)
-    if (window) window.setFullScreen(!window.isFullScreen())
+    if (!window) return
+    if (window.isMaximized()) window.unmaximize()
+    else window.maximize()
 })
 ipcMain.on('window:close', event => senderWindow(event)?.close())
-ipcMain.handle('window:is-fullscreen', event => senderWindow(event)?.isFullScreen() ?? false)
+ipcMain.handle('window:is-maximized', event => senderWindow(event)?.isMaximized() ?? false)
 
 function createWindow(): void {
     const window = new BrowserWindow({
@@ -55,21 +57,11 @@ function createWindow(): void {
     window.webContents.on('will-navigate', (event, url) => {
         if (!isAppUrl(url)) event.preventDefault()
     })
-    const publishFullscreen = () => {
-        window.webContents.send('window:fullscreen-changed', window.isFullScreen())
+    const publishMaximized = () => {
+        window.webContents.send('window:maximized-changed', window.isMaximized())
     }
-    window.on('enter-full-screen', publishFullscreen)
-    window.on('leave-full-screen', publishFullscreen)
-    window.webContents.on('before-input-event', (event, input) => {
-        if (input.type !== 'keyDown' || input.isAutoRepeat) return
-        if (input.key === 'F11') {
-            event.preventDefault()
-            window.setFullScreen(!window.isFullScreen())
-        } else if (input.key === 'Escape' && window.isFullScreen()) {
-            event.preventDefault()
-            window.setFullScreen(false)
-        }
-    })
+    window.on('maximize', publishMaximized)
+    window.on('unmaximize', publishMaximized)
 
     if (!app.isPackaged && process.env.ELECTRON_RENDERER_URL) {
         void window.loadURL(process.env.ELECTRON_RENDERER_URL)

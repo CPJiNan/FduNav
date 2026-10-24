@@ -16,7 +16,8 @@ export function parseNotices(html: string, baseUrl: string, sourceId: SourceId,
         if (new Set(links.map((_i, a) => $(a).attr('href')).get()).size !== 1) return
         const copy = row.clone();
         copy.find('a').remove()
-        const text = `${copy.text()} ${copy.find('time[datetime]').attr('datetime') ?? ''}`
+        const dateText = rule.date ? row.find(rule.date).toArray().map(element => $(element).text()).join(' ') : ''
+        const text = `${copy.text()} ${dateText} ${copy.find('time[datetime]').attr('datetime') ?? ''}`
         const dates = [...new Set([...text.matchAll(/(?<!\d)(\d{4})[-/.年](\d{1,2})[-/.月](\d{1,2})(?:日)?(?!\d)/g)]
             .map(match => `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}`))]
         if (dates.length > 1 || (dates.length === 0 && !allowMissingDate)) return

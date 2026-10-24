@@ -5,7 +5,7 @@ interface ReadingRule {
     row: string
     article: string
     pdf: string
-
+    date?: string
     detailDate?: string
 }
 
@@ -46,5 +46,36 @@ export const sourceReadingRules: Record<SourceId, ReadingRule> = {
         row: 'li.list_item, li.news, li, tr',
         article: '.wp_articlecontent, .entry .read',
         pdf: '.wp_pdf_player[pdfsrc], [pdfsrc], a[href], iframe[src], embed[src], object[data]',
+    },
+    som: {
+        link: 'a[href*="page.htm"]',
+        row: 'div.column-news-item, li, tr',
+        article: '.wp_articlecontent, #vsb_content, .v_news_content, article',
+        pdf: '[pdfsrc], a[href], iframe[src], embed[src], object[data]',
+    },
+    chinese: {
+        link: 'a[href*="page.htm"]',
+        row: 'li, tr',
+        article: '.wp_articlecontent, #vsb_content, .v_news_content, article',
+        pdf: '[pdfsrc], a[href], iframe[src], embed[src], object[data]',
+    },
+    dfll: {
+        link: 'a[href*="page.htm"]',
+        row: 'li, tr',
+        article: '.wp_articlecontent, #vsb_content, .v_news_content, article',
+        pdf: '[pdfsrc], a[href], iframe[src], embed[src], object[data]',
+    },
+    xwxy: {
+        link: 'a[href*="page.htm"]',
+        row: 'li.news, li, tr',
+        article: '.wp_articlecontent, #vsb_content, .v_news_content, article',
+        pdf: '[pdfsrc], a[href], iframe[src], embed[src], object[data]',
+    },
+    history: {
+        link: 'a[href*="info/"]',
+        row: 'li, tr',
+        article: '.wp_articlecontent, #vsb_content, .v_news_content, article',
+        pdf: '[pdfsrc], a[href], iframe[src], embed[src], object[data]',
+        date: 'span',
     },
 }

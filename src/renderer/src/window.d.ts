@@ -13,10 +13,10 @@ declare global {
         llm?: LlmAPI
         windowControls?: {
             minimize(): void
-            toggleFullscreen(): void
+            toggleMaximize(): void
             close(): void
-            isFullscreen(): Promise<boolean>
-            onFullscreenChanged(callback: (fullscreen: boolean) => void): () => void
+            isMaximized(): Promise<boolean>
+            onMaximizedChanged(callback: (maximized: boolean) => void): () => void
         }
     }
 }
