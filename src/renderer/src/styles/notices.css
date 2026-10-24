@@ -242,6 +242,19 @@
     font-size: var(--font-size-md);
 }
 
+.notice-body--rich { white-space: normal; }
+.notice-body--rich p { margin-block: 0 var(--space-3); }
+.notice-body--rich figure { margin: var(--space-3) 0; }
+.notice-body--rich pre { white-space: pre-wrap; font: inherit; overflow-wrap: anywhere; }
+.notice-body--rich blockquote { margin-inline: var(--space-4); }
+.notice-inline-image { display: inline-block; max-width: 100%; vertical-align: middle; }
+.notice-inline-image img { display: block; max-width: 100%; height: auto; }
+.notice-image-placeholder { display: block; min-width: 80px; min-height: 80px; background: var(--color-bg-subtle); }
+.notice-image-error { display: inline-flex; flex-wrap: wrap; align-items: center; padding: var(--space-2); background: var(--color-bg-subtle); color: var(--color-text-muted); font-size: var(--font-size-sm); }
+.notice-table-scroll { max-width: 100%; overflow-x: auto; }
+.notice-body--rich table { border-collapse: collapse; max-width: 100%; }
+.notice-body--rich td, .notice-body--rich th { padding: var(--space-2); border: 1px solid var(--color-border-subtle); }
+
 @media (max-width: 640px) {
     .notices-page {
         padding: var(--space-6) var(--space-4);

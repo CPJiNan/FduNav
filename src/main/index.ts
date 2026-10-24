@@ -7,6 +7,8 @@ import {registerAccountHandlers} from './accounts'
 import {registerNoticeHandlers} from './notices'
 import {registerMessagePreferenceHandlers} from './message-preferences'
 import {registerLlmHandlers} from './llm'
+import {registerTimetableHandlers} from './timetable'
+import {registerCalendarHandlers} from './calendar'
 
 let database: AppDatabase | undefined
 
@@ -76,6 +78,8 @@ app.whenReady().then(async () => {
         database = new AppDatabase(join(app.getPath('userData'), 'fdunav.sqlite'))
         const trusted = (event: IpcMainInvokeEvent) => !!senderWindow(event) && isAppUrl(event.senderFrame?.url ?? '')
         const accounts = await registerAccountHandlers(database, trusted)
+        registerTimetableHandlers(database, accounts, trusted)
+        registerCalendarHandlers(database, accounts, trusted)
         registerLlmHandlers(database, trusted)
         registerNoticeHandlers(database, accounts, trusted)
         registerMessagePreferenceHandlers(database, trusted)

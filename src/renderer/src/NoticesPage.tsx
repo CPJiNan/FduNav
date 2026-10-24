@@ -1,6 +1,7 @@
 import {useEffect, useRef, useState} from 'react'
 import type {Notice, NoticeDetail, NoticeList} from '../../shared/notices'
 import {Icon} from './Icon'
+import {NoticeBody} from './NoticeBody'
 import './styles/notices.css'
 
 export function NoticesPage({onLogin}: { onLogin: () => void }) {
@@ -124,7 +125,7 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
             <button className="primary-button" onClick={onLogin}>登录账号</button>
         </div>}
         {detail && !detail.requiresLogin && <>
-            <div className="notice-body">{detail.content}</div>
+            <NoticeBody key={`${selected.sourceId}:${selected.url}`} detail={detail} notice={selected}/>
             {detail.attachmentError && <p className="account-error" role="alert">{detail.attachmentError}</p>}
             {!!detail.attachments.length && <ul className="notice-attachments" aria-label="通知附件">
                 {detail.attachments.map(attachment => <li key={attachment.url}>
@@ -133,7 +134,6 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
                     </button>
                 </li>)}
             </ul>}
-            {detail.imageCount > 0 && <p className="notice-updated">原文含图片，可通过“查看学校原文”查看。</p>}
         </>}
     </article>
 

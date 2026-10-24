@@ -1,6 +1,8 @@
 import {BrowserWindow, session, type Session} from 'electron'
 import type {CookieJar} from 'tough-cookie'
 import {isAuthUrl, validateUrl} from './fudan-auth'
+import {fetchNoticeImage, imageDataUrl} from './notice-image'
+import {requestSourceImage} from './source-fetch'
 
 const PARTITION = 'fdunav-reader'
 const wait = (milliseconds: number) => new Promise(resolve => setTimeout(resolve, milliseconds))
@@ -41,6 +43,16 @@ async function seedCookies(jar: CookieJar, target: Session) {
         } catch {
         }
     }
+}
+
+export async function readAuthenticatedImage(url: string, referer: string, jar: CookieJar | null): Promise<string> {
+    const host = new URL(url).hostname
+    if (host !== 'fudan.edu.cn' && !host.endsWith('.fudan.edu.cn')) {
+        return imageDataUrl(await requestSourceImage(url, referer))
+    }
+    const reader = session.fromPartition(PARTITION)
+    if (jar) await seedCookies(jar, reader)
+    return fetchNoticeImage(url, referer, (input, init) => reader.fetch(validateUrl(input), init))
 }
 
 export async function readAuthenticatedPage(value: string, jar: CookieJar | null): Promise<string | null> {

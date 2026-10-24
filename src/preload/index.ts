@@ -4,6 +4,21 @@ import type {NoticesAPI} from '../shared/notices'
 import type {MessagePreferencesAPI} from '../shared/message-preferences'
 import type {SourcesAPI} from '../shared/sources'
 import type {LlmAPI} from '../shared/llm'
+import type {TimetableAPI} from '../shared/timetable'
+import type {CalendarAPI} from '../shared/calendar'
+
+const calendar: CalendarAPI = {
+    list: () => ipcRenderer.invoke('calendar:list'),
+    save: input => ipcRenderer.invoke('calendar:save', input),
+    remove: id => ipcRenderer.invoke('calendar:remove', id),
+}
+contextBridge.exposeInMainWorld('calendar', calendar)
+
+const timetable: TimetableAPI = {
+    get: options => ipcRenderer.invoke('timetable:get', options),
+    setStartDate: date => ipcRenderer.invoke('timetable:set-start-date', date),
+}
+contextBridge.exposeInMainWorld('timetable', timetable)
 
 const llm: LlmAPI = {
     get: () => ipcRenderer.invoke('llm:get'),
@@ -29,6 +44,7 @@ contextBridge.exposeInMainWorld('messagePreferences', messagePreferences)
 const notices: NoticesAPI = {
     list: refresh => ipcRenderer.invoke('notices:list', refresh),
     detail: notice => ipcRenderer.invoke('notices:detail', notice),
+    image: notice => ipcRenderer.invoke('notices:image', notice),
     openSource: notice => ipcRenderer.invoke('notices:open-source', notice),
     openAttachment: notice => ipcRenderer.invoke('notices:open-attachment', notice),
 }

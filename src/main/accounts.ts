@@ -1,8 +1,9 @@
-import {ipcMain, type IpcMainInvokeEvent} from 'electron'
+import {BrowserWindow, ipcMain, type IpcMainInvokeEvent} from 'electron'
 import {CookieJar} from 'tough-cookie'
 import {AppDatabase} from './database'
-import {authenticate, AuthError, FudanTransport, isAuthUrl, verifySession} from './fudan-auth'
-import {clearReaderSession, readAuthenticatedPage} from './authenticated-page'
+import {AdditionalAuthenticationRequired, authenticate, AuthError, FudanTransport, isAuthUrl, verifySession} from './fudan-auth'
+import {completeInteractiveAuthentication} from './interactive-auth'
+import {clearReaderSession, readAuthenticatedPage, readAuthenticatedImage} from './authenticated-page'
 import type {AccountState, LoginInput, Result, Theme} from '../shared/accounts'
 import {secureStorage} from './secure-storage'
 
@@ -41,7 +42,7 @@ export class AccountService {
         return {...this.state}
     }
 
-    async login(input: LoginInput) {
+    async login(input: LoginInput, parent?: BrowserWindow) {
         return this.exclusive(async () => {
             if (!input || typeof input.username !== 'string' || typeof input.password !== 'string' ||
                 !input.username.trim() || input.username.length > 128 || !input.password || input.password.length > 1024) {
@@ -54,8 +55,14 @@ export class AccountService {
             const transport = new FudanTransport()
             const username = input.username.trim()
             let target: string
+            let jar = transport.jar
             try {
                 target = await authenticate(transport, username, input.password)
+            } catch (error) {
+                if (!(error instanceof AdditionalAuthenticationRequired)) throw error
+                input.password = ''
+                jar = await completeInteractiveAuthentication(error, transport.jar, parent)
+                target = error.target
             } finally {
                 input.password = ''
             }
@@ -64,9 +71,9 @@ export class AccountService {
                 username,
                 target,
                 last_login: lastLogin,
-                cookies: await secureStorage.encrypt(JSON.stringify(transport.jar.serializeSync()))
+                cookies: await secureStorage.encrypt(JSON.stringify(jar.serializeSync()))
             })
-            this.jar = transport.jar
+            this.jar = jar
             this.target = target
             this.state = {username, lastLogin, status: 'signed-in', message: '已登录复旦统一身份认证。'}
             return this.getState()
@@ -138,6 +145,37 @@ export class AccountService {
         return readAuthenticatedPage(url, this.jar)
     }
 
+    async readImage(url: string, referer: string): Promise<string> {
+        return readAuthenticatedImage(url, referer, this.jar)
+    }
+
+    async withServiceSession<T>(work: (read: <R>(url: string, parse: (text: string) => R) => Promise<R>) => Promise<T>, parent?: BrowserWindow): Promise<T> {
+        return this.exclusive(async () => {
+            if (this.state.status !== 'signed-in' || !this.jar) throw new AuthError('请先登录账号。')
+            let jar = CookieJar.deserializeSync(this.jar.serializeSync()!)
+            const result = await work(async <R>(url: string, parse: (text: string) => R): Promise<R> => {
+                let page = await new FudanTransport(jar).request(url)
+                if (isAuthUrl(page.url)) {
+                    jar = await completeInteractiveAuthentication(new AdditionalAuthenticationRequired(page.url, url), jar, parent, async transport => {
+                        const verified = await transport.request(url)
+                        if (isAuthUrl(verified.url) || new URL(verified.url).origin !== new URL(url).origin) return false
+                        parse(verified.text)
+                        return true
+                    })
+                    page = await new FudanTransport(jar).request(url)
+                }
+                if (isAuthUrl(page.url) || new URL(page.url).origin !== new URL(url).origin) {
+                    throw new AuthError('课表会话已失效，请重试。')
+                }
+                return parse(page.text)
+            })
+            this.db.saveAccount({username: this.state.username!, target: this.target, last_login: this.state.lastLogin!,
+                cookies: await secureStorage.encrypt(JSON.stringify(jar.serializeSync()))})
+            this.jar = jar
+            return result
+        })
+    }
+
     private async exclusive<T>(work: () => Promise<T>): Promise<T> {
         if (this.busy) throw new AuthError('账号操作正在进行，请等待完成。')
         this.busy = true
@@ -153,11 +191,11 @@ export async function registerAccountHandlers(db: AppDatabase, trusted: (event: 
     const service = new AccountService(db)
     await service.initialize()
 
-    function handle<T>(channel: string, action: (input: any) => T | Promise<T>) {
+    function handle<T>(channel: string, action: (input: any, event: IpcMainInvokeEvent) => T | Promise<T>) {
         ipcMain.handle(channel, async (event, input): Promise<Result<T>> => {
             if (!trusted(event)) return {ok: false, error: '请求来源无效。'}
             try {
-                return {ok: true, data: await action(input)}
+                return {ok: true, data: await action(input, event)}
             } catch (error) {
                 return {ok: false, error: error instanceof AuthError ? error.message : '操作未完成，请重试。'}
             }
@@ -165,7 +203,7 @@ export async function registerAccountHandlers(db: AppDatabase, trusted: (event: 
     }
 
     handle('account:state', () => service.getState())
-    handle('account:login', (input: LoginInput) => service.login(input))
+    handle('account:login', (input: LoginInput, event) => service.login(input, BrowserWindow.fromWebContents(event.sender) ?? undefined))
     handle('account:verify', () => service.verify())
     handle('account:logout', () => service.logout())
     handle('preferences:get-theme', () => db.getTheme())

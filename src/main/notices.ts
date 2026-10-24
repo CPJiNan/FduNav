@@ -6,12 +6,15 @@ import {parseNoticeDetail} from './notice-parser'
 import {isSourceId, sourceUrl} from '../shared/sources'
 import {SourceRefreshService} from './source-service'
 import {readNoticePdfs} from './notice-pdf'
+import {noticeImageUrls} from './notice-body'
 import type {NoticeRef} from '../shared/notices'
 import type {Result} from '../shared/accounts'
 import {validateRequiredMessagePreferences} from '../shared/message-preferences'
 
 export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService, trusted: (event: IpcMainInvokeEvent) => boolean) {
     const refresh = new SourceRefreshService(db)
+    const detailImages = new Map<string, Set<string>>()
+    const detailKey = (notice: NoticeRef) => JSON.stringify([notice.sourceId, notice.url])
 
     function requireReady() {
         if (!db.getAccount()) throw new AuthError('请先登录。')
@@ -59,11 +62,27 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
         if (html === null) return {content: '', imageCount: 0, requiresLogin: true, attachments: []}
         const detail = parseNoticeDetail(html, url, source.id)
         if (!detail) throw new AuthError('无法读取通知正文，请查看学校原文。')
+        const key = detailKey(input as NoticeRef)
+        detailImages.delete(key)
+        detailImages.set(key, new Set(noticeImageUrls(detail.body ?? [])))
+        if (detailImages.size > 64) detailImages.delete(detailImages.keys().next().value!)
         return detail
     }
 
     handle('notices:detail', async (input: unknown) => {
         return readNoticePdfs(await readDetail(input))
+    })
+    handle('notices:image', async (input: unknown) => {
+        const referer = knownUrl(input)
+        const imageUrl = (input as Record<string, unknown>).imageUrl
+        if (typeof imageUrl !== 'string' || !detailImages.get(detailKey(input as NoticeRef))?.has(imageUrl)) {
+            throw new AuthError('未找到这张通知图片，请重新打开通知。')
+        }
+        try {
+            const image = await accounts.readImage(imageUrl, referer)
+            requireReady()
+            return image
+        } catch { throw new AuthError('图片加载失败，请重试。') }
     })
     handle('notices:open-source', async (input: unknown) => {
         await shell.openExternal(knownUrl(input))

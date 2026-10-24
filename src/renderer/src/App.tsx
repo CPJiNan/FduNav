@@ -3,6 +3,7 @@ import {Icon} from './Icon'
 import {WindowTitlebar} from './WindowTitlebar'
 import {AccountPanel} from './AccountPanel'
 import {NoticesPage} from './NoticesPage'
+import {CalendarPage} from './CalendarPage'
 import {MessagePreferencesPanel} from './MessagePreferencesPanel'
 import {SourcesPanel} from './SourcesPanel'
 import {LlmPanel} from './LlmPanel'
@@ -24,10 +25,13 @@ const tabs = [
     {id: 'llm', label: 'LLM', icon: 'processor'},
 ] as const
 type Tab = typeof tabs[number]['id']
+const noticesNavigation = {label: '通知', icon: 'notices'} as const
+const calendarNavigation = {label: '日历', icon: 'calendar'} as const
 
 export default function App() {
     const [theme, setTheme] = useState<Theme>(readTheme)
     const [settings, setSettings] = useState(false)
+    const [page, setPage] = useState<'notices' | 'calendar'>('notices')
     const [tab, setTab] = useState<Tab>('theme')
     const [storageError, setStorageError] = useState(false)
     const [account, setAccount] = useState<AccountState | null>(null)
@@ -37,6 +41,8 @@ export default function App() {
     const needsPreferences = account?.status === 'signed-in' && !validateRequiredMessagePreferences(preferences).ok
     const needsSetup = needsLogin || needsPreferences
     const showSettings = settings || needsSetup
+    const showNoticesPage = !showSettings && page === 'notices'
+    const showCalendarPage = !showSettings && page === 'calendar'
     const settingsButton = useRef<HTMLButtonElement>(null)
     const settingsWasOpen = useRef(false)
 
@@ -82,6 +88,15 @@ export default function App() {
         setStorageError(!await saveTheme(next))
     }
 
+    function openPage(next: 'notices' | 'calendar') {
+        setPage(next)
+        if (needsLogin) {
+            setTab('account')
+            setSettings(true)
+        } else if (needsPreferences) setTab('messages')
+        else setSettings(false)
+    }
+
     function tabKey(event: KeyboardEvent<HTMLButtonElement>, index: number) {
         if (needsSetup) return
         const offsets: Record<string, number> = {ArrowDown: 1, ArrowUp: -1, Home: -index, End: tabs.length - 1 - index}
@@ -95,15 +110,12 @@ export default function App() {
     return <><WindowTitlebar/>
         <div className="app-shell">
             <nav className="app-rail" aria-label="应用导航">
-                <button className={`icon-button rail-button ${!showSettings ? 'is-active' : ''}`} aria-label="通知"
-                        title="通知" aria-current={!showSettings ? 'page' : undefined}
-                        onClick={() => {
-                            if (needsLogin) {
-                                setTab('account');
-                                setSettings(true)
-                            } else if (needsPreferences) setTab('messages')
-                            else setSettings(false)
-                        }}><Icon name="home"/></button>
+                <button className={`icon-button rail-button ${showNoticesPage ? 'is-active' : ''}`} aria-label={noticesNavigation.label}
+                        title={noticesNavigation.label} aria-current={showNoticesPage ? 'page' : undefined}
+                        onClick={() => openPage('notices')}><Icon name={noticesNavigation.icon}/></button>
+                <button className={`icon-button rail-button ${showCalendarPage ? 'is-active' : ''}`} aria-label={calendarNavigation.label}
+                        title={calendarNavigation.label} aria-current={showCalendarPage ? 'page' : undefined}
+                        onClick={() => openPage('calendar')}><Icon name={calendarNavigation.icon}/></button>
                 <div className="rail-bottom">
                     <button ref={settingsButton}
                             className={`icon-button rail-button ${showSettings ? 'is-active' : ''}`}
@@ -173,11 +185,13 @@ export default function App() {
                                 </section>
                             </div>
                         </div>
-                        {!showSettings && accountLoaded && (!window.accounts || account?.status === 'signed-in') &&
+                        {showNoticesPage && accountLoaded && (!window.accounts || account?.status === 'signed-in') &&
                             <NoticesPage onLogin={() => {
                                 setTab('account');
                                 setSettings(true)
                             }}/>}
+                        {showCalendarPage && accountLoaded && (!window.accounts || account?.status === 'signed-in') &&
+                            <CalendarPage key={`${account?.username}-${preferences?.educationLevel}`}/>}
                     </main>
                 </div>
             </div>

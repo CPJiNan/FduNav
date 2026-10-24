@@ -3,6 +3,8 @@ import type {NoticesAPI} from '../../shared/notices'
 import type {MessagePreferencesAPI} from '../../shared/message-preferences'
 import type {SourcesAPI} from '../../shared/sources'
 import type {LlmAPI} from '../../shared/llm'
+import type {TimetableAPI} from '../../shared/timetable'
+import type {CalendarAPI} from '../../shared/calendar'
 
 declare global {
     interface Window {
@@ -11,6 +13,8 @@ declare global {
         messagePreferences?: MessagePreferencesAPI
         sources?: SourcesAPI
         llm?: LlmAPI
+        timetable?: TimetableAPI
+        calendar?: CalendarAPI
         windowControls?: {
             minimize(): void
             toggleMaximize(): void
