@@ -1,0 +1,54 @@
+.llm-panel { max-width: 680px; }
+.llm-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.llm-model-control { display: flex; flex-wrap: wrap; gap: var(--space-2); min-width: 0; }
+.llm-model-control select { flex: 1 1 140px; }
+.llm-model-control button { flex-shrink: 0; }
+.llm-panel fieldset {
+    display: grid;
+    gap: var(--space-4);
+    min-width: 0;
+    padding: 0;
+    margin: 0;
+    border: 0;
+}
+.llm-field {
+    display: grid;
+    grid-template-columns: 6rem minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-4);
+    min-width: 0;
+}
+.llm-field > label {
+    display: flex;
+    align-items: center;
+    min-height: var(--size-touch-target);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+}
+.llm-field > input, .llm-key-control > input, .llm-model-control select {
+    width: 100%;
+    min-width: 0;
+    min-height: var(--size-touch-target);
+    padding: var(--space-2) var(--space-3);
+    border: var(--border-width) solid var(--input-border);
+    border-radius: var(--input-radius);
+    background: var(--color-bg-surface);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+}
+.llm-field input::placeholder { color: var(--color-text-placeholder); }
+.llm-field input:disabled { background: var(--color-bg-disabled); color: var(--color-text-disabled); }
+.llm-key-control { min-width: 0; }
+.llm-clear-key {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: var(--size-touch-target);
+    font-size: var(--font-size-sm);
+}
+.llm-clear-key input { width: 1rem; height: 1rem; flex-shrink: 0; accent-color: var(--color-accent); }
+.llm-status { margin-top: var(--space-3); color: var(--color-text-muted); font-size: var(--font-size-sm); }
+@media (max-width: 760px) {
+    .llm-field { grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
+    .llm-field > label { min-height: 0; }
+}

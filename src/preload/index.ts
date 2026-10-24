@@ -3,6 +3,15 @@ import type {AccountAPI} from '../shared/accounts'
 import type {NoticesAPI} from '../shared/notices'
 import type {MessagePreferencesAPI} from '../shared/message-preferences'
 import type {SourcesAPI} from '../shared/sources'
+import type {LlmAPI} from '../shared/llm'
+
+const llm: LlmAPI = {
+    get: () => ipcRenderer.invoke('llm:get'),
+    save: input => ipcRenderer.invoke('llm:save', input),
+    test: input => ipcRenderer.invoke('llm:test', input),
+    models: input => ipcRenderer.invoke('llm:models', input),
+}
+contextBridge.exposeInMainWorld('llm', llm)
 
 const sources: SourcesAPI = {
     list: () => ipcRenderer.invoke('sources:list'),

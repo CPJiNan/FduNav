@@ -5,6 +5,7 @@ import {AccountPanel} from './AccountPanel'
 import {NoticesPage} from './NoticesPage'
 import {MessagePreferencesPanel} from './MessagePreferencesPanel'
 import {SourcesPanel} from './SourcesPanel'
+import {LlmPanel} from './LlmPanel'
 import type {AccountState} from '../../shared/accounts'
 import {readTheme, saveTheme, type Theme} from './theme'
 import './styles/app.css'
@@ -19,6 +20,7 @@ const tabs = [
     {id: 'theme', label: '主题', icon: 'sun'},
     {id: 'messages', label: '消息偏好', icon: 'tag'},
     {id: 'sources', label: '消息来源', icon: 'folder'},
+    {id: 'llm', label: 'LLM', icon: 'processor'},
 ] as const
 type Tab = typeof tabs[number]['id']
 
@@ -134,6 +136,7 @@ export default function App() {
                                     </>}
                                     <div hidden={tab !== 'messages'}><MessagePreferencesPanel/></div>
                                     <div hidden={tab !== 'sources'}><SourcesPanel active={settings && tab === 'sources'}/></div>
+                                    <div hidden={tab !== 'llm'}><LlmPanel active={settings && tab === 'llm'}/></div>
                                 </section>
                             </div>
                         </div>

@@ -6,6 +6,7 @@ import {AppDatabase} from './database'
 import {registerAccountHandlers} from './accounts'
 import {registerNoticeHandlers} from './notices'
 import {registerMessagePreferenceHandlers} from './message-preferences'
+import {registerLlmHandlers} from './llm'
 
 let database: AppDatabase | undefined
 
@@ -85,6 +86,7 @@ app.whenReady().then(() => {
         const accounts = registerAccountHandlers(database, trusted)
         registerNoticeHandlers(database, accounts, trusted)
         registerMessagePreferenceHandlers(database, trusted)
+        registerLlmHandlers(database, trusted)
     } catch {
         dialog.showErrorBox('无法打开应用数据', 'SQLite 数据库初始化失败，请检查应用数据目录的访问权限。')
         app.quit()

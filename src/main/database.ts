@@ -12,6 +12,8 @@ export interface SavedAccount {
     last_login: string
 }
 
+export interface SavedLlmSettings {baseUrl: string; model: string; encryptedApiKey: Uint8Array | null}
+
 export class AppDatabase {
     private db: DatabaseSync
 
@@ -28,6 +30,10 @@ export class AppDatabase {
                 target TEXT NOT NULL, last_login TEXT NOT NULL
             );
             CREATE TABLE IF NOT EXISTS notices (url TEXT PRIMARY KEY, title TEXT NOT NULL, published TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS llm_settings (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                base_url TEXT NOT NULL, model TEXT NOT NULL, api_key BLOB
+            );
         `)
         this.db.exec('PRAGMA foreign_keys = ON;')
         if (Number(this.db.prepare('PRAGMA user_version').get()?.user_version) < 3) this.migrateSources()
@@ -84,6 +90,17 @@ export class AppDatabase {
             this.db.exec('ROLLBACK')
             throw error
         }
+    }
+
+    getLlmSettings(): SavedLlmSettings | null {
+        return this.db.prepare('SELECT base_url AS baseUrl, model, api_key AS encryptedApiKey FROM llm_settings WHERE id = 1')
+            .get() as unknown as SavedLlmSettings ?? null
+    }
+
+    saveLlmSettings(value: SavedLlmSettings) {
+        this.db.prepare(`INSERT INTO llm_settings (id, base_url, model, api_key) VALUES (1, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET base_url = excluded.base_url, model = excluded.model, api_key = excluded.api_key`)
+            .run(value.baseUrl, value.model, value.encryptedApiKey)
     }
 
     getAccount(): SavedAccount | null {
