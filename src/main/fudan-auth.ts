@@ -148,7 +148,7 @@ export async function findLogin(transport: Transport) {
     const list = await transport.request(LIST_URL)
     checkPage(list.text)
     if (isAuthUrl(list.url)) return {loginUrl: list.url, target: LIST_URL}
-    const targets = parseNotices(list.text, list.url).slice(0, 8).map(notice => notice.url)
+    const targets = parseNotices(list.text, list.url, 'jwc').slice(0, 8).map(notice => notice.url)
     for (const target of targets) {
         const page = await transport.request(target)
         checkPage(page.text)

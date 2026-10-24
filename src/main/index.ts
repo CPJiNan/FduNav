@@ -84,8 +84,8 @@ app.whenReady().then(async () => {
         database = new AppDatabase(join(app.getPath('userData'), 'fdunav.sqlite'))
         const trusted = (event: IpcMainInvokeEvent) => !!senderWindow(event) && isAppUrl(event.senderFrame?.url ?? '')
         const accounts = await registerAccountHandlers(database, trusted)
-        const llm = registerLlmHandlers(database, trusted)
-        registerNoticeHandlers(database, accounts, llm, trusted)
+        registerLlmHandlers(database, trusted)
+        registerNoticeHandlers(database, accounts, trusted)
         registerMessagePreferenceHandlers(database, trusted)
     } catch {
         dialog.showErrorBox('无法打开应用数据', 'SQLite 数据库初始化失败，请检查应用数据目录的访问权限。')

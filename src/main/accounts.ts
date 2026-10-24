@@ -2,6 +2,7 @@ import {ipcMain, type IpcMainInvokeEvent} from 'electron'
 import {CookieJar} from 'tough-cookie'
 import {AppDatabase} from './database'
 import {authenticate, AuthError, FudanTransport, isAuthUrl, verifySession} from './fudan-auth'
+import {clearReaderSession, readAuthenticatedPage} from './authenticated-page'
 import type {AccountState, LoginInput, Result, Theme} from '../shared/accounts'
 import {secureStorage} from './secure-storage'
 
@@ -13,7 +14,8 @@ export class AccountService {
     private target = ''
     private busy = false
 
-    constructor(private db: AppDatabase) {}
+    constructor(private db: AppDatabase) {
+    }
 
     async initialize() {
         const saved = this.db.getAccount()
@@ -22,7 +24,7 @@ export class AccountService {
                 username: saved.username,
                 lastLogin: saved.last_login,
                 status: 'unverified',
-                message: '已恢复本地账号，请验证会话或重新登录。'
+                message: '登录过期，请验证会话或重新登录。'
             }
             try {
                 if (!await secureStorage.available()) throw new Error()
@@ -48,6 +50,7 @@ export class AccountService {
             if (!await secureStorage.available()) {
                 throw new AuthError('系统安全存储不可用，暂时无法安全保存登录会话。')
             }
+            await clearReaderSession()
             const transport = new FudanTransport()
             const username = input.username.trim()
             let target: string
@@ -104,6 +107,7 @@ export class AccountService {
             this.jar = null
             this.target = ''
             this.state = signedOut()
+            await clearReaderSession()
             return this.getState()
         })
     }
@@ -121,6 +125,17 @@ export class AccountService {
             }
             return page.text
         })
+    }
+
+    async readPage(url: string): Promise<string | null> {
+        return this.exclusive(async () => {
+            const page = await new FudanTransport(this.jar ?? undefined).request(url)
+            return isAuthUrl(page.url) ? null : page.text
+        })
+    }
+
+    async readPageWithBrowser(url: string): Promise<string | null> {
+        return readAuthenticatedPage(url, this.jar)
     }
 
     private async exclusive<T>(work: () => Promise<T>): Promise<T> {

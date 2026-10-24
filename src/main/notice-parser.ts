@@ -1,11 +1,12 @@
 import {load} from 'cheerio'
-import type {ParsedNotice, NoticeDetail} from '../shared/notices'
-import type {SourcePresetId} from '../shared/sources'
+import type {NoticeDetail, ParsedNotice} from '../shared/notices'
+import type {SourceId} from '../shared/sources'
 import {sourceReadingRules} from './source-reading-rules.ts'
 
-export function parseNotices(html: string, baseUrl: string, preset: SourcePresetId = 'generic'): ParsedNotice[] {
+export function parseNotices(html: string, baseUrl: string, sourceId: SourceId,
+                             allowMissingDate = false): ParsedNotice[] {
     const $ = load(html)
-    const rule = sourceReadingRules[preset]
+    const rule = sourceReadingRules[sourceId]
     const origin = new URL(baseUrl).origin
     const found = new Map<string, ParsedNotice>()
     $(rule.link).each((_index, element) => {
@@ -18,10 +19,12 @@ export function parseNotices(html: string, baseUrl: string, preset: SourcePreset
         const text = `${copy.text()} ${copy.find('time[datetime]').attr('datetime') ?? ''}`
         const dates = [...new Set([...text.matchAll(/(?<!\d)(\d{4})[-/.年](\d{1,2})[-/.月](\d{1,2})(?:日)?(?!\d)/g)]
             .map(match => `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}`))]
-        if (dates.length !== 1) return
-        const published = dates[0]
-        const date = new Date(published)
-        if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== published) return
+        if (dates.length > 1 || (dates.length === 0 && !allowMissingDate)) return
+        const published = dates[0] ?? ''
+        if (published) {
+            const date = new Date(published)
+            if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== published) return
+        }
         let url: URL
         try {
             url = new URL(link.attr('href')!, baseUrl)
@@ -35,6 +38,16 @@ export function parseNotices(html: string, baseUrl: string, preset: SourcePreset
         if (title) found.set(url.href, {url: url.href, title, published})
     })
     return [...found.values()].sort((a, b) => b.published.localeCompare(a.published) || a.title.localeCompare(b.title, 'zh-CN'))
+}
+
+export function parseNoticeDate(html: string, selector: string): string | null {
+    const $ = load(html)
+    const text = $(selector).first().text().replace(/\s+/g, ' ')
+    const match = /(?<!\d)(\d{4})[-/.年](\d{1,2})[-/.月](\d{1,2})(?:日)?(?!\d)/.exec(text)
+    if (!match) return null
+    const published = `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}`
+    const date = new Date(published)
+    return Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== published ? null : published
 }
 
 export function discoverNoticeLists(html: string, baseUrl: string): string[] {
@@ -57,14 +70,15 @@ export function discoverNoticeLists(html: string, baseUrl: string): string[] {
             url.hash = ''
             if (url.origin === base.origin && url.href !== base.href && !url.username && !url.password &&
                 !/page\.htm|\.(?:pdf|docx?|xlsx?|zip)$/i.test(url.pathname)) candidates.add(url.href)
-        } catch { /* Ignore malformed navigation links. */ }
+        } catch {
+        }
     })
     return [...candidates].slice(0, 3)
 }
 
-export function parseNoticeDetail(html: string, baseUrl?: string, preset: SourcePresetId = 'generic'): NoticeDetail | null {
+export function parseNoticeDetail(html: string, baseUrl: string | undefined, sourceId: SourceId): NoticeDetail | null {
     const $ = load(html)
-    const rule = sourceReadingRules[preset]
+    const rule = sourceReadingRules[sourceId]
     const article = $(rule.article).first()
     if (!article.length) return null
     const attachments: NoticeDetail['attachments'] = []
@@ -74,7 +88,7 @@ export function parseNoticeDetail(html: string, baseUrl?: string, preset: Source
         if (!raw) return
         try {
             let url = new URL(raw, baseUrl)
-            // Some WebPlus installations use a PDF.js viewer instead of pdfsrc.
+
             const file = url.searchParams.get('file')
             if (file) url = new URL(file, url)
             if (url.protocol !== 'https:' || url.origin !== new URL(baseUrl).origin || url.username || url.password ||
@@ -82,7 +96,8 @@ export function parseNoticeDetail(html: string, baseUrl?: string, preset: Source
             const metadata = item.attr('sudyfile-attr') ?? ''
             const name = /['"]title['"]\s*:\s*['"]([^'"]+)['"]/.exec(metadata)?.[1] || item.attr('title') || item.text().trim() || 'PDF 附件'
             attachments.push({url: url.href, name: name.slice(0, 200)})
-        } catch { /* Ignore invalid or unrelated attachment links. */ }
+        } catch {
+        }
     })
     article.find('script, style, iframe, noscript').remove()
     const imageCount = article.find('img').length

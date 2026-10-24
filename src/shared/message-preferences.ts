@@ -62,7 +62,7 @@ export const departments = [
     '未来信息创新学院',
 ] as const
 
-export const preferenceLimits = {minYear: 1900, maxYear: 2100, majorLength: 100, tagLength: 32, tagCount: 50}
+export const preferenceLimits = {minYear: 1900, maxYear: 2100, majorLength: 100}
 
 export interface MessagePreferences {
     identity: typeof identityOptions[number]['value'] | ''
@@ -72,21 +72,20 @@ export interface MessagePreferences {
     grade: number | null
     major: string
     campus: typeof campusOptions[number] | ''
-    /** Vocabulary available to future notification tagging. */
-    tags: string[]
 }
 
 export interface MessagePreferencesAPI {
     get(): Promise<Result<MessagePreferences>>
+
     save(preferences: MessagePreferences): Promise<Result<MessagePreferences>>
 }
 
 export const emptyMessagePreferences = (): MessagePreferences => ({
-    identity: '', gender: '', department: '', educationLevel: '', grade: null, major: '', campus: '', tags: [],
+    identity: '', gender: '', department: '', educationLevel: '', grade: null, major: '', campus: '',
 })
 
-type ValidationResult = {ok: true; data: MessagePreferences} |
-    {ok: false; error: string; field: keyof MessagePreferences}
+type ValidationResult = { ok: true; data: MessagePreferences } |
+    { ok: false; error: string; field: keyof MessagePreferences }
 
 export function validateMessagePreferences(input: unknown): ValidationResult {
     if (!input || typeof input !== 'object' || Array.isArray(input)) {
@@ -115,18 +114,17 @@ export function validateMessagePreferences(input: unknown): ValidationResult {
     if (value.campus !== '' && !campusOptions.some(campus => campus === value.campus)) {
         return {ok: false, error: '请选择有效的校区。', field: 'campus'}
     }
-    const tagResult = normalizeTags(value.tags)
-    if (!tagResult.ok) return {...tagResult, field: 'tags'}
-    return {ok: true, data: {
-        identity: value.identity as MessagePreferences['identity'],
-        gender: value.gender as MessagePreferences['gender'],
-        department: value.department as MessagePreferences['department'],
-        educationLevel: value.educationLevel as MessagePreferences['educationLevel'],
-        grade: value.grade as number | null,
-        major: value.major.trim(),
-        campus: value.campus as MessagePreferences['campus'],
-        tags: tagResult.data,
-    }}
+    return {
+        ok: true, data: {
+            identity: value.identity as MessagePreferences['identity'],
+            gender: value.gender as MessagePreferences['gender'],
+            department: value.department as MessagePreferences['department'],
+            educationLevel: value.educationLevel as MessagePreferences['educationLevel'],
+            grade: value.grade as number | null,
+            major: value.major.trim(),
+            campus: value.campus as MessagePreferences['campus'],
+        }
+    }
 }
 
 export function readSavedMessagePreferences(input: unknown): ValidationResult {
@@ -138,7 +136,6 @@ export function readSavedMessagePreferences(input: unknown): ValidationResult {
             gender: legacy.gender === 'unspecified' ? '' : legacy.gender,
             grade: legacy.enrollmentYear,
             major: legacy.major,
-            tags: legacy.tags,
         })
     }
     if (input && typeof input === 'object' && !Array.isArray(input) && !('campus' in input)) {
@@ -160,31 +157,4 @@ export function validateRequiredMessagePreferences(input: unknown): ValidationRe
         }
     }
     return result
-}
-
-export function normalizeTags(input: unknown): Result<string[]> {
-    if (!Array.isArray(input) || input.some(tag => typeof tag !== 'string')) {
-        return {ok: false, error: '标签必须是文本列表。'}
-    }
-    const tags: string[] = []
-    const seen = new Set<string>()
-    for (const raw of input as string[]) {
-        const tag = raw.trim().replace(/\s+/g, ' ')
-        if (!tag) continue
-        if (tag.length > preferenceLimits.tagLength) {
-            return {ok: false, error: `每个标签不能超过 ${preferenceLimits.tagLength} 个字符。`}
-        }
-        const key = tag.toLowerCase()
-        if (!seen.has(key)) {
-            tags.push(tag)
-            seen.add(key)
-        }
-    }
-    return tags.length > preferenceLimits.tagCount
-        ? {ok: false, error: `最多添加 ${preferenceLimits.tagCount} 个标签。`}
-        : {ok: true, data: tags}
-}
-
-export function splitTagInput(value: string): string[] {
-    return value.split(/[,，;；\r\n]+/)
 }

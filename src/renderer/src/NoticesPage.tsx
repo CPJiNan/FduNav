@@ -13,29 +13,8 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
     const [detailLoading, setDetailLoading] = useState(false)
     const [query, setQuery] = useState('')
     const [sourceId, setSourceId] = useState('')
-    const [tagAction, setTagAction] = useState(false)
     const listVersion = useRef(0)
     const api = window.notices
-
-    useEffect(() => {
-        if (!api || !list.tagging?.running || tagAction) return
-        let cancelled = false
-        let timer: ReturnType<typeof setTimeout>
-        const poll = async () => {
-            try {
-                const version = listVersion.current
-                const result = await api.list()
-                if (cancelled || version !== listVersion.current) return
-                if (result.ok) {
-                    setList(result.data)
-                    if (!result.data.tagging?.running) return
-                } else setError(result.error)
-            } catch { if (!cancelled) setError('无法读取打标进度，请刷新重试。') }
-            if (!cancelled) timer = setTimeout(poll, 1000)
-        }
-        timer = setTimeout(poll, 1000)
-        return () => { cancelled = true; clearTimeout(timer) }
-    }, [api, list.tagging?.running, tagAction])
 
     useEffect(() => {
         if (sourceId && !list.sources.some(source => source.id === sourceId && source.enabled)) setSourceId('')
@@ -117,34 +96,14 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
         }
     }
 
-    async function changeTagging(action: 'start' | 'cancel', notice?: Notice) {
-        if (!api || tagAction) return
-        setTagAction(true)
-        listVersion.current++
-        setError('')
-        try {
-            const result = await (action === 'cancel' ? api.cancelTagging() : api.tag(notice && {sourceId: notice.sourceId, url: notice.url}))
-            if (result.ok) setList(result.data)
-            else setError(result.error)
-        } catch { setError('打标操作失败，请重试。') }
-        finally { setTagAction(false) }
-    }
-
-    const taggingStatus = <>
-        {list.tagging?.running && <div className="notice-tagging-status" role="status">
-            <span>正在打标：{list.tagging.completed + list.tagging.failed} / {list.tagging.total}</span>
-            <button className="text-button" disabled={tagAction} onClick={() => void changeTagging('cancel')}><Icon name="close"/>取消打标</button>
-        </div>}
-        {!list.tagging?.running && list.tagging?.cancelled && <p className="notice-updated" role="status">已取消打标</p>}
-        {!list.tagging?.running && list.tagging?.error && <p className="account-error" role="alert">{list.tagging.error}</p>}
-    </>
-
     async function openAttachment(urlToOpen: string) {
         if (!api || !selected) return
         try {
             const result = await api.openAttachment({url: selected.url, sourceId: selected.sourceId, urlToOpen})
             if (!result.ok) setDetailError(result.error)
-        } catch { setDetailError('无法打开附件，请稍后重试。') }
+        } catch {
+            setDetailError('无法打开附件，请稍后重试。')
+        }
     }
 
     if (selected) return <article className="notices-page notice-detail">
@@ -156,9 +115,6 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
             <button className="text-button" onClick={() => void openSource()}>查看学校原文<Icon name="external"/>
             </button>
         </div>
-        <div className="notice-tags" aria-label="通知标签">{(list.items.find(item => item.sourceId === selected.sourceId && item.url === selected.url)?.tags ?? selected.tags ?? [])
-            .map(tag => <span key={tag}>{tag}</span>)}</div>
-        {taggingStatus}
         {error && <p className="account-error" role="alert">{error}</p>}
         {detailLoading && <p className="notice-empty" role="status">正在读取通知正文…</p>}
         {detailError && <div className="account-error" role="alert">{detailError}
@@ -188,32 +144,30 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
         <div className="notices-filter"><label htmlFor="notice-search" className="notice-search"><Icon
             name="search"/><input id="notice-search" type="search" placeholder="搜索通知标题" aria-label="搜索通知标题"
                                   value={query} onChange={event => setQuery(event.target.value)}/></label>
-            <div className="notice-actions"><select className="notice-source-select" aria-label="消息来源" value={sourceId} onChange={event => setSourceId(event.target.value)}>
+            <div className="notice-actions"><select className="notice-source-select" aria-label="消息来源"
+                                                    value={sourceId}
+                                                    onChange={event => setSourceId(event.target.value)}>
                 <option value="">全部来源</option>
-                {list.sources.filter(source => source.enabled).map(source => <option key={source.id} value={source.id}>{source.name}</option>)}
+                {list.sources.filter(source => source.enabled).map(source => <option key={source.id}
+                                                                                     value={source.id}>{source.name}</option>)}
             </select>
-            <button className="secondary-button" disabled={loading || tagAction || list.tagging?.running || !api}
-                    onClick={() => void changeTagging('start')}><Icon name="tag"/>全部打标</button>
-            <button className="secondary-button" disabled={loading || !api} onClick={() => void refresh()}><Icon
-                name="refresh"/>{loading ? '刷新中…' : '刷新通知'}</button></div>
+                <button className="secondary-button" disabled={loading || !api} onClick={() => void refresh()}><Icon
+                    name="refresh"/>{loading ? '刷新中…' : '刷新通知'}</button>
+            </div>
         </div>
         {!api && <p className="account-notice">请在桌面应用中查看通知。</p>}
         {error &&
             <p className="account-error" role="alert">{error}{list.items.length > 0 && ' 当前展示上次缓存的通知。'}</p>}
-        {taggingStatus}
         {list.sources.filter(source => source.enabled && source.lastError && (!sourceId || source.id === sourceId))
-            .map(source => <p className="account-error" role="alert" key={source.id}>{source.name}：{source.lastError}</p>)}
+            .map(source => <p className="account-error" role="alert"
+                              key={source.id}>{source.name}：{source.lastError}</p>)}
         <div className="notice-list" aria-busy={loading}>
             {items.map(item => <div className="notice-row" key={`${item.sourceId}:${item.url}`}>
                 <button className="notice-open" onClick={() => setSelected(item)}>
-                <time dateTime={item.published}>
-                    <strong>{item.published.slice(5)}</strong><span>{item.published.slice(0, 4)}</span></time>
-                <div><h2><span className="notice-source-badge">{item.sourceName}</span>{item.title}
-                    {!!item.tags?.length && <span className="notice-tags notice-tags--inline" aria-label="通知标签">{item.tags.map(tag => <span key={tag}>{tag}</span>)}</span>}
-                </h2></div>
-                <Icon name="chevron"/></button>
-                <button className="text-button notice-tag-button" aria-label={`打标：${item.title}`} title={item.taggedAt ? '重新打标' : '打标'}
-                        disabled={loading || tagAction || list.tagging?.running || !api} onClick={() => void changeTagging('start', item)}><Icon name="tag"/></button>
+                    <time dateTime={item.published}>
+                        <strong>{item.published.slice(5)}</strong><span>{item.published.slice(0, 4)}</span></time>
+                    <div><h2><span className="notice-source-badge">{item.sourceName}</span>{item.title}</h2></div>
+                    <Icon name="chevron"/></button>
             </div>)}
             {!items.length && <div className="notice-empty" role="status">
                 <h2>{loading ? '正在获取最新通知…' : query ? '没有匹配的通知' : '暂无通知'}</h2></div>}

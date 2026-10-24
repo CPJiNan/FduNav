@@ -1,7 +1,11 @@
 import {ipcMain, type IpcMainInvokeEvent} from 'electron'
 import type {AppDatabase} from './database'
 import type {Result} from '../shared/accounts'
-import {validateMessagePreferences, validateRequiredMessagePreferences, type MessagePreferences} from '../shared/message-preferences'
+import {
+    type MessagePreferences,
+    validateMessagePreferences,
+    validateRequiredMessagePreferences
+} from '../shared/message-preferences'
 
 export function registerMessagePreferenceHandlers(db: AppDatabase, trusted: (event: IpcMainInvokeEvent) => boolean) {
     ipcMain.handle('preferences:get-messages', (event): Result<MessagePreferences> => {

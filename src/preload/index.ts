@@ -16,8 +16,7 @@ contextBridge.exposeInMainWorld('llm', llm)
 
 const sources: SourcesAPI = {
     list: () => ipcRenderer.invoke('sources:list'),
-    save: input => ipcRenderer.invoke('sources:save', input),
-    remove: id => ipcRenderer.invoke('sources:remove', id),
+    setEnabled: (id, enabled) => ipcRenderer.invoke('sources:set-enabled', {id, enabled}),
 }
 contextBridge.exposeInMainWorld('sources', sources)
 
@@ -29,8 +28,6 @@ contextBridge.exposeInMainWorld('messagePreferences', messagePreferences)
 
 const notices: NoticesAPI = {
     list: refresh => ipcRenderer.invoke('notices:list', refresh),
-    tag: notice => ipcRenderer.invoke('notices:tag', notice),
-    cancelTagging: () => ipcRenderer.invoke('notices:cancel-tagging'),
     detail: notice => ipcRenderer.invoke('notices:detail', notice),
     openSource: notice => ipcRenderer.invoke('notices:open-source', notice),
     openAttachment: notice => ipcRenderer.invoke('notices:open-attachment', notice),

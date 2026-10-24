@@ -17,8 +17,16 @@
     min-width: 0;
 }
 
-.notice-attachments { list-style: none; padding: 0; margin-top: var(--space-5); }
-.notice-attachments .text-button { overflow-wrap: anywhere; text-align: left; }
+.notice-attachments {
+    list-style: none;
+    padding: 0;
+    margin-top: var(--space-5);
+}
+
+.notice-attachments .text-button {
+    overflow-wrap: anywhere;
+    text-align: left;
+}
 
 .notices-filter {
     display: flex;
@@ -77,25 +85,6 @@
     vertical-align: middle;
 }
 
-.notice-tags { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-block: var(--space-2); }
-.notice-tags:empty { display: none; }
-.notice-tags > span {
-    padding: var(--space-0-5) var(--space-2);
-    border-radius: var(--radius-xs);
-    background: var(--color-bg-selected);
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-xs);
-    overflow-wrap: anywhere;
-}
-
-.notice-tags--inline { display: inline; margin: 0; }
-.notice-tags--inline > span {
-    display: inline-block;
-    max-width: 100%;
-    margin-inline-start: var(--space-2);
-    vertical-align: middle;
-}
-
 .notice-row {
     width: 100%;
     display: flex;
@@ -120,9 +109,6 @@
     color: inherit;
     text-align: left;
 }
-
-.notice-tag-button { flex-shrink: 0; min-width: var(--size-touch-target); margin-right: var(--space-2); }
-.notice-tagging-status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin-top: var(--space-4); font-size: var(--font-size-sm); color: var(--color-text-secondary); }
 
 .notice-row:hover {
     background: var(--color-bg-subtle);
@@ -271,9 +257,19 @@
         max-width: none;
     }
 
-    .notice-actions { width: 100%; }
-    .notice-source-select { flex-basis: 100%; max-width: none; }
-    .notice-actions > button { flex: 1; padding-inline: var(--space-2); }
+    .notice-actions {
+        width: 100%;
+    }
+
+    .notice-source-select {
+        flex-basis: 100%;
+        max-width: none;
+    }
+
+    .notice-actions > button {
+        flex: 1;
+        padding-inline: var(--space-2);
+    }
 
     .notice-open {
         gap: var(--space-3);

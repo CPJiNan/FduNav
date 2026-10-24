@@ -15,7 +15,7 @@ export function WindowTitlebar() {
         })
         void controls.isFullscreen().then(value => {
             if (active && !receivedUpdate) setFullscreen(value)
-        }).catch(() => { /* Subsequent native events still synchronize the state. */
+        }).catch(() => {
         })
         return () => {
             active = false;

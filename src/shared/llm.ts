@@ -1,13 +1,32 @@
 import type {Result} from './accounts'
 
-export interface LlmSettings {baseUrl: string; model: string; hasApiKey: boolean; enabled: boolean}
-export interface LlmSettingsInput {baseUrl: string; model: string; apiKey: string; clearApiKey: boolean}
-export interface LlmConnectionTest {elapsedMs: number}
+export interface LlmSettings {
+    baseUrl: string;
+    model: string;
+    hasApiKey: boolean;
+    enabled: boolean
+}
+
+export interface LlmSettingsInput {
+    baseUrl: string;
+    model: string;
+    apiKey: string;
+    clearApiKey: boolean
+}
+
+export interface LlmConnectionTest {
+    elapsedMs: number
+}
+
 export interface LlmAPI {
     get(): Promise<Result<LlmSettings>>
+
     setEnabled(enabled: boolean): Promise<Result<LlmSettings>>
+
     save(input: LlmSettingsInput): Promise<Result<LlmSettings>>
+
     test(input: LlmSettingsInput): Promise<Result<LlmConnectionTest>>
+
     models(input: LlmSettingsInput): Promise<Result<string[]>>
 }
 
@@ -20,8 +39,11 @@ export function validateLlmSettings(input: unknown, requireModel = true): Result
         return {ok: false, error: '请输入有效的接口地址。'}
     }
     let url: URL
-    try { url = new URL(value.baseUrl.trim()) }
-    catch { return {ok: false, error: '请输入有效的接口地址。'} }
+    try {
+        url = new URL(value.baseUrl.trim())
+    } catch {
+        return {ok: false, error: '请输入有效的接口地址。'}
+    }
     const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)
     if ((url.protocol !== 'https:' && !(url.protocol === 'http:' && loopback)) ||
         url.username || url.password || url.search || url.hash) {
@@ -37,6 +59,10 @@ export function validateLlmSettings(input: unknown, requireModel = true): Result
         typeof value.clearApiKey !== 'boolean' || (value.clearApiKey && value.apiKey.trim())) {
         return {ok: false, error: 'API Key 设置无效。'}
     }
-    return {ok: true, data: {baseUrl: url.href.replace(/\/+$/, ''), model: value.model.trim(),
-        apiKey: value.apiKey.trim(), clearApiKey: value.clearApiKey}}
+    return {
+        ok: true, data: {
+            baseUrl: url.href.replace(/\/+$/, ''), model: value.model.trim(),
+            apiKey: value.apiKey.trim(), clearApiKey: value.clearApiKey
+        }
+    }
 }

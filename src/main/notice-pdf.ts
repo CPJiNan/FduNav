@@ -3,7 +3,7 @@ import {requestSourcePdf} from './source-fetch.ts'
 
 export async function extractPdfText(data: Uint8Array): Promise<string> {
     const {getDocument, VerbosityLevel} = await import('pdfjs-dist/legacy/build/pdf.mjs')
-    // Font hinting warnings do not affect text extraction; parsing failures still reject.
+
     const task = getDocument({data, useSystemFonts: true, verbosity: VerbosityLevel.ERRORS})
     try {
         const document = await task.promise
@@ -20,7 +20,9 @@ export async function extractPdfText(data: Uint8Array): Promise<string> {
             page.cleanup()
         }
         return pages.join('\n\n').trim()
-    } finally { await task.destroy() }
+    } finally {
+        await task.destroy()
+    }
 }
 
 export async function readNoticePdfs(detail: NoticeDetail): Promise<NoticeDetail> {
@@ -31,8 +33,12 @@ export async function readNoticePdfs(detail: NoticeDetail): Promise<NoticeDetail
             const text = await extractPdfText(await requestSourcePdf(attachment.url))
             if (text) contents.push(detail.attachments.length > 1 ? `${attachment.name}\n${text}` : text)
             else failed = true
-        } catch { failed = true }
+        } catch {
+            failed = true
+        }
     }
-    return {...detail, content: contents.filter(Boolean).join('\n\n'),
-        ...(failed ? {attachmentError: '部分 PDF 正文未能提取，请打开附件查看。'} : {})}
+    return {
+        ...detail, content: contents.filter(Boolean).join('\n\n'),
+        ...(failed ? {attachmentError: '部分 PDF 正文未能提取，请打开附件查看。'} : {})
+    }
 }

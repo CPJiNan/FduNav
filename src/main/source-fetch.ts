@@ -3,7 +3,10 @@ import {request} from 'node:https'
 import {isIP} from 'node:net'
 import {sourceUrl} from '../shared/sources.ts'
 
-export interface SourcePage {text: string; url: string}
+export interface SourcePage {
+    text: string;
+    url: string
+}
 
 export function isPublicAddress(address: string): boolean {
     if (isIP(address) === 4) {
@@ -21,8 +24,11 @@ export async function requestSourcePage(value: string): Promise<SourcePage> {
     const {bytes, type, url} = await requestSource(value, false)
     const charset = /charset\s*=\s*["']?([\w-]+)/i.exec(type)?.[1] ??
         /charset\s*=\s*["']?([\w-]+)/i.exec(bytes.subarray(0, 2048).toString('ascii'))?.[1] ?? 'utf-8'
-    try { return {text: new TextDecoder(charset).decode(bytes), url} }
-    catch { throw new Error('无法识别来源网页编码。') }
+    try {
+        return {text: new TextDecoder(charset).decode(bytes), url}
+    } catch {
+        throw new Error('无法识别来源网页编码。')
+    }
 }
 
 export async function requestSourcePdf(value: string): Promise<Uint8Array> {
@@ -41,11 +47,11 @@ async function requestSource(value: string, pdf: boolean) {
             throw new Error('来源网址未指向公开网站。')
         }
         const address = addresses.find(record => record.family === 4) ?? addresses[0]
-        const response = await new Promise<{location?: string; bytes: Buffer; type: string}>((resolve, reject) => {
+        const response = await new Promise<{ location?: string; bytes: Buffer; type: string }>((resolve, reject) => {
             const req = request(parsed, {
                 method: 'GET', agent: false, signal,
                 headers: {'User-Agent': 'Mozilla/5.0 FduNav/0.1', 'Accept-Encoding': 'identity'},
-                // Pin the validated DNS result for this connection. No account cookies are attached.
+
                 lookup: (_hostname, options, callback) => {
                     if (options.all) callback(null, [address])
                     else callback(null, address.address, address.family)

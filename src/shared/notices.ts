@@ -7,37 +7,35 @@ export interface ParsedNotice {
     published: string
 }
 
-export interface NoticeRef {sourceId: string; url: string}
+export interface NoticeRef {
+    sourceId: string;
+    url: string
+}
 
-export interface Notice extends ParsedNotice, NoticeRef {sourceName: string; tags: string[]; taggedAt: string | null}
-
-export interface TaggingStatus {running: boolean; total: number; completed: number; failed: number; cancelled: boolean; error: string | null}
+export interface Notice extends ParsedNotice, NoticeRef {
+    sourceName: string
+}
 
 export interface NoticeList {
     items: Notice[];
     updatedAt: string | null
     sources: MessageSource[]
-    tagging?: TaggingStatus
 }
 
 export interface NoticeDetail {
     content: string;
     imageCount: number;
     requiresLogin: boolean
-    attachments: {name: string; url: string}[]
+    attachments: { name: string; url: string }[]
     attachmentError?: string
 }
 
 export interface NoticesAPI {
     list(refresh?: boolean): Promise<Result<NoticeList>>
 
-    tag(notice?: NoticeRef): Promise<Result<NoticeList>>
-
-    cancelTagging(): Promise<Result<NoticeList>>
-
     detail(notice: NoticeRef): Promise<Result<NoticeDetail>>
 
     openSource(notice: NoticeRef): Promise<Result<void>>
 
-    openAttachment(notice: NoticeRef & {urlToOpen: string}): Promise<Result<void>>
+    openAttachment(notice: NoticeRef & { urlToOpen: string }): Promise<Result<void>>
 }

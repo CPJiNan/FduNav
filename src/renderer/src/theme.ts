@@ -8,7 +8,7 @@ function legacyTheme(): Theme {
     try {
         const saved = localStorage.getItem(themeKey)
         if (saved === 'light' || saved === 'dark' || saved === 'auto') return saved
-    } catch { /* Storage may be unavailable; system preference is the fallback. */
+    } catch {
     }
     return 'auto'
 }
@@ -28,11 +28,11 @@ export async function initializeTheme() {
                 if (persisted) {
                     try {
                         localStorage.removeItem(themeKey)
-                    } catch { /* Legacy storage is optional. */
+                    } catch {
                     }
                 }
             }
-        } catch { /* Keep the fallback theme if the bridge is unavailable. */
+        } catch {
         }
     }
     applyTheme(currentTheme)

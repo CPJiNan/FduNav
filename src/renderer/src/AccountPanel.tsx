@@ -2,7 +2,7 @@ import {type FormEvent, useEffect, useState} from 'react'
 import type {AccountState, Result} from '../../shared/accounts'
 import {Icon} from './Icon'
 
-const statusLabels = {'signed-out': '未登录', 'signed-in': '已登录', unverified: '会话待验证', expired: '登录已过期'}
+const statusLabels = {'signed-out': '未登录', 'signed-in': '已登录', unverified: '待验证会话', expired: '登录已过期'}
 
 export function AccountPanel({account, onChange}: {
     account: AccountState | null;
@@ -47,6 +47,7 @@ export function AccountPanel({account, onChange}: {
     }
 
     const signedIn = account?.status === 'signed-in'
+    const unverified = account?.status === 'unverified'
     return <div className="account-panel">
         {account?.username && <div className="account-summary">
             <div className="account-symbol"><Icon name="user"/></div>
@@ -54,9 +55,9 @@ export function AccountPanel({account, onChange}: {
             </div>
         </div>}
         {!api && <p className="account-notice">请在桌面应用中登录。</p>}
-        {(account?.status === 'expired' || account?.status === 'unverified') && account.message &&
-            <p className="section-description">{account.message}</p>}
-        {!signedIn && <form className="account-form" onSubmit={login} aria-busy={!!busy}>
+        {(account?.status === 'expired' || unverified) && account.message &&
+            <p className="account-error" role="alert">{account.message}</p>}
+        {!signedIn && !unverified && <form className="account-form" onSubmit={login} aria-busy={!!busy}>
             <label htmlFor="account-username">学号 / 工号</label>
             <input id="account-username" name="username" autoComplete="username" value={username}
                    onChange={event => setUsername(event.target.value)} placeholder="请输入学号或工号" required
@@ -70,13 +71,13 @@ export function AccountPanel({account, onChange}: {
             </button>
         </form>}
         {account?.username && <>
-            {account.lastLogin &&
+            {!unverified && account.lastLogin &&
                 <p className="account-time">上次登录：{new Date(account.lastLogin).toLocaleString('zh-CN')}</p>}
             <div className="account-actions">
-                {account.status !== 'expired' && <button className="secondary-button" disabled={!!busy || !api}
-                                                         onClick={() => api && void perform('正在验证会话…', () => api.verify())}>验证会话</button>}
+                {account.status === 'unverified' && <button className="secondary-button" disabled={!!busy || !api}
+                                                            onClick={() => api && void perform('正在验证会话…', () => api.verify())}>验证会话</button>}
                 <button className="secondary-button" disabled={!!busy || !api}
-                        onClick={() => api && void perform('正在退出…', () => api.logout())}>退出此设备
+                        onClick={() => api && void perform('正在退出…', () => api.logout())}>退出登录
                 </button>
             </div>
         </>}

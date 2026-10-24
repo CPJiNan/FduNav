@@ -1,25 +1,52 @@
 import type {AppDatabase} from './database'
 import type {MessageSource} from '../shared/sources'
-import {discoverNoticeLists, parseNotices} from './notice-parser.ts'
+import type {ParsedNotice} from '../shared/notices'
+import {discoverNoticeLists, parseNoticeDate, parseNotices} from './notice-parser.ts'
+import {sourceReadingRules} from './source-reading-rules.ts'
 import {requestSourcePage, type SourcePage} from './source-fetch.ts'
 
 type RequestPage = (url: string) => Promise<SourcePage>
 
 export async function collectSource(source: MessageSource, requestPage: RequestPage = requestSourcePage) {
+    const rule = sourceReadingRules[source.id]
     const page = await requestPage(source.url)
     let error = ''
-    // A homepage can contain news as well as announcements; prefer its notice column.
+    const parseList = async (text: string, url: string) => {
+        const items = parseNotices(text, url, source.id, !!rule.detailDate)
+        return rule.detailDate && items.length ? fillMissingDates(items, rule.detailDate, requestPage) : items
+    }
+
     const candidates = discoverNoticeLists(page.text, page.url)
     for (const candidate of candidates) {
         try {
             const list = await requestPage(candidate)
-            const items = parseNotices(list.text, list.url, source.preset)
+            const items = await parseList(list.text, list.url)
             if (items.length) return {items, listUrl: list.url}
-        } catch (cause) { error = cause instanceof Error ? cause.message : '来源加载失败。' }
+        } catch (cause) {
+            error = cause instanceof Error ? cause.message : '来源加载失败。'
+        }
     }
-    const items = parseNotices(page.text, page.url, source.preset)
-    if (items.length && !candidates.length) return {items, listUrl: page.url}
+    const items = await parseList(page.text, page.url)
+    if (items.length) return {items, listUrl: page.url}
     throw new Error(error || '未解析到通知，请检查来源网址或改用通知列表页。')
+}
+
+async function fillMissingDates(items: ParsedNotice[], selector: string,
+                                requestPage: RequestPage): Promise<ParsedNotice[]> {
+    const pending = items.filter(item => !item.published)
+    await Promise.all(Array.from({length: Math.min(4, pending.length)}, async () => {
+        while (pending.length) {
+            const item = pending.shift()!
+            try {
+                const detail = await requestPage(item.url)
+                item.published = parseNoticeDate(detail.text, selector) ?? ''
+            } catch {
+                item.published = ''
+            }
+        }
+    }))
+    return items.filter(item => !!item.published)
+        .sort((a, b) => b.published.localeCompare(a.published) || a.title.localeCompare(b.title, 'zh-CN'))
 }
 
 export class SourceRefreshService {
@@ -33,7 +60,9 @@ export class SourceRefreshService {
     }
 
     refresh() {
-        if (!this.refreshing) this.refreshing = this.run().finally(() => { this.refreshing = null })
+        if (!this.refreshing) this.refreshing = this.run().finally(() => {
+            this.refreshing = null
+        })
         return this.refreshing
     }
 

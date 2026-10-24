@@ -1,8 +1,8 @@
 import {type FormEvent, useEffect, useRef, useState} from 'react'
-import {emptyLlmSettings, validateLlmSettings, type LlmSettings} from '../../shared/llm'
+import {emptyLlmSettings, type LlmSettings, validateLlmSettings} from '../../shared/llm'
 import './styles/llm.css'
 
-export function LlmPanel({active}: {active: boolean}) {
+export function LlmPanel({active}: { active: boolean }) {
     const [settings, setSettings] = useState<LlmSettings>(emptyLlmSettings)
     const [apiKey, setApiKey] = useState('')
     const [clearApiKey, setClearApiKey] = useState(false)
@@ -29,12 +29,19 @@ export function LlmPanel({active}: {active: boolean}) {
         void api.get().then(result => {
             if (cancelled) return
             setBusy(false)
-            if (result.ok) { setSettings(result.data); setLoaded(true) }
-            else setError(result.error)
+            if (result.ok) {
+                setSettings(result.data);
+                setLoaded(true)
+            } else setError(result.error)
         }).catch(() => {
-            if (!cancelled) { setBusy(false); setError('无法读取 LLM 设置。') }
+            if (!cancelled) {
+                setBusy(false);
+                setError('无法读取 LLM 设置。')
+            }
         })
-        return () => { cancelled = true }
+        return () => {
+            cancelled = true
+        }
     }, [active, loaded, api, retry])
 
     useEffect(() => {
@@ -43,7 +50,12 @@ export function LlmPanel({active}: {active: boolean}) {
         if (settings.baseUrl) void loadModels()
     }, [active, loaded, settings.enabled, busy, toggling])
 
-    function edited() { setSaved(false); setError(''); setTestResult(''); setModelStatus('') }
+    function edited() {
+        setSaved(false);
+        setError('');
+        setTestResult('');
+        setModelStatus('')
+    }
 
     async function toggleEnabled() {
         if (!api || !loaded || toggling) return
@@ -51,7 +63,10 @@ export function LlmPanel({active}: {active: boolean}) {
         setError('')
         try {
             const response = await api.setEnabled(!settings.enabled)
-            if (!response.ok) { setError(response.error); return }
+            if (!response.ok) {
+                setError(response.error);
+                return
+            }
             setSettings(value => ({...value, enabled: response.data.enabled}))
             edited()
             if (!response.data.enabled) {
@@ -61,15 +76,21 @@ export function LlmPanel({active}: {active: boolean}) {
                 setTesting(false)
                 setFetchingModels(false)
             }
-        } catch { setError('无法更新 LLM 启用状态，请重试。') }
-        finally { setToggling(false) }
+        } catch {
+            setError('无法更新 LLM 启用状态，请重试。')
+        } finally {
+            setToggling(false)
+        }
     }
 
     async function loadModels() {
         if (!api || busy || toggling || !loaded || !settings.enabled) return
         edited()
         const result = validateLlmSettings({...settings, apiKey, clearApiKey}, false)
-        if (!result.ok) { setError(result.error); return }
+        if (!result.ok) {
+            setError(result.error);
+            return
+        }
         setBusy(true)
         setFetchingModels(true)
         const version = ++requestVersion.current
@@ -81,10 +102,14 @@ export function LlmPanel({active}: {active: boolean}) {
                 setSettings(value => ({...value, model: response.data.includes(value.model) ? value.model : ''}))
                 setModelStatus(`已获取 ${response.data.length} 个模型`)
             } else setError(response.error)
-        } catch { if (version === requestVersion.current) setError('获取模型失败，请重试。') }
-        finally {
+        } catch {
+            if (version === requestVersion.current) setError('获取模型失败，请重试。')
+        } finally {
             result.data.apiKey = ''
-            if (version === requestVersion.current) { setBusy(false); setFetchingModels(false) }
+            if (version === requestVersion.current) {
+                setBusy(false);
+                setFetchingModels(false)
+            }
         }
     }
 
@@ -94,7 +119,10 @@ export function LlmPanel({active}: {active: boolean}) {
         setSaved(false)
         setTestResult('')
         const result = validateLlmSettings({...settings, apiKey, clearApiKey})
-        if (!result.ok) { setError(result.error); return }
+        if (!result.ok) {
+            setError(result.error);
+            return
+        }
         setBusy(true)
         setError('')
         try {
@@ -105,8 +133,12 @@ export function LlmPanel({active}: {active: boolean}) {
                 setClearApiKey(false)
                 setSaved(true)
             } else setError(response.error)
-        } catch { setError('无法保存 LLM 设置，请重试。') }
-        finally { result.data.apiKey = ''; setBusy(false) }
+        } catch {
+            setError('无法保存 LLM 设置，请重试。')
+        } finally {
+            result.data.apiKey = '';
+            setBusy(false)
+        }
     }
 
     async function testConnection() {
@@ -114,7 +146,10 @@ export function LlmPanel({active}: {active: boolean}) {
         setSaved(false)
         setTestResult('')
         const result = validateLlmSettings({...settings, apiKey, clearApiKey})
-        if (!result.ok) { setError(result.error); return }
+        if (!result.ok) {
+            setError(result.error);
+            return
+        }
         setBusy(true)
         setTesting(true)
         setError('')
@@ -124,10 +159,14 @@ export function LlmPanel({active}: {active: boolean}) {
             if (version !== requestVersion.current) return
             if (response.ok) setTestResult(`连接成功 · ${response.data.elapsedMs} ms`)
             else setError(response.error)
-        } catch { if (version === requestVersion.current) setError('连接测试失败，请重试。') }
-        finally {
+        } catch {
+            if (version === requestVersion.current) setError('连接测试失败，请重试。')
+        } finally {
             result.data.apiKey = ''
-            if (version === requestVersion.current) { setBusy(false); setTesting(false) }
+            if (version === requestVersion.current) {
+                setBusy(false);
+                setTesting(false)
+            }
         }
     }
 
@@ -145,7 +184,11 @@ export function LlmPanel({active}: {active: boolean}) {
                 <label htmlFor="llm-base-url">接口地址</label>
                 <input id="llm-base-url" type="url" value={settings.baseUrl} required maxLength={2048}
                        placeholder="https://example.com/v1" autoCapitalize="none" spellCheck={false}
-                       onChange={event => { setSettings({...settings, baseUrl: event.target.value, model: ''}); setModels(null); edited() }}/>
+                       onChange={event => {
+                           setSettings({...settings, baseUrl: event.target.value, model: ''});
+                           setModels(null);
+                           edited()
+                       }}/>
             </div>
             <div className="llm-field">
                 <label htmlFor="llm-api-key">API Key</label>
@@ -153,10 +196,17 @@ export function LlmPanel({active}: {active: boolean}) {
                     <input id="llm-api-key" type="password" value={apiKey} maxLength={4096} autoComplete="new-password"
                            autoCapitalize="none" spellCheck={false} disabled={clearApiKey}
                            placeholder={settings.hasApiKey ? '已保存，留空保持不变' : '可选'}
-                           onChange={event => { setApiKey(event.target.value); setModels(null); edited() }}/>
+                           onChange={event => {
+                               setApiKey(event.target.value);
+                               setModels(null);
+                               edited()
+                           }}/>
                     {settings.hasApiKey && <label className="llm-clear-key">
                         <input type="checkbox" checked={clearApiKey} onChange={event => {
-                            setClearApiKey(event.target.checked); setApiKey(''); setModels(null); edited()
+                            setClearApiKey(event.target.checked);
+                            setApiKey('');
+                            setModels(null);
+                            edited()
                         }}/>清除已保存的密钥
                     </label>}
                 </div>
@@ -165,16 +215,23 @@ export function LlmPanel({active}: {active: boolean}) {
                 <label htmlFor="llm-model">模型名称</label>
                 <div className="llm-model-control">
                     <select id="llm-model" value={settings.model} required
-                            onChange={event => { setSettings({...settings, model: event.target.value}); edited() }}>
+                            onChange={event => {
+                                setSettings({...settings, model: event.target.value});
+                                edited()
+                            }}>
                         <option value="">请选择模型</option>
-                        {(models ?? (settings.model ? [settings.model] : [])).map(model => <option key={model} value={model}>{model}</option>)}
+                        {(models ?? (settings.model ? [settings.model] : [])).map(model => <option key={model}
+                                                                                                   value={model}>{model}</option>)}
                     </select>
-                    <button type="button" className="secondary-button" onClick={() => void loadModels()}>{fetchingModels ? '获取中…' : '获取模型'}</button>
+                    <button type="button" className="secondary-button"
+                            onClick={() => void loadModels()}>{fetchingModels ? '获取中…' : '获取模型'}</button>
                 </div>
             </div>
             <div className="llm-actions">
-                <button type="submit" className="primary-button">{busy && loaded && !testing && !fetchingModels ? '保存中…' : '保存'}</button>
-                <button type="button" className="secondary-button" onClick={() => void testConnection()}>{testing ? '测试中…' : '测试连接'}</button>
+                <button type="submit"
+                        className="primary-button">{busy && loaded && !testing && !fetchingModels ? '保存中…' : '保存'}</button>
+                <button type="button" className="secondary-button"
+                        onClick={() => void testConnection()}>{testing ? '测试中…' : '测试连接'}</button>
             </div>
         </fieldset>
         {!api && <p className="account-error" role="alert">LLM 设置服务不可用。</p>}
@@ -186,7 +243,7 @@ export function LlmPanel({active}: {active: boolean}) {
         {testResult && <p className="llm-status" role="status">{testResult}</p>}
         {error && <div><p className="account-error" role="alert">{error}</p>
             {!loaded && api && <button type="button" className="secondary-button" disabled={busy}
-                                      onClick={() => setRetry(value => value + 1)}>重试</button>}
+                                       onClick={() => setRetry(value => value + 1)}>重试</button>}
         </div>}
     </form>
 }

@@ -7,7 +7,7 @@ import {MessagePreferencesPanel} from './MessagePreferencesPanel'
 import {SourcesPanel} from './SourcesPanel'
 import {LlmPanel} from './LlmPanel'
 import type {AccountState} from '../../shared/accounts'
-import {validateRequiredMessagePreferences, type MessagePreferences} from '../../shared/message-preferences'
+import {type MessagePreferences, validateRequiredMessagePreferences} from '../../shared/message-preferences'
 import {readTheme, saveTheme, type Theme} from './theme'
 import './styles/app.css'
 
@@ -33,8 +33,10 @@ export default function App() {
     const [account, setAccount] = useState<AccountState | null>(null)
     const [accountLoaded, setAccountLoaded] = useState(!window.accounts)
     const [preferences, setPreferences] = useState<MessagePreferences | null>(null)
-    const needsPreferences = !!account?.username && !validateRequiredMessagePreferences(preferences).ok
-    const showSettings = settings || needsPreferences
+    const needsLogin = !!window.accounts && accountLoaded && account?.status !== 'signed-in'
+    const needsPreferences = account?.status === 'signed-in' && !validateRequiredMessagePreferences(preferences).ok
+    const needsSetup = needsLogin || needsPreferences
+    const showSettings = settings || needsSetup
     const settingsButton = useRef<HTMLButtonElement>(null)
     const settingsWasOpen = useRef(false)
 
@@ -42,32 +44,38 @@ export default function App() {
         let active = true
         void window.accounts?.getState().then(result => {
             if (active && result.ok) setAccount(result.data)
-        }).catch(() => { /* Account panel provides retryable actions. */
-            if (active) { setSettings(true); setTab('account') }
-        }).finally(() => { if (active) setAccountLoaded(true) })
+        }).catch(() => {
+            if (active) {
+                setSettings(true);
+                setTab('account')
+            }
+        }).finally(() => {
+            if (active) setAccountLoaded(true)
+        })
         return () => {
             active = false
         }
     }, [])
 
     useEffect(() => {
-        if (needsPreferences) setTab('messages')
-    }, [needsPreferences, account?.username])
+        if (needsLogin) setTab('account')
+        else if (needsPreferences) setTab('messages')
+    }, [needsLogin, needsPreferences, account?.username])
 
     useEffect(() => {
-        if (settings) document.getElementById(`settings-tab-${tab}`)?.focus()
+        if (showSettings) document.getElementById(`settings-tab-${tab}`)?.focus()
         else if (settingsWasOpen.current) settingsButton.current?.focus()
-        settingsWasOpen.current = settings
-    }, [settings])
+        settingsWasOpen.current = showSettings
+    }, [showSettings, tab])
 
     useEffect(() => {
         function onKey(event: globalThis.KeyboardEvent) {
-            if (event.key === 'Escape' && !needsPreferences) setSettings(false)
+            if (event.key === 'Escape' && !needsSetup) setSettings(false)
         }
 
         window.addEventListener('keydown', onKey)
         return () => window.removeEventListener('keydown', onKey)
-    }, [needsPreferences])
+    }, [needsSetup])
 
     async function selectTheme(next: Theme) {
         setTheme(next)
@@ -75,7 +83,7 @@ export default function App() {
     }
 
     function tabKey(event: KeyboardEvent<HTMLButtonElement>, index: number) {
-        if (needsPreferences) return
+        if (needsSetup) return
         const offsets: Record<string, number> = {ArrowDown: 1, ArrowUp: -1, Home: -index, End: tabs.length - 1 - index}
         if (!(event.key in offsets)) return
         event.preventDefault()
@@ -89,9 +97,16 @@ export default function App() {
             <nav className="app-rail" aria-label="应用导航">
                 <button className={`icon-button rail-button ${!showSettings ? 'is-active' : ''}`} aria-label="通知"
                         title="通知" aria-current={!showSettings ? 'page' : undefined}
-                        onClick={() => { if (needsPreferences) setTab('messages'); else setSettings(false) }}><Icon name="home"/></button>
+                        onClick={() => {
+                            if (needsLogin) {
+                                setTab('account');
+                                setSettings(true)
+                            } else if (needsPreferences) setTab('messages')
+                            else setSettings(false)
+                        }}><Icon name="home"/></button>
                 <div className="rail-bottom">
-                    <button ref={settingsButton} className={`icon-button rail-button ${showSettings ? 'is-active' : ''}`}
+                    <button ref={settingsButton}
+                            className={`icon-button rail-button ${showSettings ? 'is-active' : ''}`}
                             aria-label="设置" title="设置" aria-current={showSettings ? 'page' : undefined}
                             onClick={() => setSettings(true)}><Icon name="settings"/></button>
                 </div>
@@ -108,7 +123,8 @@ export default function App() {
                                                                        role="tab" aria-selected={tab === item.id}
                                                                        aria-controls={`settings-panel-${item.id}`}
                                                                        tabIndex={tab === item.id ? 0 : -1}
-                                                                       disabled={needsPreferences && item.id !== 'messages' && item.id !== 'account'}
+                                                                       disabled={needsLogin ? item.id !== 'account'
+                                                                           : needsPreferences && item.id !== 'messages' && item.id !== 'account'}
                                                                        onKeyDown={event => tabKey(event, index)}
                                                                        onClick={() => setTab(item.id)}
                                                                        className={`settings-tab ${tab === item.id ? 'is-active' : ''}`}>
@@ -146,19 +162,22 @@ export default function App() {
                                         {storageError && <p className="save-status has-error"
                                                             role="alert">主题已生效，但无法保存偏好。</p>}
                                     </>}
-                                    <div hidden={tab !== 'messages'}><MessagePreferencesPanel requiredProfile={!!account?.username}
+                                    <div hidden={tab !== 'messages'}><MessagePreferencesPanel
+                                        requiredProfile={account?.status === 'signed-in'}
                                         onChange={setPreferences} onSaved={value => {
-                                            if (needsPreferences && validateRequiredMessagePreferences(value).ok) setSettings(false)
-                                        }}/></div>
-                                    <div hidden={tab !== 'sources'}><SourcesPanel active={settings && tab === 'sources'}/></div>
+                                        if (needsPreferences && validateRequiredMessagePreferences(value).ok) setSettings(false)
+                                    }}/></div>
+                                    <div hidden={tab !== 'sources'}><SourcesPanel
+                                        active={settings && tab === 'sources'}/></div>
                                     <div hidden={tab !== 'llm'}><LlmPanel active={settings && tab === 'llm'}/></div>
                                 </section>
                             </div>
                         </div>
-                        {!showSettings && accountLoaded && <NoticesPage onLogin={() => {
-                            setTab('account');
-                            setSettings(true)
-                        }}/>}
+                        {!showSettings && accountLoaded && (!window.accounts || account?.status === 'signed-in') &&
+                            <NoticesPage onLogin={() => {
+                                setTab('account');
+                                setSettings(true)
+                            }}/>}
                     </main>
                 </div>
             </div>
