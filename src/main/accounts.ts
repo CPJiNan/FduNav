@@ -1,8 +1,9 @@
-import {ipcMain, type IpcMainInvokeEvent, safeStorage} from 'electron'
+import {ipcMain, type IpcMainInvokeEvent} from 'electron'
 import {CookieJar} from 'tough-cookie'
 import {AppDatabase} from './database'
 import {authenticate, AuthError, FudanTransport, isAuthUrl, verifySession} from './fudan-auth'
 import type {AccountState, LoginInput, Result, Theme} from '../shared/accounts'
+import {secureStorage} from './secure-storage'
 
 const signedOut = (): AccountState => ({username: null, status: 'signed-out', lastLogin: null, message: ''})
 
@@ -12,8 +13,10 @@ export class AccountService {
     private target = ''
     private busy = false
 
-    constructor(private db: AppDatabase) {
-        const saved = db.getAccount()
+    constructor(private db: AppDatabase) {}
+
+    async initialize() {
+        const saved = this.db.getAccount()
         if (saved) {
             this.state = {
                 username: saved.username,
@@ -22,8 +25,8 @@ export class AccountService {
                 message: '已恢复本地账号，请验证会话或重新登录。'
             }
             try {
-                if (!safeStorage.isEncryptionAvailable()) throw new Error()
-                this.jar = CookieJar.deserializeSync(JSON.parse(safeStorage.decryptString(Buffer.from(saved.cookies))))
+                if (!await secureStorage.available()) throw new Error()
+                this.jar = CookieJar.deserializeSync(JSON.parse(await secureStorage.decrypt(saved.cookies)))
                 this.target = saved.target
             } catch {
                 this.state.status = 'expired'
@@ -42,7 +45,7 @@ export class AccountService {
                 !input.username.trim() || input.username.length > 128 || !input.password || input.password.length > 1024) {
                 throw new AuthError('请输入有效的学号和密码。')
             }
-            if (!safeStorage.isEncryptionAvailable() || (process.platform === 'linux' && safeStorage.getSelectedStorageBackend() === 'basic_text')) {
+            if (!await secureStorage.available()) {
                 throw new AuthError('系统安全存储不可用，暂时无法安全保存登录会话。')
             }
             const transport = new FudanTransport()
@@ -58,7 +61,7 @@ export class AccountService {
                 username,
                 target,
                 last_login: lastLogin,
-                cookies: safeStorage.encryptString(JSON.stringify(transport.jar.serializeSync()))
+                cookies: await secureStorage.encrypt(JSON.stringify(transport.jar.serializeSync()))
             })
             this.jar = transport.jar
             this.target = target
@@ -81,7 +84,7 @@ export class AccountService {
                     username: this.state.username!,
                     target: this.target,
                     last_login: this.state.lastLogin!,
-                    cookies: safeStorage.encryptString(JSON.stringify(this.jar.serializeSync()))
+                    cookies: await secureStorage.encrypt(JSON.stringify(this.jar.serializeSync()))
                 })
                 else {
                     this.jar = null;
@@ -131,8 +134,9 @@ export class AccountService {
     }
 }
 
-export function registerAccountHandlers(db: AppDatabase, trusted: (event: IpcMainInvokeEvent) => boolean) {
+export async function registerAccountHandlers(db: AppDatabase, trusted: (event: IpcMainInvokeEvent) => boolean) {
     const service = new AccountService(db)
+    await service.initialize()
 
     function handle<T>(channel: string, action: (input: any) => T | Promise<T>) {
         ipcMain.handle(channel, async (event, input): Promise<Result<T>> => {

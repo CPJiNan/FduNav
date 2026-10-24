@@ -5,6 +5,8 @@ import {pathToFileURL} from 'node:url'
 import {AppDatabase} from './database'
 import {registerAccountHandlers} from './accounts'
 import {registerNoticeHandlers} from './notices'
+import {registerMessagePreferenceHandlers} from './message-preferences'
+import {registerLlmHandlers} from './llm'
 
 let database: AppDatabase | undefined
 
@@ -76,13 +78,15 @@ function createWindow(): void {
     }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
     try {
         mkdirSync(app.getPath('userData'), {recursive: true})
         database = new AppDatabase(join(app.getPath('userData'), 'fdunav.sqlite'))
         const trusted = (event: IpcMainInvokeEvent) => !!senderWindow(event) && isAppUrl(event.senderFrame?.url ?? '')
-        const accounts = registerAccountHandlers(database, trusted)
-        registerNoticeHandlers(database, accounts, trusted)
+        const accounts = await registerAccountHandlers(database, trusted)
+        const llm = registerLlmHandlers(database, trusted)
+        registerNoticeHandlers(database, accounts, llm, trusted)
+        registerMessagePreferenceHandlers(database, trusted)
     } catch {
         dialog.showErrorBox('无法打开应用数据', 'SQLite 数据库初始化失败，请检查应用数据目录的访问权限。')
         app.quit()

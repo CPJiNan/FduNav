@@ -6,6 +6,8 @@ type IconName =
     | 'user'
     | 'home'
     | 'settings'
+    | 'processor'
+    | 'tag'
     | 'panel'
     | 'folder'
     | 'sun'
@@ -22,12 +24,14 @@ type IconName =
     | 'exitFullscreen'
 const paths: Record<IconName, string> = {
     search: 'M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Zm-2 5 6 6',
+    processor: 'M6 6h12v12H6ZM9 9h6v6H9ZM9 3v3m6-3v3M9 18v3m6-3v3M3 9h3m-3 6h3m12-6h3m-3 6h3',
     refresh: 'M20 4v5h-5M4 20v-5h5M4.9 9a7.5 7.5 0 0 1 12.4-2.3L20 9M4 15l2.7 2.3A7.5 7.5 0 0 0 19.1 15',
     external: 'M14 3h7v7m0-7L10 14M10 3H4v17h17v-6',
     chevron: 'm9 5 7 7-7 7',
     user: 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM4 21v-2a8 8 0 0 1 16 0v2',
     home: 'm3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1Z',
     settings: 'm9 3-.5 2-2 1-2-.5-2 3 1.5 1.5v3L2.5 15l2 3 2-.5 2 1L9 21h6l.5-2.5 2-1 2 .5 2-3-1.5-2v-3L21.5 9l-2-3-2 .5-2-1L15 3Z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0',
+    tag: 'M3 3h8l10 10-8 8L3 11V3Zm4 4h.01',
     panel: 'M4 4h16a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1ZM9 4v16',
     folder: 'M3 7V5a1 1 0 0 1 1-1h5l2 3h9a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7Z',
     sun: 'M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5',

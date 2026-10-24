@@ -305,7 +305,7 @@ h2 {
 
 .settings-layout {
     display: grid;
-    grid-template-columns: 132px minmax(0, 1fr);
+    grid-template-columns: 148px minmax(0, 1fr);
     gap: var(--space-6);
 }
 
@@ -562,6 +562,11 @@ h2 {
     .settings-tab {
         padding: var(--space-2);
         gap: var(--space-1);
+    }
+
+    .settings-tab span {
+        overflow-wrap: anywhere;
+        min-width: 0;
     }
 
     .theme-grid {

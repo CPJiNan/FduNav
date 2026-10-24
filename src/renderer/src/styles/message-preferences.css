@@ -1,0 +1,226 @@
+.message-preferences {
+    max-width: 680px;
+}
+
+.preference-fields {
+    min-width: 0;
+    margin: var(--space-6) 0 0;
+    padding: 0;
+    border: 0;
+}
+
+.preference-profile {
+    margin-top: 0;
+}
+
+.preference-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
+}
+
+.preference-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-width: 0;
+}
+
+.preference-field label, .preference-tags-label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+}
+
+.preference-profile .preference-field, .preference-tags {
+    display: grid;
+    grid-template-columns: 6rem minmax(0, 1fr);
+    align-items: center;
+    column-gap: var(--space-4);
+}
+
+.preference-profile .preference-error, .preference-tags > .preference-error {
+    grid-column: 2;
+}
+
+.preference-tags-label {
+    display: block;
+    margin: 0;
+}
+
+.preference-tags {
+    margin-top: var(--space-4);
+}
+
+.preference-field input, .preference-field select, .preference-field textarea {
+    width: 100%;
+    min-width: 0;
+    min-height: var(--size-touch-target);
+    padding: var(--space-2) var(--space-3);
+    border: var(--border-width) solid var(--input-border);
+    border-radius: var(--input-radius);
+    background: var(--color-bg-surface);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+}
+
+.preference-field textarea {
+    resize: vertical;
+}
+
+.preference-field input::placeholder, .preference-field textarea::placeholder {
+    color: var(--color-text-placeholder);
+}
+
+.preference-field [aria-invalid="true"] {
+    border-color: var(--color-danger);
+}
+
+.preference-fields:disabled input, .preference-fields:disabled select, .preference-fields:disabled textarea {
+    background: var(--color-bg-disabled);
+    color: var(--color-text-disabled);
+}
+
+.preference-feedback {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-relaxed);
+    overflow-wrap: anywhere;
+}
+
+.preference-error {
+    color: var(--color-danger);
+    font-size: var(--font-size-sm);
+}
+
+.preference-tag-editor {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+    min-height: var(--size-touch-target);
+    padding: var(--space-2);
+    background: var(--color-bg-surface);
+    border: var(--border-width) solid var(--input-border);
+    border-radius: var(--input-radius);
+}
+
+.preference-tag-editor:has(input:focus-visible) {
+    outline: var(--focus-width) solid var(--color-focus);
+    outline-offset: var(--focus-offset);
+}
+
+.preference-tag-editor[data-invalid="true"] {
+    border-color: var(--color-danger);
+}
+
+.preference-tag-editor input {
+    flex: 1 1 8rem;
+    min-width: 0;
+    width: 100%;
+    min-height: var(--size-control-sm);
+    padding: var(--space-1);
+    border: 0;
+    background: transparent;
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+}
+
+.preference-tag-editor input:focus-visible {
+    outline: none;
+}
+
+.preference-tag-editor ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-width: 100%;
+}
+
+.preference-tag-editor li {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    max-width: 100%;
+    padding-left: var(--space-3);
+    border: var(--border-width) solid var(--color-border-subtle);
+    border-radius: var(--radius-xs);
+    background: var(--color-bg-selected);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.preference-tag-editor li span {
+    overflow-wrap: anywhere;
+    min-width: 0;
+}
+
+.preference-tag-editor button {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: var(--size-control-sm);
+    height: var(--size-control-sm);
+    border: 0;
+    border-radius: var(--radius-xs);
+    background: transparent;
+    color: inherit;
+}
+
+.preference-tag-editor button:hover:not(:disabled) {
+    background: var(--color-bg-hover);
+    color: var(--color-danger);
+}
+
+.preference-tag-editor button .icon {
+    width: var(--size-icon-sm);
+    height: var(--size-icon-sm);
+}
+
+.tag-delete-dialog {
+    width: min(360px, calc(100vw - 2rem));
+    padding: var(--space-6);
+    border: var(--border-width) solid var(--color-border-default);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-elevated);
+    color: var(--color-text-primary);
+    box-shadow: var(--shadow-lg);
+    overflow-wrap: anywhere;
+}
+
+.tag-delete-dialog::backdrop {
+    background: var(--color-overlay);
+}
+
+.tag-delete-actions {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-top: var(--space-6);
+}
+
+.tag-delete-dialog .tag-delete-confirm,
+.tag-delete-dialog .tag-delete-confirm:hover,
+.tag-delete-dialog .tag-delete-confirm:active {
+    background: var(--color-danger);
+    color: var(--color-danger-subtle);
+}
+
+.preference-save-row, .preference-load-error {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin: var(--space-5) 0;
+}
+
+@media (max-width: 760px) {
+    .preference-profile .preference-field, .preference-tags {
+        grid-template-columns: 4rem minmax(0, 1fr);
+        column-gap: var(--space-2);
+    }
+}
