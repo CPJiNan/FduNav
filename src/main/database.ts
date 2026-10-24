@@ -2,6 +2,7 @@ import {DatabaseSync} from 'node:sqlite'
 import type {Theme} from '../shared/accounts'
 import type {Notice, NoticeList, ParsedNotice} from '../shared/notices'
 import {randomUUID} from 'node:crypto'
+import {filterNoticeTags} from '../shared/notice-tags.ts'
 import {defaultSources, validateSource, type MessageSource, type SourceInput} from '../shared/sources.ts'
 import {emptyMessagePreferences, readSavedMessagePreferences, validateMessagePreferences, type MessagePreferences} from '../shared/message-preferences.ts'
 
@@ -57,6 +58,12 @@ export class AppDatabase {
                 throw error
             }
         }
+        this.db.exec(`CREATE TABLE IF NOT EXISTS notice_tags (
+            source_id TEXT NOT NULL, url TEXT NOT NULL, tags_json TEXT NOT NULL,
+            tagged_at TEXT NOT NULL, model TEXT NOT NULL,
+            PRIMARY KEY (source_id, url),
+            FOREIGN KEY (source_id, url) REFERENCES notices(source_id, url) ON DELETE CASCADE
+        );`)
     }
 
     private migrateSources() {
@@ -95,6 +102,15 @@ export class AppDatabase {
     getLlmSettings(): SavedLlmSettings | null {
         return this.db.prepare('SELECT base_url AS baseUrl, model, api_key AS encryptedApiKey FROM llm_settings WHERE id = 1')
             .get() as unknown as SavedLlmSettings ?? null
+    }
+
+    getLlmEnabled(): boolean {
+        return this.db.prepare("SELECT value FROM preferences WHERE key = 'llm_enabled'").get()?.value === 'true'
+    }
+
+    setLlmEnabled(enabled: boolean) {
+        this.db.prepare("INSERT INTO preferences (key, value) VALUES ('llm_enabled', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+            .run(JSON.stringify(enabled))
     }
 
     saveLlmSettings(value: SavedLlmSettings) {
@@ -145,9 +161,12 @@ export class AppDatabase {
     }
 
     getNotices(): NoticeList {
-        const items = this.db.prepare(`SELECT n.url, n.title, n.published, n.source_id AS sourceId, s.name AS sourceName
-            FROM notices n JOIN message_sources s ON s.id = n.source_id WHERE s.enabled = 1
-            ORDER BY n.published DESC, n.title, n.source_id`).all() as unknown as Notice[]
+        const rows = this.db.prepare(`SELECT n.url, n.title, n.published, n.source_id AS sourceId, s.name AS sourceName,
+            t.tags_json AS tagsJson, t.tagged_at AS taggedAt
+            FROM notices n JOIN message_sources s ON s.id = n.source_id
+            LEFT JOIN notice_tags t ON t.source_id = n.source_id AND t.url = n.url WHERE s.enabled = 1
+            ORDER BY n.published DESC, n.title, n.source_id`).all()
+        const items = rows.map(({tagsJson, ...row}) => ({...row, tags: tagsJson ? JSON.parse(String(tagsJson)) : []})) as unknown as Notice[]
         const sources = this.getSources()
         const updatedAt = sources.filter(source => source.enabled && source.updatedAt).map(source => source.updatedAt!).sort().at(-1) ?? null
         return {items, updatedAt, sources}
@@ -155,6 +174,17 @@ export class AppDatabase {
 
     hasNotice(url: string, sourceId = 'jwc') {
         return !!this.db.prepare('SELECT 1 FROM notices WHERE url = ? AND source_id = ?').get(url, sourceId)
+    }
+
+    saveNoticeTags(notice: Notice, tags: string[], model: string, revision: number, replace = false): boolean {
+        const filtered = filterNoticeTags(tags)
+        if (tags.length && !filtered.length) return false
+        const result = this.db.prepare(`INSERT OR IGNORE INTO notice_tags (source_id, url, tags_json, tagged_at, model)
+            SELECT n.source_id, n.url, ?, ?, ? FROM notices n JOIN message_sources s ON s.id = n.source_id
+            WHERE n.source_id = ? AND n.url = ? AND n.title = ? AND n.published = ? AND s.enabled = 1 AND s.revision = ?
+            ON CONFLICT(source_id, url) DO UPDATE SET tags_json = excluded.tags_json, tagged_at = excluded.tagged_at, model = excluded.model WHERE ?`)
+            .run(JSON.stringify(filtered), new Date().toISOString(), model, notice.sourceId, notice.url, notice.title, notice.published, revision, Number(replace))
+        return result.changes > 0
     }
 
     saveNotices(items: ParsedNotice[], sourceId = 'jwc', expectedRevision?: number, listUrl?: string) {
@@ -167,7 +197,12 @@ export class AppDatabase {
             }
             const insert = this.db.prepare(`INSERT INTO notices (source_id, url, title, published) VALUES (?, ?, ?, ?)
                 ON CONFLICT(source_id, url) DO UPDATE SET title = excluded.title, published = excluded.published`)
-            for (const item of items) insert.run(sourceId, item.url, item.title, item.published)
+            const invalidate = this.db.prepare(`DELETE FROM notice_tags WHERE source_id = ? AND url = ? AND EXISTS
+                (SELECT 1 FROM notices WHERE source_id = ? AND url = ? AND (title != ? OR published != ?))`)
+            for (const item of items) {
+                invalidate.run(sourceId, item.url, sourceId, item.url, item.title, item.published)
+                insert.run(sourceId, item.url, item.title, item.published)
+            }
             this.db.prepare('UPDATE message_sources SET updated_at = ?, last_error = NULL, list_url = COALESCE(?, list_url) WHERE id = ?')
                 .run(new Date().toISOString(), listUrl ?? null, sourceId)
             this.db.prepare(`DELETE FROM notices WHERE source_id = ? AND url NOT IN

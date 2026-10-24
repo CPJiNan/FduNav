@@ -9,14 +9,23 @@ import {requestSourcePage} from './source-fetch'
 import {readNoticePdfs} from './notice-pdf'
 import type {NoticeRef} from '../shared/notices'
 import type {Result} from '../shared/accounts'
+import type {LlmSettingsService} from './llm-settings'
+import {NoticeTaggingService} from './notice-tagging'
+import {validateRequiredMessagePreferences} from '../shared/message-preferences'
 
-export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService, trusted: (event: IpcMainInvokeEvent) => boolean) {
+export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService, llm: LlmSettingsService, trusted: (event: IpcMainInvokeEvent) => boolean) {
     const refresh = new SourceRefreshService(db)
+    const profileReady = () => {
+        try { return !db.getAccount() || validateRequiredMessagePreferences(db.getMessagePreferences()).ok }
+        catch { return false }
+    }
+    const tagging = new NoticeTaggingService(db, llm, async notice => readNoticePdfs(await readDetail(notice)), profileReady)
 
     function handle<T>(name: string, action: (input: any) => Promise<T>) {
         ipcMain.handle(name, async (event, input): Promise<Result<T>> => {
             if (!trusted(event)) return {ok: false, error: '请求来源无效。'}
             try {
+                if (!profileReady()) throw new AuthError('请先完善消息偏好（标签云可留空）。')
                 return {ok: true, data: await action(input)}
             } catch (error) {
                 return {ok: false, error: error instanceof AuthError ? error.message : '通知加载失败，请稍后重试。'}
@@ -34,8 +43,25 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
     }
 
     handle('notices:list', async (force: unknown) => {
-        if (force !== true) return db.getNotices()
-        return refresh.refresh()
+        if (force === true) {
+            const cancellationVersion = tagging.cancellationVersion
+            await refresh.refresh()
+            if (profileReady() && tagging.cancellationVersion === cancellationVersion) tagging.start()
+        }
+        if (!profileReady()) throw new AuthError('请先完善消息偏好（标签云可留空）。')
+        return {...db.getNotices(), tagging: tagging.getStatus()}
+    })
+    handle('notices:tag', async (input: unknown) => {
+        if (!db.getLlmEnabled()) throw new AuthError('请先在设置中启用 LLM。')
+        if (tagging.getStatus().running) throw new AuthError('正在打标，请等待完成或取消。')
+        if (input !== undefined) knownUrl(input)
+        tagging.start(input as NoticeRef | undefined)
+        return {...db.getNotices(), tagging: tagging.getStatus()}
+    })
+    handle('notices:cancel-tagging', async () => {
+        tagging.cancel()
+        await tagging.waitForIdle()
+        return {...db.getNotices(), tagging: tagging.getStatus()}
     })
     async function readDetail(input: unknown) {
         const url = knownUrl(input)

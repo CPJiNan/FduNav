@@ -7,6 +7,7 @@ import type {LlmAPI} from '../shared/llm'
 
 const llm: LlmAPI = {
     get: () => ipcRenderer.invoke('llm:get'),
+    setEnabled: enabled => ipcRenderer.invoke('llm:set-enabled', enabled),
     save: input => ipcRenderer.invoke('llm:save', input),
     test: input => ipcRenderer.invoke('llm:test', input),
     models: input => ipcRenderer.invoke('llm:models', input),
@@ -28,6 +29,8 @@ contextBridge.exposeInMainWorld('messagePreferences', messagePreferences)
 
 const notices: NoticesAPI = {
     list: refresh => ipcRenderer.invoke('notices:list', refresh),
+    tag: notice => ipcRenderer.invoke('notices:tag', notice),
+    cancelTagging: () => ipcRenderer.invoke('notices:cancel-tagging'),
     detail: notice => ipcRenderer.invoke('notices:detail', notice),
     openSource: notice => ipcRenderer.invoke('notices:open-source', notice),
     openAttachment: notice => ipcRenderer.invoke('notices:open-attachment', notice),

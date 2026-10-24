@@ -65,3 +65,22 @@ test('network errors and timeouts are sanitized', async () => {
     await assert.rejects(testLlmConnection(connection, request, 10), /连接超时/)
     await assert.rejects(fetchLlmModels(connection, request, 10), /连接超时/)
 })
+
+test('disabling LLM aborts pending model and connection requests and prevents starting new requests', async () => {
+    for (const action of [testLlmConnection, fetchLlmModels]) {
+        const controller = new AbortController()
+        let called = false
+        const request: typeof fetch = async (_url, init) => {
+            called = true
+            await delay(1000, undefined, {signal: init?.signal ?? undefined})
+            return Response.json({})
+        }
+        const pending = action(connection, request, 30_000, controller.signal)
+        assert.equal(called, true)
+        controller.abort()
+        await assert.rejects(pending, /LLM 已停用/)
+        called = false
+        await assert.rejects(action(connection, request, 30_000, controller.signal), /LLM 已停用/)
+        assert.equal(called, false)
+    }
+})

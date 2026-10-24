@@ -9,12 +9,15 @@ export interface ParsedNotice {
 
 export interface NoticeRef {sourceId: string; url: string}
 
-export interface Notice extends ParsedNotice, NoticeRef {sourceName: string}
+export interface Notice extends ParsedNotice, NoticeRef {sourceName: string; tags: string[]; taggedAt: string | null}
+
+export interface TaggingStatus {running: boolean; total: number; completed: number; failed: number; cancelled: boolean; error: string | null}
 
 export interface NoticeList {
     items: Notice[];
     updatedAt: string | null
     sources: MessageSource[]
+    tagging?: TaggingStatus
 }
 
 export interface NoticeDetail {
@@ -27,6 +30,10 @@ export interface NoticeDetail {
 
 export interface NoticesAPI {
     list(refresh?: boolean): Promise<Result<NoticeList>>
+
+    tag(notice?: NoticeRef): Promise<Result<NoticeList>>
+
+    cancelTagging(): Promise<Result<NoticeList>>
 
     detail(notice: NoticeRef): Promise<Result<NoticeDetail>>
 

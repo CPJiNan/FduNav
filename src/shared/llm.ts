@@ -1,16 +1,17 @@
 import type {Result} from './accounts'
 
-export interface LlmSettings {baseUrl: string; model: string; hasApiKey: boolean}
+export interface LlmSettings {baseUrl: string; model: string; hasApiKey: boolean; enabled: boolean}
 export interface LlmSettingsInput {baseUrl: string; model: string; apiKey: string; clearApiKey: boolean}
 export interface LlmConnectionTest {elapsedMs: number}
 export interface LlmAPI {
     get(): Promise<Result<LlmSettings>>
+    setEnabled(enabled: boolean): Promise<Result<LlmSettings>>
     save(input: LlmSettingsInput): Promise<Result<LlmSettings>>
     test(input: LlmSettingsInput): Promise<Result<LlmConnectionTest>>
     models(input: LlmSettingsInput): Promise<Result<string[]>>
 }
 
-export const emptyLlmSettings = (): LlmSettings => ({baseUrl: '', model: '', hasApiKey: false})
+export const emptyLlmSettings = (): LlmSettings => ({baseUrl: '', model: '', hasApiKey: false, enabled: false})
 
 export function validateLlmSettings(input: unknown, requireModel = true): Result<LlmSettingsInput> {
     if (!input || typeof input !== 'object' || Array.isArray(input)) return {ok: false, error: 'LLM 设置格式无效。'}

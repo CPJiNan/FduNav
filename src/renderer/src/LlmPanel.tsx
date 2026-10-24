@@ -8,6 +8,7 @@ export function LlmPanel({active}: {active: boolean}) {
     const [clearApiKey, setClearApiKey] = useState(false)
     const [loaded, setLoaded] = useState(false)
     const [busy, setBusy] = useState(false)
+    const [toggling, setToggling] = useState(false)
     const [error, setError] = useState('')
     const [saved, setSaved] = useState(false)
     const [testing, setTesting] = useState(false)
@@ -16,6 +17,7 @@ export function LlmPanel({active}: {active: boolean}) {
     const [fetchingModels, setFetchingModels] = useState(false)
     const [modelStatus, setModelStatus] = useState('')
     const initialModelsRequested = useRef(false)
+    const requestVersion = useRef(0)
     const [retry, setRetry] = useState(0)
     const api = window.llm
 
@@ -36,34 +38,59 @@ export function LlmPanel({active}: {active: boolean}) {
     }, [active, loaded, api, retry])
 
     useEffect(() => {
-        if (!active || !loaded || initialModelsRequested.current) return
+        if (!active || !loaded || !settings.enabled || busy || toggling || initialModelsRequested.current) return
         initialModelsRequested.current = true
         if (settings.baseUrl) void loadModels()
-    }, [active, loaded])
+    }, [active, loaded, settings.enabled, busy, toggling])
 
     function edited() { setSaved(false); setError(''); setTestResult(''); setModelStatus('') }
 
+    async function toggleEnabled() {
+        if (!api || !loaded || toggling) return
+        setToggling(true)
+        setError('')
+        try {
+            const response = await api.setEnabled(!settings.enabled)
+            if (!response.ok) { setError(response.error); return }
+            setSettings(value => ({...value, enabled: response.data.enabled}))
+            edited()
+            if (!response.data.enabled) {
+                requestVersion.current++
+                initialModelsRequested.current = false
+                setBusy(false)
+                setTesting(false)
+                setFetchingModels(false)
+            }
+        } catch { setError('无法更新 LLM 启用状态，请重试。') }
+        finally { setToggling(false) }
+    }
+
     async function loadModels() {
-        if (!api || busy || !loaded) return
+        if (!api || busy || toggling || !loaded || !settings.enabled) return
         edited()
         const result = validateLlmSettings({...settings, apiKey, clearApiKey}, false)
         if (!result.ok) { setError(result.error); return }
         setBusy(true)
         setFetchingModels(true)
+        const version = ++requestVersion.current
         try {
             const response = await api.models(result.data)
+            if (version !== requestVersion.current) return
             if (response.ok) {
                 setModels(response.data)
                 setSettings(value => ({...value, model: response.data.includes(value.model) ? value.model : ''}))
                 setModelStatus(`已获取 ${response.data.length} 个模型`)
             } else setError(response.error)
-        } catch { setError('获取模型失败，请重试。') }
-        finally { result.data.apiKey = ''; setBusy(false); setFetchingModels(false) }
+        } catch { if (version === requestVersion.current) setError('获取模型失败，请重试。') }
+        finally {
+            result.data.apiKey = ''
+            if (version === requestVersion.current) { setBusy(false); setFetchingModels(false) }
+        }
     }
 
     async function save(event: FormEvent) {
         event.preventDefault()
-        if (!api || busy || !loaded) return
+        if (!api || busy || toggling || !loaded || !settings.enabled) return
         setSaved(false)
         setTestResult('')
         const result = validateLlmSettings({...settings, apiKey, clearApiKey})
@@ -73,7 +100,7 @@ export function LlmPanel({active}: {active: boolean}) {
         try {
             const response = await api.save(result.data)
             if (response.ok) {
-                setSettings(response.data)
+                setSettings(value => ({...response.data, enabled: value.enabled}))
                 setApiKey('')
                 setClearApiKey(false)
                 setSaved(true)
@@ -83,7 +110,7 @@ export function LlmPanel({active}: {active: boolean}) {
     }
 
     async function testConnection() {
-        if (!api || busy || !loaded) return
+        if (!api || busy || toggling || !loaded || !settings.enabled) return
         setSaved(false)
         setTestResult('')
         const result = validateLlmSettings({...settings, apiKey, clearApiKey})
@@ -91,16 +118,29 @@ export function LlmPanel({active}: {active: boolean}) {
         setBusy(true)
         setTesting(true)
         setError('')
+        const version = ++requestVersion.current
         try {
             const response = await api.test(result.data)
+            if (version !== requestVersion.current) return
             if (response.ok) setTestResult(`连接成功 · ${response.data.elapsedMs} ms`)
             else setError(response.error)
-        } catch { setError('连接测试失败，请重试。') }
-        finally { result.data.apiKey = ''; setBusy(false); setTesting(false) }
+        } catch { if (version === requestVersion.current) setError('连接测试失败，请重试。') }
+        finally {
+            result.data.apiKey = ''
+            if (version === requestVersion.current) { setBusy(false); setTesting(false) }
+        }
     }
 
-    return <form className="llm-panel" onSubmit={save} aria-busy={busy}>
-        <fieldset disabled={!api || !loaded || busy}>
+    return <form className="llm-panel" onSubmit={save} aria-busy={busy || toggling}>
+        <div className="llm-field llm-enable-field">
+            <label id="llm-enable-label" htmlFor="llm-enable">启用</label>
+            <button id="llm-enable" type="button" role="switch" className="llm-switch"
+                    aria-labelledby="llm-enable-label" aria-checked={settings.enabled}
+                    disabled={!api || !loaded || toggling} onClick={() => void toggleEnabled()}>
+                <span className="llm-switch-track" aria-hidden="true"><span/></span>
+            </button>
+        </div>
+        <fieldset disabled={!api || !loaded || busy || toggling || !settings.enabled}>
             <div className="llm-field">
                 <label htmlFor="llm-base-url">接口地址</label>
                 <input id="llm-base-url" type="url" value={settings.baseUrl} required maxLength={2048}

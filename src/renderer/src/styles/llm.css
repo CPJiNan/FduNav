@@ -1,4 +1,29 @@
 .llm-panel { max-width: 680px; }
+.llm-enable-field { margin-bottom: var(--space-4); }
+.llm-switch {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    justify-self: start;
+    min-width: var(--size-touch-target);
+    min-height: var(--size-touch-target);
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+}
+.llm-switch-track {
+    display: flex;
+    align-items: center;
+    width: 40px;
+    height: 24px;
+    padding: 3px;
+    border-radius: 12px;
+    background: var(--color-text-muted);
+}
+.llm-switch-track > span { width: 18px; height: 18px; border-radius: 50%; background: var(--color-bg-surface); }
+.llm-switch[aria-checked="true"] .llm-switch-track { background: var(--color-accent); }
+.llm-switch[aria-checked="true"] .llm-switch-track > span { margin-left: auto; background: var(--color-on-accent); }
 .llm-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .llm-model-control { display: flex; flex-wrap: wrap; gap: var(--space-2); min-width: 0; }
 .llm-model-control select { flex: 1 1 140px; }

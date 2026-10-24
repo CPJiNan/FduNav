@@ -148,7 +148,7 @@
     padding-left: var(--space-3);
     border: var(--border-width) solid var(--color-border-subtle);
     border-radius: var(--radius-xs);
-    background: var(--color-bg-subtle);
+    background: var(--color-bg-selected);
     color: var(--color-text-secondary);
     font-size: var(--font-size-sm);
 }
@@ -167,7 +167,7 @@
     border: 0;
     border-radius: var(--radius-xs);
     background: transparent;
-    color: var(--color-icon-muted);
+    color: inherit;
 }
 
 .preference-tag-editor button:hover:not(:disabled) {

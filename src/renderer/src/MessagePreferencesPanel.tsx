@@ -1,8 +1,8 @@
 import {type FormEvent, useEffect, useRef, useState} from 'react'
 import {
-    departments, educationLevelOptions, emptyMessagePreferences, genderOptions, identityOptions,
+    campusOptions, departments, educationLevelOptions, emptyMessagePreferences, genderOptions, identityOptions,
     normalizeTags, preferenceLimits, splitTagInput,
-    validateMessagePreferences, type MessagePreferences,
+    validateMessagePreferences, validateRequiredMessagePreferences, type MessagePreferences,
 } from '../../shared/message-preferences'
 import {Icon} from './Icon'
 import './styles/message-preferences.css'
@@ -16,7 +16,11 @@ const profileSelects = [
     {field: 'educationLevel', label: '学历阶段', options: educationLevelOptions},
 ] as const
 
-export function MessagePreferencesPanel() {
+export function MessagePreferencesPanel({requiredProfile = false, onChange, onSaved}: {
+    requiredProfile?: boolean
+    onChange?: (value: MessagePreferences) => void
+    onSaved?: (value: MessagePreferences) => void
+}) {
     const [draft, setDraft] = useState(emptyMessagePreferences)
     const [saved, setSaved] = useState<Draft | null>(null)
     const [pendingTags, setPendingTags] = useState('')
@@ -54,6 +58,7 @@ export function MessagePreferencesPanel() {
                 const value = result.data
                 setDraft(value)
                 setSaved(value)
+                onChange?.(value)
             } else setLoadError(result.error)
         }).catch(() => {
             if (active) setLoadError('无法连接消息偏好服务，请重试或重启应用。')
@@ -61,7 +66,7 @@ export function MessagePreferencesPanel() {
             if (active) setLoading(false)
         })
         return () => { active = false }
-    }, [api, retry])
+    }, [api, retry, onChange])
 
     useEffect(() => {
         const dialog = deleteDialog.current
@@ -105,7 +110,7 @@ export function MessagePreferencesPanel() {
     async function save(event: FormEvent) {
         event.preventDefault()
         if (!api || loading || saving || !saved) return
-        const result = validateMessagePreferences({
+        const result = (requiredProfile ? validateRequiredMessagePreferences : validateMessagePreferences)({
             ...draft,
             tags: [...draft.tags, ...splitTagInput(pendingTags)],
         })
@@ -126,6 +131,8 @@ export function MessagePreferencesPanel() {
                 setSaved(value)
                 setPendingTags('')
                 setSavedMessage('已保存')
+                onChange?.(value)
+                onSaved?.(value)
             } else setSaveError(response.error)
         } catch {
             setSaveError('保存失败，输入内容已保留，请重试。')
@@ -149,7 +156,7 @@ export function MessagePreferencesPanel() {
                 <div className="preference-grid">
                     {profileSelects.map(({field, label, options}) => <div className="preference-field" key={field}>
                         <label htmlFor={`preference-${field}`}>{label}</label>
-                        <select id={`preference-${field}`} value={draft[field]}
+                        <select id={`preference-${field}`} value={draft[field]} required={requiredProfile}
                                 aria-invalid={fieldError?.field === field}
                                 aria-describedby={fieldError?.field === field ? `preference-${field}-error` : undefined}
                                 onChange={event => change(field, event.target.value as Draft[typeof field])}>
@@ -160,7 +167,7 @@ export function MessagePreferencesPanel() {
                     </div>)}
                     <div className="preference-field">
                         <label htmlFor="preference-grade">年级</label>
-                        <select id="preference-grade" value={draft.grade ?? ''}
+                        <select id="preference-grade" value={draft.grade ?? ''} required={requiredProfile}
                                 aria-invalid={fieldError?.field === 'grade'}
                                 aria-describedby={fieldError?.field === 'grade' ? 'preference-grade-error' : undefined}
                                 onChange={event => change('grade', event.target.value === '' ? null : Number(event.target.value))}>
@@ -171,12 +178,23 @@ export function MessagePreferencesPanel() {
                     </div>
                     <div className="preference-field">
                         <label htmlFor="preference-major">专业</label>
-                        <input id="preference-major" value={draft.major}
+                        <input id="preference-major" value={draft.major} required={requiredProfile}
                                maxLength={preferenceLimits.majorLength}
                                aria-invalid={fieldError?.field === 'major'}
                                aria-describedby={fieldError?.field === 'major' ? 'preference-major-error' : undefined}
                                onChange={event => change('major', event.target.value)}/>
                         {errorFor('major')}
+                    </div>
+                    <div className="preference-field">
+                        <label htmlFor="preference-campus">校区</label>
+                        <select id="preference-campus" value={draft.campus} required={requiredProfile}
+                                aria-invalid={fieldError?.field === 'campus'}
+                                aria-describedby={fieldError?.field === 'campus' ? 'preference-campus-error' : undefined}
+                                onChange={event => change('campus', event.target.value as Draft['campus'])}>
+                            <option value="" aria-label="未选择"/>
+                            {campusOptions.map(campus => <option key={campus} value={campus}>{campus}</option>)}
+                        </select>
+                        {errorFor('campus')}
                     </div>
                 </div>
             </fieldset>
@@ -211,7 +229,7 @@ export function MessagePreferencesPanel() {
                 {errorFor('tags')}
             </fieldset>
             <div className="preference-save-row">
-                <button type="submit" className="primary-button" disabled={!api || loading || saving || !dirty}>
+                <button type="submit" className="primary-button" disabled={!api || loading || saving || (!dirty && !(requiredProfile && !validateRequiredMessagePreferences(saved).ok))}>
                     {saving ? '正在保存…' : '保存偏好'}
                 </button>
                 <p className="preference-feedback" role="status">{saving || dirty ? '' : savedMessage}</p>

@@ -1,6 +1,18 @@
 import type {LlmConnectionTest} from '../shared/llm'
 
-interface Connection {baseUrl: string; model: string; apiKey: string}
+export interface Connection {baseUrl: string; model: string; apiKey: string}
+export interface ChatMessage {role: 'system' | 'user'; content: string}
+
+export async function completeLlm(connection: Connection, messages: ChatMessage[], signal: AbortSignal,
+                                  request: typeof fetch = fetch): Promise<string> {
+    const data = await requestLlmJson(connection, '/chat/completions', {
+        method: 'POST', body: JSON.stringify({model: connection.model, messages, stream: false}),
+    }, request, 60_000, signal)
+    const payload = data as {error?: unknown; choices?: {message?: {content?: unknown}}[]} | null
+    const content = Array.isArray(payload?.choices) ? payload.choices[0]?.message?.content : undefined
+    if (payload?.error || typeof content !== 'string' || !content.trim()) throw new Error('模型未返回有效内容。')
+    return content
+}
 
 function statusError(status: number): string {
     if (status === 401) return '认证失败，请检查 API Key（HTTP 401）。'
@@ -12,12 +24,12 @@ function statusError(status: number): string {
 }
 
 export async function testLlmConnection(connection: Connection, request: typeof fetch = fetch,
-                                        timeoutMs = 30_000): Promise<LlmConnectionTest> {
+                                        timeoutMs = 30_000, enabledSignal?: AbortSignal): Promise<LlmConnectionTest> {
     const start = performance.now()
     const data = await requestLlmJson(connection, '/chat/completions', {
         method: 'POST',
         body: JSON.stringify({model: connection.model, messages: [{role: 'user', content: 'Reply with only OK.'}], stream: false}),
-    }, request, timeoutMs)
+    }, request, timeoutMs, enabledSignal)
     const payload = data as {error?: unknown; choices?: {message?: {content?: unknown}}[]} | null
     const content = Array.isArray(payload?.choices) ? payload.choices[0]?.message?.content : undefined
     if (payload?.error || typeof content !== 'string' || !content.trim()) {
@@ -27,8 +39,8 @@ export async function testLlmConnection(connection: Connection, request: typeof 
 }
 
 export async function fetchLlmModels(connection: Connection, request: typeof fetch = fetch,
-                                     timeoutMs = 30_000): Promise<string[]> {
-    const data = await requestLlmJson(connection, '/models', {method: 'GET'}, request, timeoutMs)
+                                     timeoutMs = 30_000, enabledSignal?: AbortSignal): Promise<string[]> {
+    const data = await requestLlmJson(connection, '/models', {method: 'GET'}, request, timeoutMs, enabledSignal)
     const payload = data as {error?: unknown; data?: {id?: unknown}[]} | null
     if (payload?.error || !Array.isArray(payload?.data)) throw new Error('接口未返回有效的模型列表，请确认支持 /models。')
     const models = [...new Set(payload.data.map(item => item?.id).filter((id): id is string =>
@@ -38,8 +50,10 @@ export async function fetchLlmModels(connection: Connection, request: typeof fet
 }
 
 async function requestLlmJson(connection: Connection, path: string, init: RequestInit,
-                              request: typeof fetch, timeoutMs: number): Promise<unknown> {
-    const signal = AbortSignal.timeout(timeoutMs)
+                              request: typeof fetch, timeoutMs: number, enabledSignal?: AbortSignal): Promise<unknown> {
+    if (enabledSignal?.aborted) throw new Error('LLM 已停用。')
+    const timeout = AbortSignal.timeout(timeoutMs)
+    const signal = enabledSignal ? AbortSignal.any([timeout, enabledSignal]) : timeout
     let response: Response
     try {
         response = await request(`${connection.baseUrl}${path}`, {
@@ -48,6 +62,7 @@ async function requestLlmJson(connection: Connection, path: string, init: Reques
                 ...(connection.apiKey ? {Authorization: `Bearer ${connection.apiKey}`} : {})},
         })
     } catch {
+        if (enabledSignal?.aborted) throw new Error('LLM 已停用。')
         throw new Error(signal.aborted ? '连接超时，请稍后重试。' : '无法连接模型服务，请检查接口地址、网络或证书；接口不能重定向。')
     }
     if (!response.ok) {
@@ -68,12 +83,14 @@ async function requestLlmJson(connection: Connection, path: string, init: Reques
             chunks.push(value)
         }
     } catch {
+        if (enabledSignal?.aborted) throw new Error('LLM 已停用。')
         throw new Error(signal.aborted ? '连接超时，请稍后重试。' : '接口响应读取失败或内容过大。')
     } finally {
         await reader.cancel().catch(() => {})
         reader.releaseLock()
     }
     let data: unknown
+    if (enabledSignal?.aborted) throw new Error('LLM 已停用。')
     try { data = JSON.parse(Buffer.concat(chunks).toString('utf8')) }
     catch { throw new Error('接口未返回有效 JSON，请检查基础接口地址。') }
     return data

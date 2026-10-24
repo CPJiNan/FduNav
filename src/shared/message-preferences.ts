@@ -17,6 +17,8 @@ export const educationLevelOptions = [
     {value: 'doctoral', label: '博士研究生'},
 ] as const
 
+export const campusOptions = ['邯郸校区', '江湾校区', '枫林校区', '张江校区'] as const
+
 export const departments = [
     '马克思主义学院',
     '中国语言文学系',
@@ -69,6 +71,7 @@ export interface MessagePreferences {
     educationLevel: typeof educationLevelOptions[number]['value'] | ''
     grade: number | null
     major: string
+    campus: typeof campusOptions[number] | ''
     /** Vocabulary available to future notification tagging. */
     tags: string[]
 }
@@ -79,7 +82,7 @@ export interface MessagePreferencesAPI {
 }
 
 export const emptyMessagePreferences = (): MessagePreferences => ({
-    identity: '', gender: '', department: '', educationLevel: '', grade: null, major: '', tags: [],
+    identity: '', gender: '', department: '', educationLevel: '', grade: null, major: '', campus: '', tags: [],
 })
 
 type ValidationResult = {ok: true; data: MessagePreferences} |
@@ -109,6 +112,9 @@ export function validateMessagePreferences(input: unknown): ValidationResult {
     if (typeof value.major !== 'string' || value.major.trim().length > preferenceLimits.majorLength) {
         return {ok: false, error: `专业名称不能超过 ${preferenceLimits.majorLength} 个字符。`, field: 'major'}
     }
+    if (value.campus !== '' && !campusOptions.some(campus => campus === value.campus)) {
+        return {ok: false, error: '请选择有效的校区。', field: 'campus'}
+    }
     const tagResult = normalizeTags(value.tags)
     if (!tagResult.ok) return {...tagResult, field: 'tags'}
     return {ok: true, data: {
@@ -118,6 +124,7 @@ export function validateMessagePreferences(input: unknown): ValidationResult {
         educationLevel: value.educationLevel as MessagePreferences['educationLevel'],
         grade: value.grade as number | null,
         major: value.major.trim(),
+        campus: value.campus as MessagePreferences['campus'],
         tags: tagResult.data,
     }}
 }
@@ -134,7 +141,25 @@ export function readSavedMessagePreferences(input: unknown): ValidationResult {
             tags: legacy.tags,
         })
     }
+    if (input && typeof input === 'object' && !Array.isArray(input) && !('campus' in input)) {
+        return validateMessagePreferences({...input, campus: ''})
+    }
     return validateMessagePreferences(input)
+}
+
+export function validateRequiredMessagePreferences(input: unknown): ValidationResult {
+    const result = validateMessagePreferences(input)
+    if (!result.ok) return result
+    const fields = [
+        ['identity', '身份'], ['gender', '性别'], ['department', '院系'], ['educationLevel', '学历阶段'],
+        ['grade', '年级'], ['major', '专业'], ['campus', '校区'],
+    ] as const
+    for (const [field, label] of fields) {
+        if (result.data[field] === '' || result.data[field] === null) {
+            return {ok: false, field, error: `请填写${label}。`}
+        }
+    }
+    return result
 }
 
 export function normalizeTags(input: unknown): Result<string[]> {

@@ -1,7 +1,7 @@
 import {ipcMain, type IpcMainInvokeEvent} from 'electron'
 import type {AppDatabase} from './database'
 import type {Result} from '../shared/accounts'
-import {validateMessagePreferences, type MessagePreferences} from '../shared/message-preferences'
+import {validateMessagePreferences, validateRequiredMessagePreferences, type MessagePreferences} from '../shared/message-preferences'
 
 export function registerMessagePreferenceHandlers(db: AppDatabase, trusted: (event: IpcMainInvokeEvent) => boolean) {
     ipcMain.handle('preferences:get-messages', (event): Result<MessagePreferences> => {
@@ -14,7 +14,7 @@ export function registerMessagePreferenceHandlers(db: AppDatabase, trusted: (eve
     })
     ipcMain.handle('preferences:set-messages', (event, input: unknown): Result<MessagePreferences> => {
         if (!trusted(event)) return {ok: false, error: '请求来源无效。'}
-        const result = validateMessagePreferences(input)
+        const result = db.getAccount() ? validateRequiredMessagePreferences(input) : validateMessagePreferences(input)
         if (!result.ok) return result
         try {
             return {ok: true, data: db.setMessagePreferences(result.data)}

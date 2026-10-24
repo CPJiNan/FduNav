@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {DatabaseSync} from 'node:sqlite'
 import {AppDatabase} from '../src/main/database.ts'
-import {departments, emptyMessagePreferences, normalizeTags, splitTagInput, validateMessagePreferences} from '../src/shared/message-preferences.ts'
+import {campusOptions, departments, emptyMessagePreferences, normalizeTags, splitTagInput, validateMessagePreferences} from '../src/shared/message-preferences.ts'
 
 test('empty preferences remain optional and fresh', () => {
     assert.deepEqual(validateMessagePreferences(emptyMessagePreferences()), {ok: true, data: emptyMessagePreferences()})
@@ -30,6 +30,7 @@ test('profile choices and IPC payload validation reject invalid data', () => {
         {...defaults, department: '不存在的院系'}, {...defaults, educationLevel: 'postdoc'},
         {...defaults, grade: '2024'}, {...defaults, grade: 2024.5},
         {...defaults, grade: NaN}, {...defaults, grade: 2101}, {...defaults, grade: 1899},
+        {...defaults, campus: '未知校区'}, {...defaults, campus: undefined},
         {...defaults, tags: '奖学金'}, {...defaults, tags: [null]}]) {
         assert.equal(validateMessagePreferences(input).ok, false)
     }
@@ -39,6 +40,8 @@ test('profile choices and IPC payload validation reject invalid data', () => {
     }
     assert.equal(departments.length, 40)
     assert.equal(new Set(departments).size, 40)
+    assert.deepEqual(campusOptions, ['邯郸校区', '江湾校区', '枫林校区', '张江校区'])
+    for (const campus of campusOptions) assert.equal(validateMessagePreferences({...defaults, campus}).ok, true)
 })
 
 test('preferences survive database reopening, update and clear without changing theme or notices', () => {
@@ -52,7 +55,7 @@ test('preferences survive database reopening, update and clear without changing 
         db.saveNotices(notices)
         const value = {...emptyMessagePreferences(), identity: 'student' as const, gender: 'female' as const,
             department: '计算与智能创新学院' as const, educationLevel: 'undergraduate' as const, grade: 2024,
-            major: ' 计算机科学与技术 ', tags: ['奖学金', '选课', '奖学金']}
+            major: ' 计算机科学与技术 ', campus: '江湾校区' as const, tags: ['奖学金', '选课', '奖学金']}
         const expected = {...value, major: value.major.trim(), tags: ['奖学金', '选课']}
         assert.deepEqual(db.setMessagePreferences(value), expected)
         db.close()
@@ -65,7 +68,7 @@ test('preferences survive database reopening, update and clear without changing 
         db.setMessagePreferences(emptyMessagePreferences())
         assert.deepEqual(db.getMessagePreferences(), emptyMessagePreferences())
         assert.equal(db.getTheme(), 'dark')
-        assert.deepEqual(db.getNotices().items.map(item => ({...item})), notices.map(item => ({...item, sourceId: 'jwc', sourceName: '教务处'})))
+        assert.deepEqual(db.getNotices().items.map(item => ({...item})), notices.map(item => ({...item, sourceId: 'jwc', sourceName: '教务处', tags: [], taggedAt: null})))
     } finally {
         db.close()
         rmSync(directory, {recursive: true, force: true})
@@ -90,6 +93,26 @@ test('legacy profiles migrate without losing gender, cohort, major or tags', () 
             assert.equal('enrollmentYear' in stored, false)
             assert.equal('graduationYear' in stored, false)
         }
+    } finally {
+        raw.close()
+        db.close()
+        rmSync(directory, {recursive: true, force: true})
+    }
+})
+
+test('saved profiles from before campus was added retain their fields and gain an empty campus', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'fdunav-campus-preferences-'))
+    const path = join(directory, 'test.sqlite')
+    const db = new AppDatabase(path)
+    const raw = new DatabaseSync(path)
+    try {
+        const old = {...emptyMessagePreferences(), identity: 'staff', major: '物理学', tags: ['讲座']}
+        delete (old as Partial<typeof old>).campus
+        db.setMessagePreferences({...emptyMessagePreferences(), identity: 'staff', major: '物理学', tags: ['讲座']})
+        raw.prepare("UPDATE preferences SET value = ? WHERE key = 'message_preferences'").run(JSON.stringify(old))
+        assert.deepEqual(db.getMessagePreferences(), {...old, campus: ''})
+        assert.deepEqual(JSON.parse(String(raw.prepare("SELECT value FROM preferences WHERE key = 'message_preferences'").get()?.value)),
+            {...old, campus: ''})
     } finally {
         raw.close()
         db.close()
