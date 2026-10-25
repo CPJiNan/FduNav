@@ -81,7 +81,7 @@ function createWindow(): void {
 app.whenReady().then(async () => {
     try {
         mkdirSync(app.getPath('userData'), {recursive: true})
-        database = new AppDatabase(join(app.getPath('userData'), 'fdunav-v2.sqlite'))
+        database = new AppDatabase(join(app.getPath('userData'), 'fdunav.sqlite'))
         const trusted = (event: IpcMainInvokeEvent) => !!senderWindow(event) && isAppUrl(event.senderFrame?.url ?? '')
         const accounts = await registerAccountHandlers(database, trusted)
         registerTimetableHandlers(database, accounts, trusted)

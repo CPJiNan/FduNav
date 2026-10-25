@@ -86,7 +86,7 @@ export function registerTimetableHandlers(db: AppDatabase, accounts: AccountServ
         if (!trusted(event)) return {ok: false, error: '请求来源无效。'}
         try {
             if (pending) throw new AuthError('请等待课表获取完成。')
-            if (!validDate(value) || new Date(`${value}T00:00:00Z`).getUTCDay() !== 1) throw new AuthError('请选择第一周的星期一。')
+            if (!validDate(value) || new Date(`${value}T00:00:00Z`).getUTCDay() !== 0) throw new AuthError('请选择第一周的星期日。')
             const {username, kind} = context()
             const data = db.getTimetable(username, kind)
             if (!data) throw new AuthError('请先获取课表。')

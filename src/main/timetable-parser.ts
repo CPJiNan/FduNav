@@ -1,6 +1,6 @@
 import {load} from 'cheerio'
 import {AuthError} from './fudan-auth.ts'
-import {dateAfter, type Semester, type TimetableCourse, validDate} from '../shared/timetable.ts'
+import {type Semester, type TimetableCourse, validDate} from '../shared/timetable.ts'
 
 const invalid = () => new AuthError('无法解析学校课表数据，学校页面可能已更新。')
 
@@ -23,8 +23,7 @@ export function parseSemesters(html: string): { semesters: Semester[]; defaultId
         const row = record(value)
         if (!/^\d+$/.test(String(row.id)) || typeof row.name !== 'string') throw invalid()
         const date = typeof row.startDate === 'string' ? row.startDate.slice(0, 10) : ''
-        // JWGL uses Sunday as the start of a teaching week; the UI starts on Monday.
-        const startDate = validDate(date) ? dateAfter(date, new Date(`${date}T00:00:00Z`).getUTCDay() === 0 ? 1 : 0) : null
+        const startDate = validDate(date) ? date : null
         return {id: String(row.id), name: row.name, startDate}
     }).reverse()
     const defaultId = $('#allSemesters option[selected]').first().attr('value') ?? $('#allSemesters option').first().attr('value')
@@ -79,7 +78,7 @@ export function parseUndergraduateCourses(body: string): TimetableCourse[] {
             id: `${activity.lessonId ?? ''}-${activity.lessonCode ?? ''}-${index}`,
             name: text(activity.courseName), teachers: teachers.map(value => text(value)),
             room: text(activity.room, true), weekday, startUnit, endUnit,
-            weeks: [...new Set(weeks.map(week => integer(week, 1, 60) - (weekday === 7 ? 1 : 0)))].sort((a, b) => a - b),
+            weeks: [...new Set(weeks.map(week => integer(week, 1, 60)))].sort((a, b) => a - b),
         }
     })
 }

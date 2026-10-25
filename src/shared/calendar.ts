@@ -4,7 +4,7 @@ import {courseStartTimes, dateAfter, type Timetable, type TimetableCourse, valid
 export type CalendarView = 'year' | 'month' | 'week' | 'day' | 'agenda'
 export const calendarViews = [{id: 'year', label: '年'}, {id: 'month', label: '月'}, {id: 'week', label: '周'},
     {id: 'day', label: '日'}, {id: 'agenda', label: '日程'}] as const
-export const calendarWeekdays = ['一', '二', '三', '四', '五', '六', '日']
+export const calendarWeekdays = ['日', '一', '二', '三', '四', '五', '六']
 
 export interface CalendarEventInput {
     id?: string
@@ -53,15 +53,12 @@ export function localToday() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 }
 
-export const weekStartDate = (date: string) => dateAfter(date, -((asDate(date).getUTCDay() + 6) % 7))
+export const weekStartDate = (date: string) => dateAfter(date, -asDate(date).getUTCDay())
 export const dayDifference = (left: string, right: string) => Math.round((asDate(left).getTime() - asDate(right).getTime()) / 86_400_000)
 
 export function monthDates(date: string) {
     const first = weekStartDate(`${date.slice(0, 7)}-01`)
-    const current = asDate(date)
-    const last = dateString(new Date(Date.UTC(current.getUTCFullYear(), current.getUTCMonth() + 1, 0)))
-    const length = Math.ceil((dayDifference(last, first) + 1) / 7) * 7
-    return Array.from({length}, (_, index) => dateAfter(first, index))
+    return Array.from({length: 42}, (_, index) => dateAfter(first, index))
 }
 
 export function shiftCalendarDate(date: string, view: CalendarView, amount: number) {
@@ -142,7 +139,8 @@ export function calendarOccurrences(timetable: Timetable | null, events: Calenda
     const result: CalendarOccurrence[] = []
     if (timetable?.startDate) {
         for (const course of timetable.courses) for (const week of new Set(course.weeks)) {
-            const date = dateAfter(timetable.startDate, (week - 1) * 7 + course.weekday - 1)
+            const date = dateAfter(timetable.startDate,
+                (week - 1) * 7 + (course.weekday === 7 ? 0 : course.weekday))
             if (date < from || date > to) continue
             result.push({
                 key: `course:${course.id}:${date}`, date, title: course.name, location: course.room,

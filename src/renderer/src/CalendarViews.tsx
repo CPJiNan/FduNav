@@ -183,7 +183,7 @@ export function CalendarAgenda({items, onOpen, onMore}: Pick<ViewProps, 'items' 
         {items.length === 0 && <p className="calendar-empty" role="status">暂无日程</p>}
         {[...groupByDate(items)].map(([date, events]) => <section className="calendar-agenda-group" key={date}>
             <div className="calendar-agenda-date">{Number(date.slice(5, 7))}月{Number(date.slice(8))}日
-                星期{calendarWeekdays[(asDate(date).getUTCDay() + 6) % 7]}
+                星期{calendarWeekdays[asDate(date).getUTCDay()]}
                 <span>农历{lunarDate(date, true)}</span></div>
             <div className="calendar-agenda-card">{events.map(item => <button type="button" key={item.key}
                                                                               className="calendar-agenda-event"
