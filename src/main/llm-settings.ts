@@ -26,6 +26,7 @@ export class LlmSettingsService {
             ...(saved ? {
                 baseUrl: saved.baseUrl,
                 model: saved.model,
+                summaryPrompt: saved.summaryPrompt,
                 hasApiKey: !!saved.encryptedApiKey?.length
             } : emptyLlmSettings()),
             enabled: this.db.getLlmEnabled()
@@ -122,7 +123,7 @@ export class LlmSettingsService {
                 throw new Error('API Key 加密失败，设置未保存。')
             }
         }
-        this.db.saveLlmSettings({baseUrl: value.baseUrl, model: value.model, encryptedApiKey})
+        this.db.saveLlmSettings({baseUrl: value.baseUrl, model: value.model, encryptedApiKey, summaryPrompt: value.summaryPrompt})
         return this.get()
     }
 }

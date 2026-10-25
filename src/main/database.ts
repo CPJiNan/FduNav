@@ -1,4 +1,5 @@
 import {DatabaseSync} from 'node:sqlite'
+import {defaultSummaryPrompt} from '../shared/llm.ts'
 import type {Theme} from '../shared/accounts'
 import type {Notice, NoticeList, ParsedNotice} from '../shared/notices'
 import type {Timetable} from '../shared/timetable'
@@ -24,6 +25,7 @@ export interface SavedLlmSettings {
     baseUrl: string;
     model: string;
     encryptedApiKey: Uint8Array | null
+    summaryPrompt: string
 }
 
 export class AppDatabase {
@@ -191,11 +193,22 @@ export class AppDatabase {
                 throw error
             }
         }
+        if (Number(this.db.prepare('PRAGMA user_version').get()?.user_version) < 10) {
+            this.db.exec('BEGIN IMMEDIATE')
+            try {
+                this.db.exec("ALTER TABLE llm_settings ADD COLUMN summary_prompt TEXT NOT NULL DEFAULT ''; PRAGMA user_version = 10;")
+                this.db.prepare('UPDATE llm_settings SET summary_prompt = ?').run(defaultSummaryPrompt)
+                this.db.exec('COMMIT')
+            } catch (error) {
+                this.db.exec('ROLLBACK')
+                throw error
+            }
+        }
         this.syncSources()
     }
 
     getLlmSettings(): SavedLlmSettings | null {
-        return this.db.prepare('SELECT base_url AS baseUrl, model, api_key AS encryptedApiKey FROM llm_settings WHERE id = 1')
+        return this.db.prepare('SELECT base_url AS baseUrl, model, api_key AS encryptedApiKey, summary_prompt AS summaryPrompt FROM llm_settings WHERE id = 1')
             .get() as unknown as SavedLlmSettings ?? null
     }
 
@@ -209,10 +222,11 @@ export class AppDatabase {
     }
 
     saveLlmSettings(value: SavedLlmSettings) {
-        this.db.prepare(`INSERT INTO llm_settings (id, base_url, model, api_key)
-                         VALUES (1, ?, ?, ?) ON CONFLICT(id) DO
-        UPDATE SET base_url = excluded.base_url, model = excluded.model, api_key = excluded.api_key`)
-            .run(value.baseUrl, value.model, value.encryptedApiKey)
+        this.db.prepare(`INSERT INTO llm_settings (id, base_url, model, api_key, summary_prompt)
+                         VALUES (1, ?, ?, ?, ?) ON CONFLICT(id) DO
+        UPDATE SET base_url = excluded.base_url, model = excluded.model, api_key = excluded.api_key,
+                   summary_prompt = excluded.summary_prompt`)
+            .run(value.baseUrl, value.model, value.encryptedApiKey, value.summaryPrompt)
     }
 
     getAccount(): SavedAccount | null {
