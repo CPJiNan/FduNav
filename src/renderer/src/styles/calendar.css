@@ -577,17 +577,6 @@
     line-height: 1.4;
 }
 
-.calendar-timeline-day .calendar-timed-event,
-.calendar-timeline-day .calendar-all-day-event {
-    border-left-width: 4px;
-    background-color: var(--palette-white);
-}
-
-.calendar-timeline-day .calendar-timed-event::before,
-.calendar-timeline-day .calendar-all-day-event::before {
-    display: none;
-}
-
 .calendar-timed-event strong {
     display: -webkit-box;
     -webkit-line-clamp: 3;

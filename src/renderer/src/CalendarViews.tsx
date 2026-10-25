@@ -154,8 +154,7 @@ export function CalendarTimeline({
                         {dates.map(day => <div
                             key={day}>{items.filter(item => item.date === day && item.allDay).map(item =>
                             <button type="button" key={item.key} className="calendar-event calendar-all-day-event"
-                                    style={{backgroundColor: mode === 'week' ? occurrenceColor(item) : undefined,
-                                        borderLeftColor: mode === 'day' ? occurrenceColor(item) : undefined}}
+                                    style={{backgroundColor: occurrenceColor(item)}}
                                     onClick={() => onOpen(item)}><span>{item.title}</span></button>)}</div>)}
                     </div>
                 </div>
@@ -178,8 +177,7 @@ export function CalendarTimeline({
                             <button type="button" className="calendar-event calendar-timed-event" key={item.key}
                                     onClick={() => onOpen(item)}
                                     style={{
-                                        backgroundColor: mode === 'week' ? occurrenceColor(item) : undefined,
-                                        borderLeftColor: mode === 'day' ? occurrenceColor(item) : undefined,
+                                        backgroundColor: occurrenceColor(item),
                                         top: `calc(${item.startMinute / 60} * var(--calendar-hour-height))`,
                                         height: `calc(${(item.endMinute - item.startMinute) / 60} * var(--calendar-hour-height))`,
                                         left: `${100 * lane / lanes}%`,
