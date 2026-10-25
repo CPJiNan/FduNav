@@ -205,10 +205,11 @@ export default function App() {
                             </div>
                         </div>
                         {showNoticesPage && accountLoaded && (!window.accounts || account?.status === 'signed-in') &&
-                            <NoticesPage noticeToOpen={noticeToOpen} onNoticeOpened={() => setNoticeToOpen(null)} onLogin={() => {
-                                setTab('account');
-                                setSettings(true)
-                            }}/>}
+                            <NoticesPage noticeToOpen={noticeToOpen} onNoticeOpened={() => setNoticeToOpen(null)}
+                                         onLogin={() => {
+                                             setTab('account');
+                                             setSettings(true)
+                                         }}/>}
                         {showCalendarPage && accountLoaded && (!window.accounts || account?.status === 'signed-in') &&
                             <CalendarPage key={`${account?.username}-${preferences?.educationLevel}`}/>}
                         {showTodosPage && accountLoaded && (!window.accounts || account?.status === 'signed-in') &&

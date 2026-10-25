@@ -5,9 +5,12 @@ import {Icon} from './Icon'
 import {TodoDialog} from './TodoDialog'
 import './styles/todos.css'
 
-const filters = [{value: 'pending', label: '待完成'}, {value: 'completed', label: '已完成'}, {value: 'all', label: '全部'}] as const
+const filters = [{value: 'pending', label: '待完成'}, {value: 'completed', label: '已完成'}, {
+    value: 'all',
+    label: '全部'
+}] as const
 type Filter = typeof filters[number]['value']
-type TodoTransition = {todo: Todo; stage: 'line' | 'exit'}
+type TodoTransition = { todo: Todo; stage: 'line' | 'exit' }
 const emptyTodo = (): TodoInput => ({title: '', notes: '', dueDate: '', completed: false})
 
 export function TodosPage() {
@@ -30,16 +33,24 @@ export function TodosPage() {
     const api = window.todos
 
     async function load() {
-        if (!api) { setLoading(false); return }
+        if (!api) {
+            setLoading(false);
+            return
+        }
         setLoading(true)
         setError('')
         try {
             const result = await api.list()
             if (!active.current) return
-            if (result.ok) { setTodos(result.data); setLoaded(true) }
-            else setError(result.error)
-        } catch { if (active.current) setError('无法读取待办，请重试。') }
-        finally { if (active.current) setLoading(false) }
+            if (result.ok) {
+                setTodos(result.data);
+                setLoaded(true)
+            } else setError(result.error)
+        } catch {
+            if (active.current) setError('无法读取待办，请重试。')
+        } finally {
+            if (active.current) setLoading(false)
+        }
     }
 
     useEffect(() => {
@@ -47,7 +58,11 @@ export function TodosPage() {
         // Deferring the initial read also prevents duplicate requests under Strict Mode.
         const start = window.setTimeout(() => void load(), 0)
         const timer = window.setInterval(() => setToday(localToday()), 60_000)
-        return () => { active.current = false; window.clearTimeout(start); window.clearInterval(timer) }
+        return () => {
+            active.current = false;
+            window.clearTimeout(start);
+            window.clearInterval(timer)
+        }
     }, [])
 
     function openEditor(todo: TodoInput) {
@@ -75,7 +90,10 @@ export function TodosPage() {
     async function save(input: TodoInput, close = false) {
         if (!api || pending.current) return
         const checked = validateTodo(input)
-        if (!checked.ok) { setError(checked.error); return }
+        if (!checked.ok) {
+            setError(checked.error);
+            return
+        }
         pending.current = true
         setBusy(true)
         setError('')
@@ -89,8 +107,12 @@ export function TodosPage() {
                     closeEditor()
                 }
             } else setError(result.error)
-        } catch { if (active.current) setError('无法保存待办，请重试。') }
-        finally { pending.current = false; if (active.current) setBusy(false) }
+        } catch {
+            if (active.current) setError('无法保存待办，请重试。')
+        } finally {
+            pending.current = false;
+            if (active.current) setBusy(false)
+        }
     }
 
     async function remove(todo: Todo) {
@@ -105,8 +127,12 @@ export function TodosPage() {
                 setTodos(current => current.filter(item => item.id !== todo.id))
                 restoreFocus.current = true
             } else setError(result.error)
-        } catch { if (active.current) setError('无法删除待办，请重试。') }
-        finally { pending.current = false; if (active.current) setBusy(false) }
+        } catch {
+            if (active.current) setError('无法删除待办，请重试。')
+        } finally {
+            pending.current = false;
+            if (active.current) setBusy(false)
+        }
     }
 
     function unlockToggle(id: string) {
@@ -128,8 +154,9 @@ export function TodosPage() {
                 animating = true
                 setTransitions(current => ({...current, [todo.id]: {todo: result.data, stage: 'line'}}))
             } else setError(result.error)
-        } catch { if (active.current) setError('无法更新待办状态，请重试。') }
-        finally {
+        } catch {
+            if (active.current) setError('无法更新待办状态，请重试。')
+        } finally {
             if (!animating) {
                 if (active.current) unlockToggle(todo.id)
                 else pendingToggles.current.delete(todo.id)
@@ -162,8 +189,8 @@ export function TodosPage() {
         <div className="todos-toolbar">
             <div className="todos-filters" role="group" aria-label="筛选待办">
                 {filters.map(item => <button key={item.value} type="button" aria-pressed={filter === item.value}
-                                            disabled={busy || toggling.size > 0}
-                                            onClick={() => setFilter(item.value)}>
+                                             disabled={busy || toggling.size > 0}
+                                             onClick={() => setFilter(item.value)}>
                     {item.label}<span>{item.value === 'all' ? todos.length : item.value === 'pending' ? remaining : todos.length - remaining}</span>
                 </button>)}
             </div>
@@ -174,9 +201,13 @@ export function TodosPage() {
         </div>
         {!api && <p className="account-notice">请在桌面应用中使用 TODO；若已打开桌面应用，请重启以加载待办服务。</p>}
         {error && !editor && <div className="account-error" role="alert">{error}{!loaded && api &&
-            <button type="button" className="text-button" disabled={loading} onClick={() => void load()}>重试</button>}</div>}
+            <button type="button" className="text-button" disabled={loading}
+                    onClick={() => void load()}>重试</button>}</div>}
         {editor && <TodoDialog draft={editor} busy={busy} error={error}
-                               onChange={draft => { setEditor(draft); setError('') }}
+                               onChange={draft => {
+                                   setEditor(draft);
+                                   setError('')
+                               }}
                                onSave={() => void save(editor, true)} onClose={closeEditor}/>}
         {loading && <p className="todos-empty" role="status">正在读取待办…</p>}
         {loaded && !loading && <>
@@ -184,17 +215,17 @@ export function TodosPage() {
                 {visible.map(todo => {
                     const transition = transitions[todo.id]
                     return <li key={todo.id} className={`todo-row${todo.completed ? ' is-completed' : ''}${
-                    transition ? ` is-transitioning ${transition.todo.completed ? 'is-completing' : 'is-reopening'}${transition.stage === 'exit' ? ' is-leaving' : ''}` : ''}`}
-                    onAnimationEnd={event => {
-                        if (event.target === event.currentTarget && event.animationName === 'todo-row-exit') finishTransition(todo.id, event.currentTarget)
-                    }}>
-                    <button className="icon-button todo-check" type="button" aria-pressed={todo.completed}
-                           aria-disabled={busy || editing || toggling.has(todo.id)}
-                           disabled={busy || editing} title={todo.completed ? '标记为待完成' : '标记为已完成'}
-                           aria-label={`${todo.completed ? '标记为待完成' : '标记为已完成'}：${todo.title}`}
-                           onClick={() => void toggleCompleted(todo)}><Icon name="check"/></button>
-                    <button className="todo-content" type="button" disabled={busy || editing || toggling.size > 0}
-                            aria-label={`编辑待办：${todo.title}`} onClick={() => openEditor(todo)}>
+                        transition ? ` is-transitioning ${transition.todo.completed ? 'is-completing' : 'is-reopening'}${transition.stage === 'exit' ? ' is-leaving' : ''}` : ''}`}
+                               onAnimationEnd={event => {
+                                   if (event.target === event.currentTarget && event.animationName === 'todo-row-exit') finishTransition(todo.id, event.currentTarget)
+                               }}>
+                        <button className="icon-button todo-check" type="button" aria-pressed={todo.completed}
+                                aria-disabled={busy || editing || toggling.has(todo.id)}
+                                disabled={busy || editing} title={todo.completed ? '标记为待完成' : '标记为已完成'}
+                                aria-label={`${todo.completed ? '标记为待完成' : '标记为已完成'}：${todo.title}`}
+                                onClick={() => void toggleCompleted(todo)}><Icon name="check"/></button>
+                        <button className="todo-content" type="button" disabled={busy || editing || toggling.size > 0}
+                                aria-label={`编辑待办：${todo.title}`} onClick={() => openEditor(todo)}>
                         <span className="todo-title"><span className="todo-title-text" onAnimationEnd={event => {
                             if (event.target === event.currentTarget && transition?.todo.id === todo.id && transition.stage === 'line' &&
                                 (event.animationName === 'todo-strike-in' || event.animationName === 'todo-strike-out')) {
@@ -202,15 +233,19 @@ export function TodosPage() {
                                     ? {...current, [todo.id]: {...current[todo.id], stage: 'exit'}} : current)
                             }
                         }}>{todo.title}</span></span>
-                        {todo.notes && <span className="todo-notes">{todo.notes}</span>}
-                        {todo.dueDate && <span className={`todo-due${!todo.completed && todo.dueDate < today ? ' is-overdue' : ''}`}>
+                            {todo.notes && <span className="todo-notes">{todo.notes}</span>}
+                            {todo.dueDate && <span
+                                className={`todo-due${!todo.completed && todo.dueDate < today ? ' is-overdue' : ''}`}>
                             <Icon name="calendar"/><time dateTime={todo.dueDate}>{todo.dueDate}</time>
-                            {!todo.completed && (todo.dueDate < today ? '已逾期' : todo.dueDate === today ? '今天截止' : '')}
+                                {!todo.completed && (todo.dueDate < today ? '已逾期' : todo.dueDate === today ? '今天截止' : '')}
                         </span>}
-                    </button>
-                    <button type="button" className="icon-button todo-delete" disabled={busy || editing || toggling.has(todo.id)}
-                            aria-label={`删除待办：${todo.title}`} title="删除待办" onClick={() => void remove(todo)}><Icon name="close"/></button>
-                </li>})}
+                        </button>
+                        <button type="button" className="icon-button todo-delete"
+                                disabled={busy || editing || toggling.has(todo.id)}
+                                aria-label={`删除待办：${todo.title}`} title="删除待办"
+                                onClick={() => void remove(todo)}><Icon name="close"/></button>
+                    </li>
+                })}
             </ul>
             {!visible.length && <div className="todos-empty" role="status"><Icon name="todo"/>
                 <p>{filter === 'completed' ? '暂无已完成的待办' : filter === 'pending' ? '暂无待完成的代办' : '暂无待办'}</p>

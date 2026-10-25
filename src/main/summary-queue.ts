@@ -1,7 +1,8 @@
 import {randomUUID} from 'node:crypto'
-import {summaryTaskFinished, type Notice, type NoticeSummary, type SummaryTask} from '../shared/notices.ts'
+import {type Notice, type NoticeSummary, type SummaryTask, summaryTaskFinished} from '../shared/notices.ts'
 
 type Work = (signal: AbortSignal, stage: (status: 'reading' | 'generating' | 'saving') => void) => Promise<NoticeSummary>
+
 interface Entry {
     task: SummaryTask
     owner: string
@@ -16,17 +17,19 @@ export class SummaryQueue {
     private running = false
     private listeners = new Set<() => void>()
 
+    get activeCount(): number {
+        return this.entries.filter(entry => !summaryTaskFinished(entry.task)).length
+    }
+
     subscribe(listener: () => void) {
         this.listeners.add(listener)
-        return () => { this.listeners.delete(listener) }
+        return () => {
+            this.listeners.delete(listener)
+        }
     }
 
     snapshot(owner: string): SummaryTask[] {
         return this.entries.filter(entry => entry.owner === owner).map(entry => ({...entry.task}))
-    }
-
-    get activeCount(): number {
-        return this.entries.filter(entry => !summaryTaskFinished(entry.task)).length
     }
 
     enqueue(notice: Notice, owner: string, work: Work): Promise<NoticeSummary> {
@@ -37,12 +40,20 @@ export class SummaryQueue {
         if (this.entries.length >= 400) this.entries = this.entries.filter(entry => !summaryTaskFinished(entry.task))
         const promise = new Promise<NoticeSummary>((resolve, reject) => {
             this.entries.push({
-                task: {id: randomUUID(), sourceId: notice.sourceId, url: notice.url, title: notice.title, status: 'queued'},
+                task: {
+                    id: randomUUID(),
+                    sourceId: notice.sourceId,
+                    url: notice.url,
+                    title: notice.title,
+                    status: 'queued'
+                },
                 owner, controller: new AbortController(), work, resolve, reject
             })
         })
         this.changed()
-        queueMicrotask(() => { void this.drain() })
+        queueMicrotask(() => {
+            void this.drain()
+        })
         return promise
     }
 
@@ -83,7 +94,7 @@ export class SummaryQueue {
         if (this.running) return
         this.running = true
         try {
-            for (;;) {
+            for (; ;) {
                 const entry = this.entries.find(entry => entry.task.status === 'queued')
                 if (!entry) break
                 const signal = entry.controller.signal
@@ -93,7 +104,8 @@ export class SummaryQueue {
                     this.changed()
                 }
                 stage('reading')
-                let abort: () => void = () => {}
+                let abort: () => void = () => {
+                }
                 try {
                     const cancelled = new Promise<never>((_resolve, reject) => {
                         abort = () => reject(signal.reason)

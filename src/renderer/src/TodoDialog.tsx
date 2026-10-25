@@ -16,8 +16,13 @@ export function TodoDialog({draft, busy, error, onChange, onSave, onClose}: {
 
     return <dialog className="calendar-dialog" ref={dialog} aria-label={draft.id ? '编辑待办' : '新建待办'}
                    aria-busy={busy} onClose={onClose}
-                   onCancel={event => { event.preventDefault(); if (!busy) onClose() }}
-                   onKeyDown={event => { if (event.key === 'Escape') event.stopPropagation() }}
+                   onCancel={event => {
+                       event.preventDefault();
+                       if (!busy) onClose()
+                   }}
+                   onKeyDown={event => {
+                       if (event.key === 'Escape') event.stopPropagation()
+                   }}
                    onClick={event => {
                        if (busy || event.target !== dialog.current) return
                        const bounds = event.currentTarget.getBoundingClientRect()
@@ -29,11 +34,15 @@ export function TodoDialog({draft, busy, error, onChange, onSave, onClose}: {
             <button type="button" className="icon-button" aria-label="关闭待办" disabled={busy}
                     onClick={onClose}><Icon name="close"/></button>
         </div>
-        <form className="calendar-event-form" onSubmit={event => { event.preventDefault(); onSave() }}>
+        <form className="calendar-event-form" onSubmit={event => {
+            event.preventDefault();
+            onSave()
+        }}>
             <label>名称<input ref={title} autoFocus value={draft.title} required maxLength={200} disabled={busy}
                               onChange={event => onChange({...draft, title: event.target.value})}/></label>
             <label>截止日期<input type="date" min="1900-01-01" max="2100-12-31" value={draft.dueDate}
-                                        disabled={busy} onChange={event => onChange({...draft, dueDate: event.target.value})}/></label>
+                                  disabled={busy}
+                                  onChange={event => onChange({...draft, dueDate: event.target.value})}/></label>
             <label>备注<textarea rows={3} maxLength={5000} value={draft.notes} disabled={busy}
                                  onChange={event => onChange({...draft, notes: event.target.value})}/></label>
             {error && <p className="account-error" role="alert">{error}</p>}

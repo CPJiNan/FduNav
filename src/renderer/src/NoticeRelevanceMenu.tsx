@@ -2,7 +2,7 @@ import {useEffect, useId, useRef, useState} from 'react'
 import type {NoticeRef, NoticeRelevance, NoticeRelevanceChoice} from '../../shared/notices'
 import {Icon} from './Icon'
 
-const choices: {value: NoticeRelevanceChoice; label: string}[] = [
+const choices: { value: NoticeRelevanceChoice; label: string }[] = [
     {value: 'related', label: '与我有关'},
     {value: 'maybe', label: '可能有关'},
     {value: 'none', label: '与我无关'}
@@ -24,7 +24,9 @@ export function NoticeRelevanceMenu({notice, relevance, onChanged}: {
 
     useEffect(() => {
         active.current = true
-        return () => { active.current = false }
+        return () => {
+            active.current = false
+        }
     }, [])
 
     useEffect(() => {
@@ -48,12 +50,17 @@ export function NoticeRelevanceMenu({notice, relevance, onChanged}: {
             if (!active.current) return
             if (result.ok) onChanged(result.data)
             else setError(result.error)
-        } catch { if (active.current) setError('无法保存选择，请重试。') }
-        finally { if (active.current) setSaving(false) }
+        } catch {
+            if (active.current) setError('无法保存选择，请重试。')
+        } finally {
+            if (active.current) setSaving(false)
+        }
     }
 
     return <div className="notice-relevance-select" ref={root}
-                onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false) }}
+                onBlur={event => {
+                    if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false)
+                }}
                 onKeyDown={event => {
                     if (event.key === 'Escape' && open) {
                         event.preventDefault()
@@ -69,11 +76,11 @@ export function NoticeRelevanceMenu({notice, relevance, onChanged}: {
                     if (saving || !window.notices) return
                     setOpen(current => !current)
                 }} onKeyDown={event => {
-                    if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && !saving && window.notices) {
-                        event.preventDefault()
-                        setOpen(true)
-                    }
-                }}>
+            if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && !saving && window.notices) {
+                event.preventDefault()
+                setOpen(true)
+            }
+        }}>
             {choices.find(choice => choice.value === value)!.label}<Icon name="chevron"/>
         </button>
         {open && <div id={menuId} className="notice-relevance-menu" role="menu" aria-label="通知相关性"
@@ -81,12 +88,18 @@ export function NoticeRelevanceMenu({notice, relevance, onChanged}: {
                           const index = items.current.indexOf(document.activeElement as HTMLButtonElement)
                           const next = event.key === 'ArrowDown' ? (index + 1) % choices.length
                               : event.key === 'ArrowUp' ? (index + choices.length - 1) % choices.length
-                              : event.key === 'Home' ? 0 : event.key === 'End' ? choices.length - 1 : -1
-                          if (next >= 0) { event.preventDefault(); items.current[next]?.focus() }
+                                  : event.key === 'Home' ? 0 : event.key === 'End' ? choices.length - 1 : -1
+                          if (next >= 0) {
+                              event.preventDefault();
+                              items.current[next]?.focus()
+                          }
                       }}>
             {choices.map((choice, index) => <button key={choice.value} type="button" role="menuitemradio"
-                aria-checked={value === choice.value} tabIndex={-1} ref={element => { items.current[index] = element }}
-                onClick={() => void choose(choice.value)}>
+                                                    aria-checked={value === choice.value} tabIndex={-1}
+                                                    ref={element => {
+                                                        items.current[index] = element
+                                                    }}
+                                                    onClick={() => void choose(choice.value)}>
                 {choice.label}{value === choice.value && <Icon name="check"/>}
             </button>)}
         </div>}

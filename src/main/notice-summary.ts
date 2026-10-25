@@ -101,11 +101,6 @@ export class NoticeSummaryService {
         }
     }
 
-    private effectiveRelevance(notice: NoticeRef, username: string, predicted: NoticeRelevance | null): NoticeRelevance | null {
-        const choice = this.db.getNoticeRelevanceChoice(username, notice.sourceId, notice.url)
-        return choice === null ? predicted : choice === 'none' ? null : choice
-    }
-
     needsSummary(ref: NoticeRef): boolean {
         const context = this.context(ref)
         return !this.pending.has(context.key) &&
@@ -137,6 +132,11 @@ export class NoticeSummaryService {
         } finally {
             this.pending.delete(context.key)
         }
+    }
+
+    private effectiveRelevance(notice: NoticeRef, username: string, predicted: NoticeRelevance | null): NoticeRelevance | null {
+        const choice = this.db.getNoticeRelevanceChoice(username, notice.sourceId, notice.url)
+        return choice === null ? predicted : choice === 'none' ? null : choice
     }
 
     private contextFor(notice: Notice) {
@@ -188,7 +188,12 @@ export class NoticeSummaryService {
             stage('saving')
             this.db.saveNoticeSummary(ref.sourceId, ref.url, context.key, connection.model, summary,
                 output.relevance ?? '')
-            return {content: summary, relevance: this.effectiveRelevance(ref, context.username, output.relevance), model: connection.model, cached: false}
+            return {
+                content: summary,
+                relevance: this.effectiveRelevance(ref, context.username, output.relevance),
+                model: connection.model,
+                cached: false
+            }
         } finally {
             connection.apiKey = ''
         }

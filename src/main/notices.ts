@@ -1,4 +1,4 @@
-import {ipcMain, type IpcMainInvokeEvent, type WebContents, shell} from 'electron'
+import {ipcMain, type IpcMainInvokeEvent, shell, type WebContents} from 'electron'
 import {AppDatabase} from './database'
 import {AccountService} from './accounts'
 import {AuthError} from './fudan-auth'
@@ -73,7 +73,8 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
         const settings = llm.get()
         if (!settings.enabled || !settings.model) throw new AuthError('请先配置并启用 LLM。')
         if (summaries.queue.activeCount + notices.length > 200) throw new AuthError('队列最多容纳 200 条待完成任务，请减少选择或等待任务完成。')
-        for (const ref of notices) void summaries.summarize(ref).catch(() => { /* Task errors are shown in the queue. */ })
+        for (const ref of notices) void summaries.summarize(ref).catch(() => { /* Task errors are shown in the queue. */
+        })
     })
     handle('notices:cancel-summaries', async (input: unknown) => {
         if (!Array.isArray(input) || input.length > 400 || !input.every(id => typeof id === 'string')) {
@@ -96,7 +97,7 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
     })
     handle('notices:set-relevance', async (input: unknown) => {
         knownUrl(input)
-        const value = input as NoticeRef & {relevance?: unknown}
+        const value = input as NoticeRef & { relevance?: unknown }
         if (value.relevance !== 'related' && value.relevance !== 'maybe' && value.relevance !== 'none') {
             throw new AuthError('相关性选项无效。')
         }

@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState} from 'react'
-import {summaryTaskFinished, type NoticeRef, type SummaryTask} from '../../shared/notices'
+import {type NoticeRef, type SummaryTask, summaryTaskFinished} from '../../shared/notices'
 import {Icon} from './Icon'
 import './styles/summary-queue.css'
 
@@ -32,8 +32,13 @@ export function SummaryQueuePanel({username, onOpenNotice}: {
         })
         void api.summaryQueue().then(result => {
             if (active && version === 0 && result.ok) setTasks(result.data)
-        }).catch(() => { if (active) setError('无法读取摘要队列。') })
-        return () => { active = false; unsubscribe() }
+        }).catch(() => {
+            if (active) setError('无法读取摘要队列。')
+        })
+        return () => {
+            active = false;
+            unsubscribe()
+        }
     }, [api, username])
 
     useEffect(() => {
@@ -46,7 +51,10 @@ export function SummaryQueuePanel({username, onOpenNotice}: {
             if (!container.current?.contains(event.target as Node)) setOpen(false)
         }
         const escape = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') { setOpen(false); button.current?.focus() }
+            if (event.key === 'Escape') {
+                setOpen(false);
+                button.current?.focus()
+            }
         }
         document.addEventListener('pointerdown', close)
         document.addEventListener('keydown', escape)
@@ -63,8 +71,11 @@ export function SummaryQueuePanel({username, onOpenNotice}: {
         try {
             const result = id ? await api.removeSummaries([id]) : await api.clearSummaryQueue()
             if (!result.ok) setError(result.error)
-        } catch { setError('无法更新摘要队列，请重试。') }
-        finally { setBusy(false) }
+        } catch {
+            setError('无法更新摘要队列，请重试。')
+        } finally {
+            setBusy(false)
+        }
     }
 
     async function openNotice(task: SummaryTask) {
@@ -74,8 +85,11 @@ export function SummaryQueuePanel({username, onOpenNotice}: {
         try {
             await onOpenNotice({sourceId: task.sourceId, url: task.url})
             setOpen(false)
-        } catch (error) { setError(error instanceof Error ? error.message : '无法打开通知，请重试。') }
-        finally { setBusy(false) }
+        } catch (error) {
+            setError(error instanceof Error ? error.message : '无法打开通知，请重试。')
+        } finally {
+            setBusy(false)
+        }
     }
 
     if (!tasks.length) return null
@@ -98,12 +112,14 @@ export function SummaryQueuePanel({username, onOpenNotice}: {
                                     aria-label={`打开通知：${task.title}`} onClick={() => void openNotice(task)}>
                                 <span className="summary-queue-card-meta">
                                     <span className={`summary-queue-card-status is-${task.status}`}>
-                                        <Icon name={task.status === 'completed' ? 'check' : task.status === 'failed' ? 'info' : 'sparkles'}/>
+                                        <Icon
+                                            name={task.status === 'completed' ? 'check' : task.status === 'failed' ? 'info' : 'sparkles'}/>
                                         {statusLabels[task.status]}
                                     </span>
                                 </span>
                                 <span className="summary-queue-task-title">{task.title}</span>
-                                {active && <progress className="summary-queue-progress summary-queue-task-progress" aria-label={`${task.title}：${statusLabels[task.status]}`}/>}
+                                {active && <progress className="summary-queue-progress summary-queue-task-progress"
+                                                     aria-label={`${task.title}：${statusLabels[task.status]}`}/>}
                                 {task.error && <span className="summary-queue-error">{task.error}</span>}
                             </button>
                             <button type="button" className="icon-button summary-queue-delete" disabled={busy}
@@ -114,8 +130,10 @@ export function SummaryQueuePanel({username, onOpenNotice}: {
                 </ul>
             </div>
             <footer className="summary-queue-footer">
-                <button type="button" className="summary-queue-command" disabled={busy || !tasks.some(task => task.status === 'completed')}
-                        onClick={() => void remove()}>全部清除</button>
+                <button type="button" className="summary-queue-command"
+                        disabled={busy || !tasks.some(task => task.status === 'completed')}
+                        onClick={() => void remove()}>全部清除
+                </button>
             </footer>
         </section>}
     </div>

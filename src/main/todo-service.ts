@@ -6,7 +6,9 @@ import type {Todo} from '../shared/todos'
 export class TodoService {
     private db: AppDatabase
 
-    constructor(db: AppDatabase) { this.db = db }
+    constructor(db: AppDatabase) {
+        this.db = db
+    }
 
     save(username: string, input: unknown): Todo {
         const result = validateTodo(input)
@@ -14,7 +16,12 @@ export class TodoService {
         const previous = result.data.id ? this.db.getTodo(username, result.data.id) : null
         if (result.data.id && !previous) throw new TodoError('待办不存在或已被删除。')
         const now = new Date().toISOString()
-        const todo = {...result.data, id: previous?.id ?? randomUUID(), createdAt: previous?.createdAt ?? now, updatedAt: now}
+        const todo = {
+            ...result.data,
+            id: previous?.id ?? randomUUID(),
+            createdAt: previous?.createdAt ?? now,
+            updatedAt: now
+        }
         this.db.saveTodo(username, todo)
         return todo
     }
@@ -26,4 +33,5 @@ export class TodoService {
     }
 }
 
-export class TodoError extends Error {}
+export class TodoError extends Error {
+}

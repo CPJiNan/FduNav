@@ -17,7 +17,9 @@ export interface Todo extends TodoInput {
 
 export interface TodosAPI {
     list(): Promise<Result<Todo[]>>
+
     save(input: TodoInput): Promise<Result<Todo>>
+
     remove(id: string): Promise<Result<null>>
 }
 
@@ -35,8 +37,10 @@ export function validateTodo(input: unknown): Result<TodoInput> {
         return {ok: false, error: '请选择有效的截止日期。'}
     }
     if (typeof value.completed !== 'boolean') return {ok: false, error: '待办状态无效。'}
-    return {ok: true, data: {
-        id: value.id as string | undefined, title: value.title.trim(), notes: value.notes.trim(),
-        dueDate: value.dueDate as string, completed: value.completed
-    }}
+    return {
+        ok: true, data: {
+            id: value.id as string | undefined, title: value.title.trim(), notes: value.notes.trim(),
+            dueDate: value.dueDate as string, completed: value.completed
+        }
+    }
 }

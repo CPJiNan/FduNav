@@ -1,6 +1,6 @@
 import {app, BrowserWindow, dialog, ipcMain, type IpcMainEvent, type IpcMainInvokeEvent} from 'electron'
 import {join} from 'node:path'
-import {mkdirSync} from 'node:fs'
+import {existsSync, mkdirSync} from 'node:fs'
 import {pathToFileURL} from 'node:url'
 import {AppDatabase} from './database'
 import {registerAccountHandlers} from './accounts'
@@ -40,6 +40,10 @@ ipcMain.on('window:close', event => senderWindow(event)?.close())
 ipcMain.handle('window:is-maximized', event => senderWindow(event)?.isMaximized() ?? false)
 
 function createWindow(): void {
+    const icon = [
+        join(app.getAppPath(), 'resources/icon.png'),
+        join(__dirname, '../../resources/icon.png')
+    ].find(existsSync)
     const window = new BrowserWindow({
         width: 1000,
         height: 700,
@@ -47,6 +51,7 @@ function createWindow(): void {
         minHeight: 420,
         frame: false,
         title: 'FduNav',
+        icon,
         webPreferences: {
             preload: join(__dirname, '../preload/index.js'),
             contextIsolation: true,

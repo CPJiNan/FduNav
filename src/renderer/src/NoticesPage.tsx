@@ -60,9 +60,13 @@ export function NoticesPage({onLogin, noticeToOpen, onNoticeOpened}: {
             const request = ++version
             void api.list().then(result => {
                 if (active && request === version && result.ok) setList(result.data)
-            }).catch(() => {})
+            }).catch(() => {
+            })
         })
-        return () => { active = false; unsubscribe() }
+        return () => {
+            active = false;
+            unsubscribe()
+        }
     }, [api])
 
     useEffect(() => {
@@ -206,15 +210,20 @@ export function NoticesPage({onLogin, noticeToOpen, onNoticeOpened}: {
             if (result.ok) {
                 setChecked([])
             } else setError(result.error)
-        } catch { setError('无法加入摘要队列，请重试。') }
-        finally { setEnqueueing(false) }
+        } catch {
+            setError('无法加入摘要队列，请重试。')
+        } finally {
+            setEnqueueing(false)
+        }
     }
 
     function updateRelevance(value: NoticeRelevance | null) {
         if (!selected) return
         relevanceChoices.current.set(noticeKey(selected), value)
-        setList(current => ({...current, items: current.items.map(item => noticeKey(item) === noticeKey(selected)
-            ? {...item, relevance: value} : item)}))
+        setList(current => ({
+            ...current, items: current.items.map(item => noticeKey(item) === noticeKey(selected)
+                ? {...item, relevance: value} : item)
+        }))
         setSummary(current => current ? {...current, relevance: value} : current)
     }
 
@@ -224,7 +233,8 @@ export function NoticesPage({onLogin, noticeToOpen, onNoticeOpened}: {
     if (selected) return <article className="notices-page notice-detail">
         <button type="button" className="text-button" onClick={() => setSelected(null)}><Icon name="arrow"/>返回通知列表
         </button>
-        <h1>{relevance && <span className={`notice-relevance notice-relevance--${relevance}`}>{relevanceText(relevance)}</span>}{selected.title}</h1>
+        <h1>{relevance && <span
+            className={`notice-relevance notice-relevance--${relevance}`}>{relevanceText(relevance)}</span>}{selected.title}</h1>
         <div className="notice-meta">
             <time dateTime={selected.published}>{selected.published}</time>
             <span>{selected.sourceName}</span>
@@ -297,7 +307,10 @@ export function NoticesPage({onLogin, noticeToOpen, onNoticeOpened}: {
                         onClick={() => setFilterOpen(value => !value)}><Icon name="filter"/></button>
                 <button type="button" className={`icon-button ${multiSelect ? 'is-active' : ''}`}
                         aria-label="AI 摘要" title="AI 摘要" aria-pressed={multiSelect}
-                        onClick={() => { setMultiSelect(value => !value); setChecked([]) }}><Icon name="sparkles"/></button>
+                        onClick={() => {
+                            setMultiSelect(value => !value);
+                            setChecked([])
+                        }}><Icon name="sparkles"/></button>
                 <button type="button" className="icon-button" aria-label={loading ? '正在刷新通知' : '刷新通知'}
                         title={loading ? '正在刷新通知' : '刷新通知'} disabled={loading || !api}
                         onClick={() => void refresh()}><Icon name="refresh"/></button>
@@ -342,15 +355,20 @@ export function NoticesPage({onLogin, noticeToOpen, onNoticeOpened}: {
             .map(source => <p className="account-error" role="alert"
                               key={source.id}>{source.name}：{source.lastError}</p>)}
         <div className="notice-list" aria-busy={loading}>
-            {items.map(item => <div className={`notice-row ${multiSelect ? 'notice-row--selectable' : ''}`} key={`${item.sourceId}:${item.url}`}>
+            {items.map(item => <div className={`notice-row ${multiSelect ? 'notice-row--selectable' : ''}`}
+                                    key={`${item.sourceId}:${item.url}`}>
                 {multiSelect && <input type="checkbox" aria-label={`选择通知：${item.title}`}
-                                       checked={checked.includes(noticeKey(item))} onChange={event => setChecked(value =>
-                    event.target.checked ? [...value, noticeKey(item)] : value.filter(key => key !== noticeKey(item)))}/>}
+                                       checked={checked.includes(noticeKey(item))}
+                                       onChange={event => setChecked(value =>
+                                           event.target.checked ? [...value, noticeKey(item)] : value.filter(key => key !== noticeKey(item)))}/>}
                 <button type="button" className="notice-open" onClick={() => setSelected(item)}>
                     <time dateTime={item.published}>
                         <strong>{item.published.slice(5)}</strong><span>{item.published.slice(0, 4)}</span></time>
-                    <div><h2><span className="notice-source-badge">{item.sourceName}</span>{effectiveRelevance(item, item.relevance) &&
-                        <span className={`notice-relevance notice-relevance--${effectiveRelevance(item, item.relevance)}`}>{relevanceText(effectiveRelevance(item, item.relevance))}</span>}{item.title}</h2>
+                    <div><h2><span
+                        className="notice-source-badge">{item.sourceName}</span>{effectiveRelevance(item, item.relevance) &&
+                        <span
+                            className={`notice-relevance notice-relevance--${effectiveRelevance(item, item.relevance)}`}>{relevanceText(effectiveRelevance(item, item.relevance))}</span>}{item.title}
+                    </h2>
                     </div>
                     <Icon name="chevron"/></button>
             </div>)}

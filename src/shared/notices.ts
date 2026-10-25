@@ -69,6 +69,7 @@ export interface NoticesAPI {
     setRelevance(notice: NoticeRef, relevance: NoticeRelevanceChoice): Promise<Result<NoticeRelevance | null>>
 
     onSummaryQueueChanged(callback: (tasks: SummaryTask[]) => void): () => void
+
     list(refresh?: boolean): Promise<Result<NoticeList>>
 
     detail(notice: NoticeRef): Promise<Result<NoticeDetail>>
