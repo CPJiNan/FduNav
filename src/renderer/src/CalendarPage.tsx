@@ -30,7 +30,9 @@ export function CalendarPage() {
     const [error, setError] = useState('')
     const [eventError, setEventError] = useState('')
     const [agendaDays, setAgendaDays] = useState(30)
-    const [editor, setEditor] = useState<{ item: CalendarOccurrence | null; create: boolean } | null>(null)
+    const [editor, setEditor] = useState<{
+        item: CalendarOccurrence | null; create: boolean; date: string; startMinute: number
+    } | null>(null)
     const [settingsOpen, setSettingsOpen] = useState(false)
     const requestId = useRef(0)
     const eventRequestId = useRef(0)
@@ -163,9 +165,9 @@ export function CalendarPage() {
         setTodayJump(value => value + 1)
     }
 
-    function openItem(item: CalendarOccurrence | null) {
+    function openItem(item: CalendarOccurrence | null, initialDate = date, startMinute = 9 * 60) {
         previousFocus.current = document.activeElement as HTMLElement
-        setEditor({item, create: !item})
+        setEditor({item, create: !item, date: initialDate, startMinute})
     }
 
     function closeEditor() {
@@ -249,11 +251,13 @@ export function CalendarPage() {
                 <CalendarTimeline mode={view} date={date} today={today} items={items}
                                   onDate={value => chooseDate(value, view === 'week' ? 'day' : undefined)}
                                   onOpen={openItem}
-                                  onNavigate={amount => chooseDate(shiftCalendarDate(date, 'week', amount))}/>}
+                                  onCreate={(day, minute) => openItem(null, day, minute)}
+                                  onNavigate={amount => chooseDate(shiftCalendarDate(date, view, amount))}/>}
             {view === 'agenda' && <CalendarAgenda items={items} onOpen={openItem}
                                                   onMore={agendaDays < 360 ? () => setAgendaDays(value => value + 30) : undefined}/>}
         </div>
-        {editor && <CalendarEventDialog date={date} item={editor.item} create={editor.create} onClose={closeEditor}
+        {editor && <CalendarEventDialog date={editor.date} startMinute={editor.startMinute}
+                                        item={editor.item} create={editor.create} onClose={closeEditor}
                                         onSaved={event => {
                                             eventRequestId.current++
                                             setEventsLoading(false)

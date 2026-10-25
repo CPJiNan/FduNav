@@ -3,26 +3,35 @@ import {
     type CalendarEvent,
     type CalendarEventInput,
     type CalendarOccurrence,
+    calendarDate,
+    timeLabel,
     validateCalendarEvent
 } from '../../shared/calendar'
+import {dateAfter} from '../../shared/timetable'
 import {eventTime} from './CalendarViews'
 import {Icon} from './Icon'
 
-export function CalendarEventDialog({date, item, create, onClose, onSaved, onRemoved}: {
-    date: string; item: CalendarOccurrence | null; create: boolean; onClose: () => void;
+export function CalendarEventDialog({date, startMinute = 9 * 60, item, create, onClose, onSaved, onRemoved}: {
+    date: string; startMinute?: number; item: CalendarOccurrence | null; create: boolean; onClose: () => void;
     onSaved: (event: CalendarEvent) => void; onRemoved: (id: string) => void
 }) {
     const dialog = useRef<HTMLDialogElement>(null)
     const [editing, setEditing] = useState(create)
-    const [draft, setDraft] = useState<CalendarEventInput>(() => item?.event ?? {
-        title: '',
-        startDate: date,
-        endDate: date,
-        startTime: '09:00',
-        endTime: '10:00',
-        allDay: false,
-        location: '',
-        notes: '',
+    const [draft, setDraft] = useState<CalendarEventInput>(() => {
+        if (item?.event) return item.event
+        const nextDay = dateAfter(date, 1)
+        const crossesMidnight = startMinute + 60 >= 1440
+        const endDate = crossesMidnight && calendarDate(nextDay) ? nextDay : date
+        return {
+            title: '',
+            startDate: date,
+            endDate,
+            startTime: timeLabel(startMinute),
+            endTime: timeLabel(endDate !== date ? (startMinute + 60) % 1440 : Math.min(startMinute + 60, 1439)),
+            allDay: false,
+            location: '',
+            notes: '',
+        }
     })
     const [error, setError] = useState('')
     const [busy, setBusy] = useState(false)
