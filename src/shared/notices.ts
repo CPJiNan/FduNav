@@ -14,6 +14,7 @@ export interface NoticeRef {
 
 export interface Notice extends ParsedNotice, NoticeRef {
     sourceName: string
+    read: boolean
     relevance?: NoticeRelevance | null
 }
 
@@ -36,7 +37,7 @@ export type NoticeBodyNode = { type: 'text'; text: string } |
 
 export interface NoticeDetail {
     content: string;
-    body?: NoticeBodyNode[]
+    body: NoticeBodyNode[]
     imageCount: number;
     requiresLogin: boolean
     attachments: { name: string; url: string }[]
@@ -65,6 +66,8 @@ export interface NoticesAPI {
     removeSummaries(ids: string[]): Promise<Result<void>>
 
     getNotice(notice: NoticeRef): Promise<Result<Notice>>
+
+    markRead(notice: NoticeRef): Promise<Result<void>>
 
     setRelevance(notice: NoticeRef, relevance: NoticeRelevanceChoice): Promise<Result<NoticeRelevance | null>>
 

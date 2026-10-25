@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "FduNav",
+  "author": "yutong",
   "main": "./out/main/index.js",
   "engines": {
     "node": "^22.13.0 || >=24.0.0"
@@ -11,6 +12,8 @@
     "dev": "electron-vite dev",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "build": "npm run typecheck && electron-vite build",
+    "build:win": "npm run build && npx --yes electron-builder@26.0.12 --win --x64",
+    "build:win:dir": "npm run build && npx --yes electron-builder@26.0.12 --win --x64 --dir",
     "start": "electron-vite preview"
   },
   "dependencies": {

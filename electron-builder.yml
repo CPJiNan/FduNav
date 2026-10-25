@@ -1,0 +1,28 @@
+appId: top.cpjinan.fdunav
+productName: FduNav
+directories:
+  buildResources: resources
+  output: release
+files:
+  - out/**/*
+  - resources/icon.png
+  - package.json
+asar: true
+asarUnpack:
+  - node_modules/@napi-rs/**/*
+npmRebuild: false
+win:
+  icon: resources/icon.png
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: ${productName}-${version}-Setup-${arch}.${ext}
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: FduNav
+  deleteAppDataOnUninstall: false

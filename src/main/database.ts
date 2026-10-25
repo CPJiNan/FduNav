@@ -72,6 +72,11 @@ export class AppDatabase {
                 PRIMARY KEY (source_id, url)
             );
             CREATE INDEX IF NOT EXISTS notices_published ON notices (published DESC);
+            CREATE TABLE IF NOT EXISTS notice_reads (
+                username TEXT NOT NULL, source_id TEXT NOT NULL, url TEXT NOT NULL,
+                PRIMARY KEY (username, source_id, url),
+                FOREIGN KEY (source_id, url) REFERENCES notices (source_id, url) ON DELETE CASCADE
+            );
             CREATE TABLE IF NOT EXISTS notice_relevance_choices (
                 username TEXT NOT NULL, source_id TEXT NOT NULL, url TEXT NOT NULL,
                 relevance TEXT NOT NULL CHECK (relevance IN ('related', 'maybe', 'none')),
@@ -95,30 +100,8 @@ export class AppDatabase {
                 FOREIGN KEY (source_id, url) REFERENCES notices (source_id, url) ON DELETE CASCADE
             );
         `)
-        if (this.db.prepare('PRAGMA table_info(notice_relevance_choices)').all().some(column => column.name === 'related')) {
-            this.db.exec('BEGIN IMMEDIATE')
-            try {
-                this.db.exec(`
-                    ALTER TABLE notice_relevance_choices RENAME TO notice_relevance_choices_legacy;
-                    CREATE TABLE notice_relevance_choices (
-                        username TEXT NOT NULL, source_id TEXT NOT NULL, url TEXT NOT NULL,
-                        relevance TEXT NOT NULL CHECK (relevance IN ('related', 'maybe', 'none')),
-                        PRIMARY KEY (username, source_id, url),
-                        FOREIGN KEY (source_id, url) REFERENCES notices (source_id, url) ON DELETE CASCADE
-                    );
-                    INSERT INTO notice_relevance_choices (username, source_id, url, relevance)
-                        SELECT username, source_id, url, CASE related WHEN 1 THEN 'related' ELSE 'none' END
-                        FROM notice_relevance_choices_legacy;
-                    DROP TABLE notice_relevance_choices_legacy;
-                    COMMIT;
-                `)
-            } catch (error) {
-                this.db.exec('ROLLBACK')
-                throw error
-            }
-        }
         this.db.exec('PRAGMA foreign_keys = ON;')
-        this.syncSources()
+        this.initializeSources()
     }
 
     getTodos(username: string): Todo[] {
@@ -224,7 +207,6 @@ export class AppDatabase {
         if (!row) return emptyMessagePreferences()
         const result = validateMessagePreferences(JSON.parse(String(row.value)))
         if (!result.ok) throw new Error('Invalid saved message preferences')
-        if (JSON.stringify(result.data) !== row.value) this.setMessagePreferences(result.data)
         return result.data
     }
 
@@ -236,31 +218,42 @@ export class AppDatabase {
         return result.data
     }
 
-    getNotices(): NoticeList {
-        const items = this.db.prepare(`SELECT n.url, n.title, n.published, n.source_id AS sourceId, s.name AS sourceName
+    getNotices(username = this.getAccount()?.username ?? ''): NoticeList {
+        const rows = this.db.prepare(`SELECT n.url, n.title, n.published, n.source_id AS sourceId, s.name AS sourceName,
+                                            r.url IS NOT NULL AS read
                                        FROM notices n
                                                 JOIN message_sources s ON s.id = n.source_id
+                                                LEFT JOIN notice_reads r ON r.source_id = n.source_id AND r.url = n.url AND r.username = ?
                                        WHERE s.enabled = 1
-                                       ORDER BY n.published DESC, n.title, n.source_id`).all() as unknown as Notice[]
+                                       ORDER BY n.published DESC, n.title, n.source_id`).all(username) as unknown as (Omit<Notice, 'read'> & {read: number})[]
+        const items = rows.map(row => ({...row, read: !!row.read}))
         const sources = this.getSources()
         const updatedAt = sources.filter(source => source.enabled && source.updatedAt).map(source => source.updatedAt!).sort().at(-1) ?? null
         return {items, updatedAt, sources}
     }
 
-    hasNotice(url: string, sourceId = 'jwc') {
+    hasNotice(url: string, sourceId: string) {
         return !!this.db.prepare('SELECT 1 FROM notices WHERE url = ? AND source_id = ?').get(url, sourceId)
     }
 
-    getNotice(sourceId: string, url: string): Notice | null {
-        return this.db.prepare(`SELECT n.url,
+    getNotice(sourceId: string, url: string, username = this.getAccount()?.username ?? ''): Notice | null {
+        const row = this.db.prepare(`SELECT n.url,
                                        n.title,
                                        n.published,
                                        n.source_id AS sourceId,
-                                       s.name      AS sourceName
+                                       s.name      AS sourceName,
+                                       r.url IS NOT NULL AS read
                                 FROM notices n
                                          JOIN message_sources s ON s.id = n.source_id
+                                         LEFT JOIN notice_reads r ON r.source_id = n.source_id AND r.url = n.url AND r.username = ?
                                 WHERE n.source_id = ?
-                                  AND n.url = ?`).get(sourceId, url) as unknown as Notice ?? null
+                                  AND n.url = ?`).get(username, sourceId, url) as unknown as (Omit<Notice, 'read'> & {read: number}) | undefined
+        return row ? {...row, read: !!row.read} : null
+    }
+
+    markNoticeRead(username: string, sourceId: string, url: string) {
+        this.db.prepare(`INSERT INTO notice_reads (username, source_id, url) VALUES (?, ?, ?)
+                         ON CONFLICT(username, source_id, url) DO NOTHING`).run(username, sourceId, url)
     }
 
     getNoticeRelevanceChoice(username: string, sourceId: string, url: string): NoticeRelevanceChoice | null {
@@ -303,7 +296,7 @@ export class AppDatabase {
             .run(sourceId, url, cacheKey, model, summary, relevance, new Date().toISOString())
     }
 
-    saveNotices(items: ParsedNotice[], sourceId = 'jwc', expectedRevision?: number, listUrl?: string) {
+    saveNotices(items: ParsedNotice[], sourceId: string, expectedRevision?: number, listUrl?: string) {
         this.db.exec('BEGIN IMMEDIATE')
         try {
             const source = this.getSource(sourceId)
@@ -367,43 +360,13 @@ export class AppDatabase {
         this.db.close()
     }
 
-    private syncSources() {
-        type Row = { id: string; name: string; url: string; enabled: number; revision: number }
-        const rows = this.db.prepare('SELECT id, name, url, enabled, revision FROM message_sources')
-            .all() as unknown as Row[]
+    private initializeSources() {
         this.db.exec('BEGIN IMMEDIATE')
         try {
-            const remove = this.db.prepare('DELETE FROM message_sources WHERE id = ?')
-            const insert = this.db.prepare(`INSERT INTO message_sources
-                                                (id, name, url, enabled, revision, list_url, updated_at, last_error)
-                                            VALUES (?, ?, ?, ?, 1, NULL, NULL, NULL)`)
+            const insert = this.db.prepare(`INSERT INTO message_sources (id, name, url, enabled)
+                                            VALUES (?, ?, ?, ?) ON CONFLICT(id) DO NOTHING`)
             for (const source of defaultSources) {
-                const current = rows.find(row => row.id === source.id)
-                if (current) {
-                    if (current.url !== source.url) {
-                        const conflict = rows.find(row => row.id !== source.id && row.url === source.url)
-                        if (conflict) remove.run(conflict.id)
-                        this.db.prepare('DELETE FROM notices WHERE source_id = ?').run(source.id)
-                        this.db.prepare(`UPDATE message_sources
-                                         SET name       = ?,
-                                             url        = ?,
-                                             revision   = revision + 1,
-                                             list_url   = NULL,
-                                             updated_at = NULL,
-                                             last_error = NULL
-                                         WHERE id = ?`)
-                            .run(source.name, source.url, source.id)
-                    } else if (current.name !== source.name) {
-                        this.db.prepare('UPDATE message_sources SET name = ? WHERE id = ?').run(source.name, source.id)
-                    }
-                    continue
-                }
-                const adopted = rows.find(row => row.url === source.url)
-                if (adopted) remove.run(adopted.id)
-                insert.run(source.id, source.name, source.url, adopted ? adopted.enabled : Number(source.enabled))
-            }
-            for (const row of rows) {
-                if (!defaultSources.some(source => source.id === row.id)) remove.run(row.id)
+                insert.run(source.id, source.name, source.url, Number(source.enabled))
             }
             this.db.exec('COMMIT')
         } catch (error) {
