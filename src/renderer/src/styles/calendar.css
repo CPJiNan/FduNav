@@ -446,10 +446,6 @@
     grid-template-columns: 52px repeat(7, minmax(0, 1fr));
 }
 
-.calendar-timeline-day .calendar-date-strip {
-    grid-template-columns: 52px minmax(0, 1fr);
-}
-
 .calendar-date-strip .calendar-date-button {
     min-height: 84px;
 }

@@ -36,10 +36,10 @@ interface PeriodNavigationProps {
     onNavigate: (amount: number) => void
 }
 
-function CalendarPeriodButton({date, direction, onNavigate, mode}: PeriodNavigationProps & {
-    date: string; direction: -1 | 1; mode: 'week' | 'day'
+function CalendarPeriodButton({date, direction, onNavigate}: PeriodNavigationProps & {
+    date: string; direction: -1 | 1
 }) {
-    const label = `${direction < 0 ? '上一' : '下一'}${mode === 'week' ? '周' : '天'}`
+    const label = direction < 0 ? '上一周' : '下一周'
     return <button type="button" className={`calendar-period-button ${direction < 0 ? 'is-previous' : ''}`}
                    aria-label={label} title={label}
                    disabled={date === (direction < 0 ? '1900-01-01' : '2100-12-31')}
@@ -104,13 +104,10 @@ export function CalendarDateStrip({
                                       date,
                                       today,
                                       onDate,
-                                      onNavigate,
-                                      mode
-                                  }: Pick<ViewProps, 'date' | 'today' | 'onDate'> & Partial<PeriodNavigationProps> & {
-    mode: 'week' | 'day'
-}) {
+                                      onNavigate
+                                  }: Pick<ViewProps, 'date' | 'today' | 'onDate'> & Partial<PeriodNavigationProps>) {
     const first = weekStartDate(date)
-    const dates = mode === 'week' ? calendarWeekdays.map((_, index) => dateAfter(first, index)) : [date]
+    const dates = calendarWeekdays.map((_, index) => dateAfter(first, index))
     return <div className="calendar-date-strip"><span aria-hidden="true"/>{dates.map((dayDate, index) => {
         const day = calendarWeekdays[asDate(dayDate).getUTCDay()]
         return <div className="calendar-weekday-cell" key={day}>
@@ -119,10 +116,10 @@ export function CalendarDateStrip({
                     aria-label={dateLabel(dayDate)} aria-pressed={dayDate === date} onClick={() => onDate(dayDate)}>
                 <small>{day}</small><span>{Number(dayDate.slice(8))}</span><small>{lunarDate(dayDate)}</small>
             </button>
-            {onNavigate && (mode === 'day' || index === 0) &&
-                <CalendarPeriodButton date={date} direction={-1} mode={mode} onNavigate={onNavigate}/>}
-            {onNavigate && (mode === 'day' || index === 6) &&
-                <CalendarPeriodButton date={date} direction={1} mode={mode} onNavigate={onNavigate}/>}</div>
+            {onNavigate && index === 0 &&
+                <CalendarPeriodButton date={date} direction={-1} onNavigate={onNavigate}/>}
+            {onNavigate && index === 6 &&
+                <CalendarPeriodButton date={date} direction={1} onNavigate={onNavigate}/>}</div>
     })}</div>
 }
 
@@ -149,7 +146,7 @@ export function CalendarTimeline({
              aria-label={mode === 'week' ? '每周课表' : '当天时间轴'}>
             <div className="calendar-time-content">
                 <div className="calendar-time-heading">
-                    <CalendarDateStrip date={date} today={today} onDate={onDate} onNavigate={onNavigate} mode={mode}/>
+                    <CalendarDateStrip date={date} today={today} onDate={onDate} onNavigate={onNavigate}/>
                     <div className="calendar-time-columns calendar-all-day"><span>全天</span>
                         {dates.map(day => <div
                             key={day}>{items.filter(item => item.date === day && item.allDay).map(item =>

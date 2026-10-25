@@ -252,7 +252,7 @@ export function CalendarPage() {
                                   onDate={value => chooseDate(value, view === 'week' ? 'day' : undefined)}
                                   onOpen={openItem}
                                   onCreate={(day, minute) => openItem(null, day, minute)}
-                                  onNavigate={amount => chooseDate(shiftCalendarDate(date, view, amount))}/>}
+                                  onNavigate={amount => chooseDate(shiftCalendarDate(date, 'week', amount))}/>}
             {view === 'agenda' && <CalendarAgenda items={items} onOpen={openItem}
                                                   onMore={agendaDays < 360 ? () => setAgendaDays(value => value + 30) : undefined}/>}
         </div>
