@@ -47,7 +47,9 @@ export function NoticesPage({onLogin, noticeToOpen, onNoticeOpened}: {
 
     useEffect(() => {
         mounted.current = true
-        return () => { mounted.current = false }
+        return () => {
+            mounted.current = false
+        }
     }, [])
 
     useEffect(() => {
@@ -60,8 +62,10 @@ export function NoticesPage({onLogin, noticeToOpen, onNoticeOpened}: {
         setList(current => ({...current}))
         void api.markRead({sourceId: selected.sourceId, url: selected.url}).then(result => {
             if (!result.ok) throw new Error(result.error)
-            if (mounted.current) setList(current => ({...current, items: current.items.map(item =>
-                noticeKey(item) === key ? {...item, read: true} : item)}))
+            if (mounted.current) setList(current => ({
+                ...current, items: current.items.map(item =>
+                    noticeKey(item) === key ? {...item, read: true} : item)
+            }))
         }).catch(() => {
             if (!mounted.current) return
             readNotices.current.delete(key)
@@ -397,8 +401,10 @@ export function NoticesPage({onLogin, noticeToOpen, onNoticeOpened}: {
                         className="notice-source-badge">{item.sourceName}</span>{effectiveRelevance(item, item.relevance) &&
                         <span
                             className={`notice-relevance notice-relevance--${effectiveRelevance(item, item.relevance)}`}>{relevanceText(effectiveRelevance(item, item.relevance))}</span>}{item.title}
-                        <span className={`notice-read-indicator${!item.read && !readNotices.current.has(noticeKey(item)) ? ' is-unread' : ''}`}
-                              role="img" aria-label="未读" aria-hidden={item.read || readNotices.current.has(noticeKey(item))}/>
+                        <span
+                            className={`notice-read-indicator${!item.read && !readNotices.current.has(noticeKey(item)) ? ' is-unread' : ''}`}
+                            role="img" aria-label="未读"
+                            aria-hidden={item.read || readNotices.current.has(noticeKey(item))}/>
                     </h2>
                     </div>
                     <Icon name="chevron"/></button>

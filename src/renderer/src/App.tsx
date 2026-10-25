@@ -205,7 +205,8 @@ export default function App() {
                             </div>
                         </div>
                         {showNoticesPage && accountLoaded && (!window.accounts || account?.status === 'signed-in') &&
-                            <NoticesPage key={account?.username} noticeToOpen={noticeToOpen} onNoticeOpened={() => setNoticeToOpen(null)}
+                            <NoticesPage key={account?.username} noticeToOpen={noticeToOpen}
+                                         onNoticeOpened={() => setNoticeToOpen(null)}
                                          onLogin={() => {
                                              setTab('account');
                                              setSettings(true)

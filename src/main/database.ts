@@ -225,7 +225,9 @@ export class AppDatabase {
                                                 JOIN message_sources s ON s.id = n.source_id
                                                 LEFT JOIN notice_reads r ON r.source_id = n.source_id AND r.url = n.url AND r.username = ?
                                        WHERE s.enabled = 1
-                                       ORDER BY n.published DESC, n.title, n.source_id`).all(username) as unknown as (Omit<Notice, 'read'> & {read: number})[]
+                                       ORDER BY n.published DESC, n.title, n.source_id`).all(username) as unknown as (Omit<Notice, 'read'> & {
+            read: number
+        })[]
         const items = rows.map(row => ({...row, read: !!row.read}))
         const sources = this.getSources()
         const updatedAt = sources.filter(source => source.enabled && source.updatedAt).map(source => source.updatedAt!).sort().at(-1) ?? null
@@ -247,7 +249,9 @@ export class AppDatabase {
                                          JOIN message_sources s ON s.id = n.source_id
                                          LEFT JOIN notice_reads r ON r.source_id = n.source_id AND r.url = n.url AND r.username = ?
                                 WHERE n.source_id = ?
-                                  AND n.url = ?`).get(username, sourceId, url) as unknown as (Omit<Notice, 'read'> & {read: number}) | undefined
+                                  AND n.url = ?`).get(username, sourceId, url) as unknown as (Omit<Notice, 'read'> & {
+            read: number
+        }) | undefined
         return row ? {...row, read: !!row.read} : null
     }
 
