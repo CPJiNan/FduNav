@@ -12,6 +12,12 @@ interface ReadingRule {
 }
 
 export const sourceReadingRules: Record<SourceId, ReadingRule> = {
+    fao: {
+        link: 'a[href*="page.htm"]',
+        row: 'li, tr',
+        article: '.wp_articlecontent',
+        pdf: '[pdfsrc], a[href], iframe[src], embed[src], object[data]',
+    },
     jwc: {
         link: 'a[href*="page.htm"]',
         row: 'li, tr',

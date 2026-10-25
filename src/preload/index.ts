@@ -40,6 +40,7 @@ contextBridge.exposeInMainWorld('llm', llm)
 const sources: SourcesAPI = {
     list: () => ipcRenderer.invoke('sources:list'),
     setEnabled: (id, enabled) => ipcRenderer.invoke('sources:set-enabled', {id, enabled}),
+    reorder: ids => ipcRenderer.invoke('sources:reorder', ids),
 }
 contextBridge.exposeInMainWorld('sources', sources)
 
