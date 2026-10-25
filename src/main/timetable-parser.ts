@@ -76,6 +76,7 @@ export function parseUndergraduateCourses(body: string): TimetableCourse[] {
         const endUnit = integer(activity.endUnit, startUnit, 15)
         return {
             id: `${activity.lessonId ?? ''}-${activity.lessonCode ?? ''}-${index}`,
+            lessonId: activity.lessonId == null ? undefined : String(integer(activity.lessonId, 1, Number.MAX_SAFE_INTEGER)),
             name: text(activity.courseName), teachers: teachers.map(value => text(value)),
             room: text(activity.room, true), weekday, startUnit, endUnit,
             weeks: [...new Set(weeks.map(week => integer(week, 1, 60)))].sort((a, b) => a - b),

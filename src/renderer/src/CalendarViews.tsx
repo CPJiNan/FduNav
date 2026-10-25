@@ -1,6 +1,7 @@
 import {useEffect, useRef} from 'react'
 import {
     asDate,
+    calendarDate,
     type CalendarOccurrence,
     calendarWeekdays,
     layoutCalendarDay,
@@ -16,6 +17,7 @@ import {Icon} from './Icon'
 export const occurrenceColor = (item: CalendarOccurrence) => item.course ? courseColor(item.course) : calendarEventColor(item.event?.id ?? item.key)
 export const eventTime = (item: CalendarOccurrence) => item.allDay ? '全天' : `${timeLabel(item.startMinute)}–${timeLabel(item.endMinute)}`
 const dateLabel = (date: string) => `${Number(date.slice(0, 4))}年${Number(date.slice(5, 7))}月${Number(date.slice(8))}日`
+const timeSlots = Array.from({length: 24}, (_, hour) => ({minute: hour * 60, label: timeLabel(hour * 60)}))
 const groupByDate = (items: CalendarOccurrence[]) => {
     const groups = new Map<string, CalendarOccurrence[]>()
     for (const item of items) groups.set(item.date, [...(groups.get(item.date) ?? []), item])
@@ -105,16 +107,19 @@ export function CalendarDateStrip({
                                       onNavigate
                                   }: Pick<ViewProps, 'date' | 'today' | 'onDate'> & Partial<PeriodNavigationProps>) {
     const first = weekStartDate(date)
-    return <div className="calendar-date-strip"><span aria-hidden="true"/>{calendarWeekdays.map((day, index) => {
-        const dayDate = dateAfter(first, index)
+    const dates = calendarWeekdays.map((_, index) => dateAfter(first, index))
+    return <div className="calendar-date-strip"><span aria-hidden="true"/>{dates.map((dayDate, index) => {
+        const day = calendarWeekdays[asDate(dayDate).getUTCDay()]
         return <div className="calendar-weekday-cell" key={day}>
             <button type="button"
                     className={`calendar-date-button ${dayDate === today ? 'is-today' : ''} ${dayDate === date ? 'is-selected' : ''}`}
                     aria-label={dateLabel(dayDate)} aria-pressed={dayDate === date} onClick={() => onDate(dayDate)}>
                 <small>{day}</small><span>{Number(dayDate.slice(8))}</span><small>{lunarDate(dayDate)}</small>
             </button>
-            {onNavigate && (index === 0 || index === 6) &&
-                <CalendarPeriodButton date={date} direction={index === 0 ? -1 : 1} onNavigate={onNavigate}/>}</div>
+            {onNavigate && index === 0 &&
+                <CalendarPeriodButton date={date} direction={-1} onNavigate={onNavigate}/>}
+            {onNavigate && index === 6 &&
+                <CalendarPeriodButton date={date} direction={1} onNavigate={onNavigate}/>}</div>
     })}</div>
 }
 
@@ -124,9 +129,12 @@ export function CalendarTimeline({
                                      items,
                                      onDate,
                                      onOpen,
+                                     onCreate,
                                      mode,
                                      onNavigate
-                                 }: ViewProps & PeriodNavigationProps & { mode: 'week' | 'day' }) {
+                                 }: ViewProps & PeriodNavigationProps & {
+    mode: 'week' | 'day'; onCreate: (date: string, startMinute: number) => void
+}) {
     const scroll = useRef<HTMLDivElement>(null)
     const start = mode === 'week' ? weekStartDate(date) : date
     const dates = Array.from({length: mode === 'week' ? 7 : 1}, (_, index) => dateAfter(start, index))
@@ -150,9 +158,15 @@ export function CalendarTimeline({
                 <div className="calendar-time-columns calendar-hour-grid">
                     <div className="calendar-hours">{Array.from({length: 24}, (_, hour) => <div key={hour}>
                         <span>{String(hour).padStart(2, '0')}:00</span></div>)}</div>
-                    {dates.map(day => <div className="calendar-time-day-column" key={day}>
-                        {Array.from({length: 24}, (_, hour) => <div className="calendar-hour-line" key={hour}/>)}
-                        {layoutCalendarDay(items.filter(item => item.date === day && !item.allDay)).map(({
+                    {dates.map(day => {
+                        const timedItems = items.filter(item => item.date === day && !item.allDay)
+                        return <div className="calendar-time-day-column" key={day}>
+                            {timeSlots.map(slot => <button type="button" className="calendar-hour-line calendar-create-slot"
+                                                           key={slot.label}
+                                                           disabled={!calendarDate(day)}
+                                                           aria-label={`${dateLabel(day)} ${slot.label} 新建日程`}
+                                                           onClick={() => onCreate(day, slot.minute)}/>)}
+                            {layoutCalendarDay(timedItems).map(({
                                                                                                              item,
                                                                                                              lane,
                                                                                                              lanes
@@ -161,17 +175,18 @@ export function CalendarTimeline({
                                     onClick={() => onOpen(item)}
                                     style={{
                                         backgroundColor: occurrenceColor(item),
-                                        top: `calc(${item.startMinute / 60} * var(--calendar-hour-height) + 2px)`,
-                                        height: `max(24px, calc(${(item.endMinute - item.startMinute) / 60} * var(--calendar-hour-height) - 4px))`,
-                                        left: `calc(${100 * lane / lanes}% + 3px)`,
-                                        width: `calc(${100 / lanes}% - 6px)`
+                                        top: `calc(${item.startMinute / 60} * var(--calendar-hour-height))`,
+                                        height: `calc(${(item.endMinute - item.startMinute) / 60} * var(--calendar-hour-height))`,
+                                        left: `${100 * lane / lanes}%`,
+                                        width: `${100 / lanes}%`
                                     }}
                                     aria-label={`${item.title}，${eventTime(item)}，${item.location}`}>
                                 <strong>{item.title}</strong><span>{eventTime(item)}</span>{item.location &&
                                 <span>{item.location}</span>}
                                 {item.course && <small>第 {item.course.startUnit}–{item.course.endUnit} 节</small>}
                             </button>)}
-                    </div>)}
+                        </div>
+                    })}
                 </div>
             </div>
         </div>

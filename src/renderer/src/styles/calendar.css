@@ -540,6 +540,29 @@
     border-left: 1px solid var(--color-border-subtle);
 }
 
+.calendar-create-slot {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    border-bottom: 1px solid var(--color-border-subtle);
+    border-radius: 0;
+    background: transparent;
+}
+
+.calendar-create-slot:disabled {
+    cursor: default;
+    opacity: 1;
+}
+
+.calendar-create-slot:hover:not(:disabled), .calendar-create-slot:focus-visible {
+    background: var(--color-bg-hover);
+}
+
+.calendar-create-slot:focus-visible {
+    outline-offset: -3px;
+}
+
 .calendar-timed-event {
     position: absolute;
     display: flex;

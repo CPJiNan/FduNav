@@ -8,6 +8,7 @@ export interface Semester {
 
 export interface TimetableCourse {
     id: string
+    lessonId?: string
     name: string
     teachers: string[]
     room: string
@@ -30,6 +31,13 @@ export interface TimetableAPI {
     get(options?: { refresh?: boolean; semesterId?: string }): Promise<Result<Timetable>>
 
     setStartDate(date: string): Promise<Result<Timetable>>
+
+    openSyllabus(courseId: string): Promise<Result<void>>
+}
+
+export function courseSyllabusUrl({lessonId}: Pick<TimetableCourse, 'lessonId'>): string | null {
+    if (!lessonId || !/^[1-9]\d*$/.test(lessonId) || !Number.isSafeInteger(Number(lessonId))) return null
+    return `https://fdjwgl.fudan.edu.cn/student/for-std/lesson-search/teachingSyllabusInfo/${lessonId}`
 }
 
 export const courseStartTimes = ['08:00', '08:55', '09:55', '10:50', '11:45', '13:30', '14:25', '15:25',

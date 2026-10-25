@@ -1,9 +1,9 @@
-import {BrowserWindow, ipcMain, type IpcMainInvokeEvent} from 'electron'
+import {BrowserWindow, ipcMain, type IpcMainInvokeEvent, shell} from 'electron'
 import type {AppDatabase} from './database'
 import type {AccountService} from './accounts'
 import {AuthError} from './fudan-auth.ts'
 import type {Result} from '../shared/accounts'
-import {type Timetable, validDate} from '../shared/timetable.ts'
+import {courseSyllabusUrl, type Timetable, validDate} from '../shared/timetable.ts'
 import {parsePostgraduateCourses, parseSemesters, parseUndergraduateCourses} from './timetable-parser.ts'
 
 const timetableUrl = 'https://fdjwgl.fudan.edu.cn/student/for-std/course-table'
@@ -80,6 +80,21 @@ export function registerTimetableHandlers(db: AppDatabase, accounts: AccountServ
             return promise
         } catch (error) {
             return {ok: false, error: error instanceof AuthError ? error.message : '获取课表失败，请稍后重试。'}
+        }
+    })
+    ipcMain.handle('timetable:open-syllabus', async (event, courseId: unknown): Promise<Result<void>> => {
+        if (!trusted(event)) return {ok: false, error: '请求来源无效。'}
+        try {
+            if (typeof courseId !== 'string' || !courseId || courseId.length > 500) throw new AuthError('课程编号无效。')
+            const {username, kind} = context()
+            const course = db.getTimetable(username, kind)?.courses.find(item => item.id === courseId)
+            if (!course) throw new AuthError('未找到这门课程，请刷新课表后重试。')
+            const url = courseSyllabusUrl(course)
+            if (!url) throw new AuthError('这门课程缺少教学班编号，暂时无法直接打开教学大纲。')
+            await shell.openExternal(url)
+            return {ok: true, data: undefined}
+        } catch (error) {
+            return {ok: false, error: error instanceof AuthError ? error.message : '无法打开教学大纲，请检查默认浏览器后重试。'}
         }
     })
     ipcMain.handle('timetable:set-start-date', (event, value: unknown): Result<Timetable> => {
