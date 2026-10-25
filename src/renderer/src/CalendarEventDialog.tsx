@@ -76,6 +76,24 @@ export function CalendarEventDialog({date, startMinute = 9 * 60, item, create, o
         }
     }
 
+    async function openSyllabus() {
+        if (busy || !item?.course) return
+        if (!window.timetable) {
+            setError('教学大纲服务未加载，请重启应用后重试。')
+            return
+        }
+        setBusy(true)
+        setError('')
+        try {
+            const result = await window.timetable.openSyllabus(item.course.id)
+            if (!result.ok) setError(result.error)
+        } catch {
+            setError('无法打开教学大纲，请稍后重试。')
+        } finally {
+            setBusy(false)
+        }
+    }
+
     async function remove() {
         if (busy || !window.calendar || !item?.event) return
         setBusy(true)
@@ -166,6 +184,10 @@ export function CalendarEventDialog({date, startMinute = 9 * 60, item, create, o
                 <button type="button" className="secondary-button" onClick={() => setConfirmDelete(true)}>删除</button>
                 <button type="button" className="primary-button" onClick={() => setEditing(true)}>编辑</button>
             </>}</div>}
+            {item?.course && <button type="button" className="text-button" disabled={busy}
+                                    aria-busy={busy} onClick={() => void openSyllabus()}>
+                {busy ? '正在打开…' : '查看教学大纲'}<Icon name="external"/>
+            </button>}
         </>}
     </dialog>
 }
