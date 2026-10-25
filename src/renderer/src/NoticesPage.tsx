@@ -83,6 +83,7 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
             })
         return () => {
             cancelled = true
+            summaryRequest.current++
         }
     }, [selected, api])
 
@@ -135,7 +136,6 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
             return
         }
         setSummaryOpen(true)
-        if (force) setSummary(null)
         const request = ++summaryRequest.current
         setSummaryLoading(true)
         setSummaryError('')
@@ -163,7 +163,7 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
             </button>
             <button type="button" className="icon-button notice-summary-button" aria-label="AI 摘要" title="AI 摘要"
                     aria-expanded={summaryOpen} aria-controls="notice-summary"
-                    disabled={detailLoading || !detail || detail.requiresLogin || !api}
+                    disabled={!api}
                     onClick={() => void summarize()}><Icon name="sparkles"/></button>
         </div>
         {summaryOpen && <section id="notice-summary" className="notice-summary" aria-label="AI 摘要">
