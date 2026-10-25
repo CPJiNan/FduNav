@@ -1,9 +1,9 @@
 import {type FormEvent, useEffect, useRef, useState} from 'react'
 import {
+    calendarDate,
     type CalendarEvent,
     type CalendarEventInput,
     type CalendarOccurrence,
-    calendarDate,
     timeLabel,
     validateCalendarEvent
 } from '../../shared/calendar'
@@ -185,7 +185,7 @@ export function CalendarEventDialog({date, startMinute = 9 * 60, item, create, o
                 <button type="button" className="primary-button" onClick={() => setEditing(true)}>编辑</button>
             </>}</div>}
             {item?.course && <button type="button" className="text-button" disabled={busy}
-                                    aria-busy={busy} onClick={() => void openSyllabus()}>
+                                     aria-busy={busy} onClick={() => void openSyllabus()}>
                 {busy ? '正在打开…' : '查看教学大纲'}<Icon name="external"/>
             </button>}
         </>}

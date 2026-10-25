@@ -161,30 +161,31 @@ export function CalendarTimeline({
                     {dates.map(day => {
                         const timedItems = items.filter(item => item.date === day && !item.allDay)
                         return <div className="calendar-time-day-column" key={day}>
-                            {timeSlots.map(slot => <button type="button" className="calendar-hour-line calendar-create-slot"
+                            {timeSlots.map(slot => <button type="button"
+                                                           className="calendar-hour-line calendar-create-slot"
                                                            key={slot.label}
                                                            disabled={!calendarDate(day)}
                                                            aria-label={`${dateLabel(day)} ${slot.label} 新建日程`}
                                                            onClick={() => onCreate(day, slot.minute)}/>)}
                             {layoutCalendarDay(timedItems).map(({
-                                                                                                             item,
-                                                                                                             lane,
-                                                                                                             lanes
-                                                                                                         }) =>
-                            <button type="button" className="calendar-event calendar-timed-event" key={item.key}
-                                    onClick={() => onOpen(item)}
-                                    style={{
-                                        backgroundColor: occurrenceColor(item),
-                                        top: `calc(${item.startMinute / 60} * var(--calendar-hour-height))`,
-                                        height: `calc(${(item.endMinute - item.startMinute) / 60} * var(--calendar-hour-height))`,
-                                        left: `${100 * lane / lanes}%`,
-                                        width: `${100 / lanes}%`
-                                    }}
-                                    aria-label={`${item.title}，${eventTime(item)}，${item.location}`}>
-                                <strong>{item.title}</strong><span>{eventTime(item)}</span>{item.location &&
-                                <span>{item.location}</span>}
-                                {item.course && <small>第 {item.course.startUnit}–{item.course.endUnit} 节</small>}
-                            </button>)}
+                                                                    item,
+                                                                    lane,
+                                                                    lanes
+                                                                }) =>
+                                <button type="button" className="calendar-event calendar-timed-event" key={item.key}
+                                        onClick={() => onOpen(item)}
+                                        style={{
+                                            backgroundColor: occurrenceColor(item),
+                                            top: `calc(${item.startMinute / 60} * var(--calendar-hour-height))`,
+                                            height: `calc(${(item.endMinute - item.startMinute) / 60} * var(--calendar-hour-height))`,
+                                            left: `${100 * lane / lanes}%`,
+                                            width: `${100 / lanes}%`
+                                        }}
+                                        aria-label={`${item.title}，${eventTime(item)}，${item.location}`}>
+                                    <strong>{item.title}</strong><span>{eventTime(item)}</span>{item.location &&
+                                    <span>{item.location}</span>}
+                                    {item.course && <small>第 {item.course.startUnit}–{item.course.endUnit} 节</small>}
+                                </button>)}
                         </div>
                     })}
                 </div>

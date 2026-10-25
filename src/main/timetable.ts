@@ -94,7 +94,10 @@ export function registerTimetableHandlers(db: AppDatabase, accounts: AccountServ
             await shell.openExternal(url)
             return {ok: true, data: undefined}
         } catch (error) {
-            return {ok: false, error: error instanceof AuthError ? error.message : '无法打开教学大纲，请检查默认浏览器后重试。'}
+            return {
+                ok: false,
+                error: error instanceof AuthError ? error.message : '无法打开教学大纲，请检查默认浏览器后重试。'
+            }
         }
     })
     ipcMain.handle('timetable:set-start-date', (event, value: unknown): Result<Timetable> => {
