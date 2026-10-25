@@ -204,6 +204,26 @@ export class AppDatabase {
                 throw error
             }
         }
+        if (Number(this.db.prepare('PRAGMA user_version').get()?.user_version) < 11) {
+            this.db.exec('BEGIN IMMEDIATE')
+            try {
+                // Legacy entries cannot be attributed to an account or a complete request context.
+                this.db.exec(`
+                    DROP TABLE IF EXISTS notice_summaries;
+                    CREATE TABLE IF NOT EXISTS notice_summary_cache (
+                        source_id TEXT NOT NULL, url TEXT NOT NULL, cache_key TEXT NOT NULL,
+                        model TEXT NOT NULL, summary TEXT NOT NULL, created_at TEXT NOT NULL,
+                        PRIMARY KEY (source_id, url, cache_key),
+                        FOREIGN KEY (source_id, url) REFERENCES notices (source_id, url) ON DELETE CASCADE
+                    );
+                    PRAGMA user_version = 11;
+                    COMMIT;
+                `)
+            } catch (error) {
+                this.db.exec('ROLLBACK')
+                throw error
+            }
+        }
         this.syncSources()
     }
 
@@ -330,25 +350,22 @@ export class AppDatabase {
                                   AND n.url = ?`).get(sourceId, url) as unknown as Notice ?? null
     }
 
-    getNoticeSummary(sourceId: string, url: string): { contentHash: string; model: string; summary: string } | null {
-        return this.db.prepare(`SELECT content_hash AS contentHash, model, summary
-                                FROM notice_summaries
-                                WHERE source_id = ?
-                                  AND url = ?`).get(sourceId, url) as unknown as {
-            contentHash: string;
+    getNoticeSummary(sourceId: string, url: string, cacheKey: string): { model: string; summary: string } | null {
+        return this.db.prepare(`SELECT model, summary FROM notice_summary_cache
+                                WHERE source_id = ? AND url = ? AND cache_key = ?`)
+            .get(sourceId, url, cacheKey) as unknown as {
             model: string;
             summary: string
         } ?? null
     }
 
-    saveNoticeSummary(sourceId: string, url: string, contentHash: string, model: string, summary: string) {
-        this.db.prepare(`INSERT INTO notice_summaries (source_id, url, content_hash, model, summary, created_at)
-                         VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(source_id, url) DO
-        UPDATE SET content_hash = excluded.content_hash,
-            model = excluded.model,
+    saveNoticeSummary(sourceId: string, url: string, cacheKey: string, model: string, summary: string) {
+        this.db.prepare(`INSERT INTO notice_summary_cache (source_id, url, cache_key, model, summary, created_at)
+                         VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(source_id, url, cache_key) DO
+        UPDATE SET model = excluded.model,
             summary = excluded.summary,
             created_at = excluded.created_at`)
-            .run(sourceId, url, contentHash, model, summary, new Date().toISOString())
+            .run(sourceId, url, cacheKey, model, summary, new Date().toISOString())
     }
 
     saveNotices(items: ParsedNotice[], sourceId = 'jwc', expectedRevision?: number, listUrl?: string) {

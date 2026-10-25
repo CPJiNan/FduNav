@@ -7,8 +7,7 @@ import {isSourceId, sourceUrl} from '../shared/sources'
 import {SourceRefreshService} from './source-service'
 import {readNoticePdfs} from './notice-pdf'
 import {noticeImageUrls} from './notice-body'
-import {completeLlm} from './llm-connection'
-import {summaryCacheKey, summaryMessages} from './notice-summary'
+import {NoticeSummaryService} from './notice-summary'
 import type {LlmSettingsService} from './llm-settings'
 import type {NoticeRef} from '../shared/notices'
 import type {Result} from '../shared/accounts'
@@ -75,40 +74,14 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
     handle('notices:detail', async (input: unknown) => {
         return readNoticePdfs(await readDetail(input))
     })
+    const summaries = new NoticeSummaryService(db, llm, async ref => readNoticePdfs(await readDetail(ref)))
     handle('notices:summary', async (input: unknown) => {
-        const ref = input as NoticeRef
-        const force = (input as { force?: unknown }).force === true
         knownUrl(input)
-        const notice = db.getNotice(ref.sourceId, ref.url)
-        if (!notice) throw new AuthError('未找到这条通知，请刷新列表。')
-        requireReady()
-        const settings = llm.get()
-        const preferences = db.getMessagePreferences()
-        const cacheKey = summaryCacheKey(notice, preferences, settings.summaryPrompt, settings.baseUrl)
-        const cached = db.getNoticeSummary(ref.sourceId, ref.url)
-        if (!force && cached?.contentHash === cacheKey && cached.model === settings.model) {
-            return {content: cached.summary, model: cached.model, cached: true}
-        }
-        if (!settings.enabled) throw new AuthError('请先在设置中启用 LLM。')
-        if (!settings.model) throw new AuthError('请先配置 LLM 模型。')
-        const detail = await readNoticePdfs(await readDetail(input))
-        if (detail.requiresLogin) throw new AuthError('需要登录后才能生成摘要。')
-        const content = detail.content.trim()
-        if (!content) throw new AuthError('这条通知没有可摘要的正文，请查看学校原文。')
-        const messages = summaryMessages(notice, content, preferences, settings.summaryPrompt)
-        let connection: Awaited<ReturnType<LlmSettingsService['getConnection']>> | undefined
         try {
-            connection = await llm.getConnection()
-            const result = (await completeLlm(connection, messages, llm.getRequestSignal())).trim()
-            if (!result) throw new Error('模型没有返回摘要内容。')
-            const summary = result.slice(0, 4000)
-            db.saveNoticeSummary(ref.sourceId, ref.url, cacheKey, connection.model, summary)
-            return {content: summary, model: connection.model, cached: false}
+            return await summaries.summarize(input as NoticeRef, (input as { force?: unknown }).force === true)
         } catch (error) {
             if (error instanceof AuthError) throw error
             throw new AuthError(error instanceof Error ? error.message : '摘要生成失败，请稍后重试。')
-        } finally {
-            if (connection) connection.apiKey = ''
         }
     })
     handle('notices:image', async (input: unknown) => {
