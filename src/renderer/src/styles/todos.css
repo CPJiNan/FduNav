@@ -59,20 +59,20 @@
     border-bottom: 1px solid var(--color-border-subtle);
 }
 .todo-check {
-    width: 20px;
-    height: 20px;
     flex: 0 0 auto;
-    margin: var(--space-2) 0 0;
-    accent-color: var(--color-accent);
-    cursor: pointer;
+    color: var(--color-text-muted);
 }
+.todo-check[aria-pressed="true"], .is-completing .todo-check { color: var(--color-accent); }
+.todo-check:hover:not(:disabled):not([aria-disabled="true"]) { color: var(--color-accent); }
+.todo-check[aria-disabled="true"] { cursor: not-allowed; }
+.todo-row button:disabled { opacity: 1; }
 .todo-content {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     flex: 1;
     min-width: 0;
-    padding: var(--space-2);
+    padding: calc((var(--size-touch-target) - 1.5em) / 2) var(--space-2);
     gap: var(--space-2);
     border: 0;
     border-radius: var(--radius-sm);
@@ -81,11 +81,43 @@
     text-align: left;
     font: inherit;
     font-size: var(--font-size-sm);
+    line-height: 1.5;
     overflow-wrap: anywhere;
 }
 .todo-content:hover:not(:disabled) { background: var(--color-bg-hover); }
 .todo-title { font-weight: var(--font-weight-medium); }
-.is-completed .todo-title { text-decoration: line-through; color: var(--color-text-muted); }
+.is-completed .todo-title { color: var(--color-text-muted); }
+.todo-title-text {
+    background-image: linear-gradient(to bottom, transparent calc(50% - 0.75px), currentColor calc(50% - 0.75px), currentColor calc(50% + 0.75px), transparent calc(50% + 0.75px));
+    background-repeat: no-repeat;
+    background-position: left center;
+    background-size: 0% 100%;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+}
+.is-completed .todo-title-text { background-size: 100% 100%; }
+.is-completing .todo-title-text { animation: todo-strike-in 520ms ease-in-out forwards; }
+.is-reopening .todo-title-text {
+    background-position: right center;
+    animation: todo-strike-out 360ms ease-in-out forwards;
+}
+.todo-row.is-leaving { animation: todo-row-exit 260ms ease-in forwards; }
+@keyframes todo-strike-in {
+    0% { color: var(--color-text-primary); background-size: 0% 100%; }
+    30% { color: var(--color-text-muted); background-size: 0% 100%; }
+    100% { color: var(--color-text-muted); background-size: 100% 100%; }
+}
+@keyframes todo-strike-out {
+    from { background-size: 100% 100%; }
+    to { background-size: 0% 100%; }
+}
+@keyframes todo-row-exit {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(4px); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .is-transitioning .todo-title-text, .todo-row.is-leaving { animation-duration: 1ms; }
+}
 .todo-notes {
     color: var(--color-text-muted);
     white-space: pre-wrap;
