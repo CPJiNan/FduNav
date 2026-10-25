@@ -325,8 +325,18 @@
 }
 
 .notice-summary-head .text-button {
-    margin-left: auto;
     min-height: auto;
+}
+
+.notice-summary-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-left: auto;
+}
+
+.notice-summary-actions .text-button {
+    margin-left: 0;
 }
 
 .notice-summary-status {
@@ -335,10 +345,84 @@
 }
 
 .notice-summary-text {
-    white-space: pre-wrap;
     overflow-wrap: anywhere;
     font-size: var(--font-size-sm);
     line-height: var(--line-height-relaxed);
+}
+
+.notice-summary-text > :first-child {
+    margin-top: 0;
+}
+
+.notice-summary-text > :last-child {
+    margin-bottom: 0;
+}
+
+.notice-summary-text p {
+    margin: 0 0 var(--space-3);
+}
+
+.notice-summary-text ul, .notice-summary-text ol {
+    margin: 0 0 var(--space-3);
+    padding-left: var(--space-6);
+}
+
+.notice-summary-text li {
+    margin-bottom: var(--space-1);
+}
+
+.notice-summary-text li::marker {
+    color: var(--color-accent);
+}
+
+.notice-summary-text strong {
+    color: var(--color-text-primary);
+    font-weight: var(--font-weight-semibold);
+}
+
+.notice-summary-text h1, .notice-summary-text h2, .notice-summary-text h3,
+.notice-summary-text h4, .notice-summary-text h5, .notice-summary-text h6 {
+    margin: 0 0 var(--space-2);
+    font-size: var(--font-size-md);
+}
+
+.notice-summary-text code {
+    padding: 0 var(--space-1);
+    border-radius: var(--radius-xs);
+    background: var(--color-bg-surface);
+    font-size: var(--font-size-xs);
+}
+
+.notice-summary-text pre {
+    overflow: auto;
+    margin: 0 0 var(--space-3);
+    padding: var(--space-3);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-surface);
+}
+
+.notice-summary-text pre code {
+    padding: 0;
+    background: transparent;
+}
+
+.notice-summary-text blockquote {
+    margin: 0 0 var(--space-3);
+    padding-left: var(--space-3);
+    border-left: 3px solid var(--color-border-default);
+    color: var(--color-text-secondary);
+}
+
+.notice-summary-text table {
+    width: 100%;
+    margin: 0 0 var(--space-3);
+    border-collapse: collapse;
+}
+
+.notice-summary-text th, .notice-summary-text td {
+    padding: var(--space-2);
+    border: 1px solid var(--color-border-subtle);
+    text-align: left;
 }
 
 .notice-body {

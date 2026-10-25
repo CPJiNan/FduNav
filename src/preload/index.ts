@@ -44,7 +44,7 @@ contextBridge.exposeInMainWorld('messagePreferences', messagePreferences)
 const notices: NoticesAPI = {
     list: refresh => ipcRenderer.invoke('notices:list', refresh),
     detail: notice => ipcRenderer.invoke('notices:detail', notice),
-    summarize: notice => ipcRenderer.invoke('notices:summary', notice),
+    summarize: (notice, force = false) => ipcRenderer.invoke('notices:summary', {...notice, force}),
     image: notice => ipcRenderer.invoke('notices:image', notice),
     openSource: notice => ipcRenderer.invoke('notices:open-source', notice),
     openAttachment: notice => ipcRenderer.invoke('notices:open-attachment', notice),

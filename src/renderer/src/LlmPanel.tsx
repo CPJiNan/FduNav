@@ -195,7 +195,7 @@ export function LlmPanel({active}: { active: boolean }) {
                 <div className="llm-key-control">
                     <input id="llm-api-key" type="password" value={apiKey} maxLength={4096} autoComplete="new-password"
                            autoCapitalize="none" spellCheck={false} disabled={clearApiKey}
-                           placeholder={settings.hasApiKey ? '已保存，留空保持不变' : '可选'}
+                           placeholder={settings.hasApiKey ? '已保存' : '可选'}
                            onChange={event => {
                                setApiKey(event.target.value);
                                setModels(null);

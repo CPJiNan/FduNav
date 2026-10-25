@@ -53,7 +53,7 @@ export interface NoticesAPI {
 
     detail(notice: NoticeRef): Promise<Result<NoticeDetail>>
 
-    summarize(notice: NoticeRef): Promise<Result<NoticeSummary>>
+    summarize(notice: NoticeRef, force?: boolean): Promise<Result<NoticeSummary>>
 
     image(notice: NoticeRef & { imageUrl: string }): Promise<Result<string>>
 

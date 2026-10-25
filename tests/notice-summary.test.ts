@@ -10,20 +10,42 @@ import {summaryContentHash, summaryMessages} from '../src/main/notice-summary.ts
 import {defaultSummaryPrompt, summaryPromptMaxLength, validateLlmSettings} from '../src/shared/llm.ts'
 import {emptyMessagePreferences, type MessagePreferences} from '../src/shared/message-preferences.ts'
 
-const notice = {sourceId: 'jwc', sourceName: '教务处', url: 'https://jwc.fudan.edu.cn/test.htm', title: '报名通知', published: '2026-10-25'}
+const notice = {
+    sourceId: 'jwc',
+    sourceName: '教务处',
+    url: 'https://jwc.fudan.edu.cn/test.htm',
+    title: '报名通知',
+    published: '2026-10-25'
+}
 const preferences: MessagePreferences = {
     identity: 'student', gender: 'female', department: '数学科学学院', educationLevel: 'undergraduate',
     grade: 2024, major: '数学与应用数学', campus: '邯郸校区'
 }
-const input = {baseUrl: 'https://model.example/v1', model: 'example', apiKey: '', clearApiKey: false, summaryPrompt: defaultSummaryPrompt}
-const secrets = {available: async () => true, encrypt: async (value: string) => Buffer.from(value), decrypt: async (value: Uint8Array) => Buffer.from(value).toString()}
+const input = {
+    baseUrl: 'https://model.example/v1',
+    model: 'example',
+    apiKey: '',
+    clearApiKey: false,
+    summaryPrompt: defaultSummaryPrompt
+}
+const secrets = {
+    available: async () => true,
+    encrypt: async (value: string) => Buffer.from(value),
+    decrypt: async (value: Uint8Array) => Buffer.from(value).toString()
+}
 
 test('摘要请求包含全部偏好及通知，使用保存的提示词', () => {
     const messages = summaryMessages(notice, '本科生报名，研究生无需办理。', preferences, '只列与用户相关的截止日期。')
     assert.deepEqual(messages[0], {role: 'system', content: '只列与用户相关的截止日期。'})
     const data = JSON.parse(messages[1].content)
     assert.deepEqual(data.messagePreferences, {
-        身份: '学生', 性别: '女', 院系: '数学科学学院', 学历阶段: '本科生', 年级: '2024级', 专业: '数学与应用数学', 校区: '邯郸校区'
+        身份: '学生',
+        性别: '女',
+        院系: '数学科学学院',
+        学历阶段: '本科生',
+        年级: '2024级',
+        专业: '数学与应用数学',
+        校区: '邯郸校区'
     })
     assert.equal(data.notice.content, '本科生报名，研究生无需办理。')
     const empty = JSON.parse(summaryMessages(notice, '正文', emptyMessagePreferences(), defaultSummaryPrompt)[1].content)
@@ -70,7 +92,12 @@ test('旧版数据库升级后保留接口和密钥，并补入默认提示词',
     const path = join(directory, 'test.sqlite')
     try {
         const db = new AppDatabase(path)
-        db.saveLlmSettings({baseUrl: input.baseUrl, model: input.model, encryptedApiKey: Buffer.from('encrypted'), summaryPrompt: '旧提示词'})
+        db.saveLlmSettings({
+            baseUrl: input.baseUrl,
+            model: input.model,
+            encryptedApiKey: Buffer.from('encrypted'),
+            summaryPrompt: '旧提示词'
+        })
         db.close()
         const legacy = new DatabaseSync(path)
         legacy.exec('ALTER TABLE llm_settings DROP COLUMN summary_prompt; PRAGMA user_version = 9;')

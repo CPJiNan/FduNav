@@ -123,7 +123,12 @@ export class LlmSettingsService {
                 throw new Error('API Key 加密失败，设置未保存。')
             }
         }
-        this.db.saveLlmSettings({baseUrl: value.baseUrl, model: value.model, encryptedApiKey, summaryPrompt: value.summaryPrompt})
+        this.db.saveLlmSettings({
+            baseUrl: value.baseUrl,
+            model: value.model,
+            encryptedApiKey,
+            summaryPrompt: value.summaryPrompt
+        })
         return this.get()
     }
 }

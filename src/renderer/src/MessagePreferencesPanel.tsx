@@ -22,6 +22,13 @@ const profileSelects = [
     {field: 'educationLevel', label: '学历阶段', options: educationLevelOptions},
 ] as const
 
+function defaultGradeFromUsername(username: string | null): number | null {
+    if (!username || !/^\d{2}/.test(username)) return null
+    const year = 2000 + Number(username.slice(0, 2))
+    const currentYear = new Date().getFullYear()
+    return year >= currentYear - 19 && year <= currentYear + 1 ? year : null
+}
+
 export function MessagePreferencesPanel({requiredProfile = false, onChange, onSaved}: {
     requiredProfile?: boolean
     onChange?: (value: MessagePreferences) => void
@@ -60,6 +67,16 @@ export function MessagePreferencesPanel({requiredProfile = false, onChange, onSa
                 setDraft(value)
                 setSaved(value)
                 onChange?.(value)
+                if (value.grade === null && window.accounts) {
+                    void window.accounts.getState().then(state => {
+                        if (!active || !state.ok) return
+                        const grade = defaultGradeFromUsername(state.data.username)
+                        if (grade !== null) {
+                            setDraft(current => current.grade === null ? {...current, grade} : current)
+                        }
+                    }).catch(() => {
+                    })
+                }
             } else setLoadError(result.error)
         }).catch(() => {
             if (active) setLoadError('无法连接消息偏好服务，请重试或重启应用。')

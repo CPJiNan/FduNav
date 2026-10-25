@@ -18,6 +18,9 @@
     "pdfjs-dist": "^6.4.299",
     "react": "19.3.1",
     "react-dom": "19.3.1",
+    "react-markdown": "^10.1.0",
+    "remark-breaks": "^4.0.0",
+    "remark-gfm": "^4.0.1",
     "tough-cookie": "^6.0.2"
   },
   "devDependencies": {

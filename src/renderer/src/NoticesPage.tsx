@@ -1,4 +1,7 @@
 import {useEffect, useRef, useState} from 'react'
+import Markdown from 'react-markdown'
+import remarkBreaks from 'remark-breaks'
+import remarkGfm from 'remark-gfm'
 import type {Notice, NoticeDetail, NoticeList, NoticeSummary} from '../../shared/notices'
 import {Icon} from './Icon'
 import {NoticeBody} from './NoticeBody'
@@ -120,19 +123,24 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
         }
     }
 
-    async function summarize() {
+    async function summarize(force = false) {
         if (!api || !selected) return
-        if (summaryOpen) {
+        if (!force && summaryOpen) {
             setSummaryOpen(false)
             return
         }
+        if (summaryLoading) return
+        if (!force && summary) {
+            setSummaryOpen(true)
+            return
+        }
         setSummaryOpen(true)
-        if (summary || summaryLoading) return
+        if (force) setSummary(null)
         const request = ++summaryRequest.current
         setSummaryLoading(true)
         setSummaryError('')
         try {
-            const result = await api.summarize({url: selected.url, sourceId: selected.sourceId})
+            const result = await api.summarize({url: selected.url, sourceId: selected.sourceId}, force)
             if (request !== summaryRequest.current) return
             if (result.ok) setSummary(result.data)
             else setSummaryError(result.error)
@@ -160,11 +168,19 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
         </div>
         {summaryOpen && <section id="notice-summary" className="notice-summary" aria-label="AI 摘要">
             <div className="notice-summary-head"><Icon name="sparkles"/><strong>AI 摘要</strong>
-                <button type="button" className="text-button" onClick={() => setSummaryOpen(false)}>收起</button>
+                <div className="notice-summary-actions">
+                    <button type="button" className="text-button" disabled={summaryLoading}
+                            onClick={() => void summarize(true)}>重新摘要
+                    </button>
+                    <button type="button" className="text-button" onClick={() => setSummaryOpen(false)}>收起</button>
+                </div>
             </div>
             {summaryLoading && <p className="notice-summary-status" role="status">正在生成摘要…</p>}
             {summaryError && <p className="account-error" role="alert">{summaryError}</p>}
-            {summary && <p className="notice-summary-text">{summary.content}</p>}
+            {summary && <div className="notice-summary-text">
+                <Markdown remarkPlugins={[remarkGfm, remarkBreaks]}
+                          components={{a: ({children}) => <span>{children}</span>}}>{summary.content}</Markdown>
+            </div>}
         </section>}
         {error && <p className="account-error" role="alert">{error}</p>}
         {detailLoading && <p className="notice-empty" role="status">正在读取通知正文…</p>}
