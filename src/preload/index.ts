@@ -1,6 +1,6 @@
 import {contextBridge, ipcRenderer, type IpcRendererEvent} from 'electron'
 import type {AccountAPI} from '../shared/accounts'
-import type {NoticesAPI} from '../shared/notices'
+import type {NoticesAPI, SummaryTask} from '../shared/notices'
 import type {MessagePreferencesAPI} from '../shared/message-preferences'
 import type {SourcesAPI} from '../shared/sources'
 import type {LlmAPI} from '../shared/llm'
@@ -42,6 +42,18 @@ const messagePreferences: MessagePreferencesAPI = {
 contextBridge.exposeInMainWorld('messagePreferences', messagePreferences)
 
 const notices: NoticesAPI = {
+    summaryQueue: () => ipcRenderer.invoke('notices:summary-queue'),
+    enqueueSummaries: notices => ipcRenderer.invoke('notices:enqueue-summaries', notices),
+    cancelSummaries: ids => ipcRenderer.invoke('notices:cancel-summaries', ids),
+    clearSummaryQueue: () => ipcRenderer.invoke('notices:clear-summary-queue'),
+    removeSummaries: ids => ipcRenderer.invoke('notices:remove-summaries', ids),
+    getNotice: notice => ipcRenderer.invoke('notices:get', notice),
+    setRelevance: (notice, relevance) => ipcRenderer.invoke('notices:set-relevance', {...notice, relevance}),
+    onSummaryQueueChanged: callback => {
+        const listener = (_event: IpcRendererEvent, tasks: SummaryTask[]) => callback(tasks)
+        ipcRenderer.on('notices:summary-queue-changed', listener)
+        return () => ipcRenderer.removeListener('notices:summary-queue-changed', listener)
+    },
     list: refresh => ipcRenderer.invoke('notices:list', refresh),
     detail: notice => ipcRenderer.invoke('notices:detail', notice),
     summarize: (notice, force = false) => ipcRenderer.invoke('notices:summary', {...notice, force}),

@@ -1,4 +1,4 @@
-import {ipcMain, type IpcMainInvokeEvent, shell} from 'electron'
+import {ipcMain, type IpcMainInvokeEvent, type WebContents, shell} from 'electron'
 import {AppDatabase} from './database'
 import {AccountService} from './accounts'
 import {AuthError} from './fudan-auth'
@@ -29,11 +29,11 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
         if (!ready) throw new AuthError('请先完善消息偏好。')
     }
 
-    function handle<T>(name: string, action: (input: any) => Promise<T>) {
+    function handle<T>(name: string, action: (input: any) => Promise<T>, ready = true) {
         ipcMain.handle(name, async (event, input): Promise<Result<T>> => {
             if (!trusted(event)) return {ok: false, error: '请求来源无效。'}
             try {
-                requireReady()
+                if (ready) requireReady()
                 return {ok: true, data: await action(input)}
             } catch (error) {
                 return {ok: false, error: error instanceof AuthError ? error.message : '通知加载失败，请稍后重试。'}
@@ -51,6 +51,58 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
     }
 
     const summaries = new NoticeSummaryService(db, llm, async ref => readNoticePdfs(await readDetail(ref)))
+    const subscribers = new Set<WebContents>()
+    const queueSnapshot = () => summaries.queue.snapshot(db.getAccount()?.username ?? '')
+    summaries.queue.subscribe(() => {
+        for (const sender of subscribers) {
+            if (sender.isDestroyed()) subscribers.delete(sender)
+            else sender.send('notices:summary-queue-changed', queueSnapshot())
+        }
+    })
+    ipcMain.handle('notices:summary-queue', event => {
+        if (!trusted(event)) return {ok: false, error: '请求来源无效。'}
+        subscribers.add(event.sender)
+        return {ok: true, data: queueSnapshot()}
+    })
+    handle('notices:enqueue-summaries', async (input: unknown) => {
+        if (!Array.isArray(input) || !input.length || input.length > 200) throw new AuthError('请选择 1–200 条通知。')
+        input.forEach(knownUrl)
+        const unique = new Map(input.map((ref: NoticeRef) => [detailKey(ref), ref]))
+        const notices = [...unique.values()].filter(ref => summaries.needsSummary(ref))
+        if (!notices.length) return
+        const settings = llm.get()
+        if (!settings.enabled || !settings.model) throw new AuthError('请先配置并启用 LLM。')
+        if (summaries.queue.activeCount + notices.length > 200) throw new AuthError('队列最多容纳 200 条待完成任务，请减少选择或等待任务完成。')
+        for (const ref of notices) void summaries.summarize(ref).catch(() => { /* Task errors are shown in the queue. */ })
+    })
+    handle('notices:cancel-summaries', async (input: unknown) => {
+        if (!Array.isArray(input) || input.length > 400 || !input.every(id => typeof id === 'string')) {
+            throw new AuthError('摘要任务参数无效。')
+        }
+        summaries.queue.cancel(input, db.getAccount()?.username ?? '')
+    }, false)
+    handle('notices:clear-summary-queue', async () => summaries.queue.clear(db.getAccount()?.username ?? ''), false)
+    handle('notices:remove-summaries', async (input: unknown) => {
+        if (!Array.isArray(input) || input.length > 400 || !input.every(id => typeof id === 'string')) {
+            throw new AuthError('摘要任务参数无效。')
+        }
+        summaries.queue.remove(input, db.getAccount()?.username ?? '')
+    }, false)
+    handle('notices:get', async (input: unknown) => {
+        knownUrl(input)
+        const ref = input as NoticeRef
+        const notice = db.getNotice(ref.sourceId, ref.url)!
+        return {...notice, relevance: summaries.relevanceFor(notice)}
+    })
+    handle('notices:set-relevance', async (input: unknown) => {
+        knownUrl(input)
+        const value = input as NoticeRef & {relevance?: unknown}
+        if (value.relevance !== 'related' && value.relevance !== 'maybe' && value.relevance !== 'none') {
+            throw new AuthError('相关性选项无效。')
+        }
+        db.setNoticeRelevanceChoice(db.getAccount()!.username, value.sourceId, value.url, value.relevance)
+        return value.relevance === 'none' ? null : value.relevance
+    })
 
     handle('notices:list', async (force: unknown) => {
         if (force === true) await refresh.refresh()
