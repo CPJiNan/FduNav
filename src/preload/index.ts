@@ -6,6 +6,14 @@ import type {SourcesAPI} from '../shared/sources'
 import type {LlmAPI} from '../shared/llm'
 import type {TimetableAPI} from '../shared/timetable'
 import type {CalendarAPI} from '../shared/calendar'
+import type {TodosAPI} from '../shared/todos'
+
+const todos: TodosAPI = {
+    list: () => ipcRenderer.invoke('todos:list'),
+    save: input => ipcRenderer.invoke('todos:save', input),
+    remove: id => ipcRenderer.invoke('todos:remove', id),
+}
+contextBridge.exposeInMainWorld('todos', todos)
 
 const calendar: CalendarAPI = {
     list: () => ipcRenderer.invoke('calendar:list'),

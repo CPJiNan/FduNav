@@ -4,6 +4,7 @@ import {WindowTitlebar} from './WindowTitlebar'
 import {AccountPanel} from './AccountPanel'
 import {NoticesPage} from './NoticesPage'
 import {CalendarPage} from './CalendarPage'
+import {TodosPage} from './TodosPage'
 import {MessagePreferencesPanel} from './MessagePreferencesPanel'
 import {SourcesPanel} from './SourcesPanel'
 import {LlmPanel} from './LlmPanel'
@@ -33,7 +34,7 @@ const calendarNavigation = {label: '日历', icon: 'calendar'} as const
 export default function App() {
     const [theme, setTheme] = useState<Theme>(readTheme)
     const [settings, setSettings] = useState(false)
-    const [page, setPage] = useState<'notices' | 'calendar'>('notices')
+    const [page, setPage] = useState<'notices' | 'calendar' | 'todos'>('notices')
     const [noticeToOpen, setNoticeToOpen] = useState<Notice | null>(null)
     const [tab, setTab] = useState<Tab>('theme')
     const [storageError, setStorageError] = useState(false)
@@ -46,6 +47,7 @@ export default function App() {
     const showSettings = settings || needsSetup
     const showNoticesPage = !showSettings && page === 'notices'
     const showCalendarPage = !showSettings && page === 'calendar'
+    const showTodosPage = !showSettings && page === 'todos'
     const settingsButton = useRef<HTMLButtonElement>(null)
     const settingsWasOpen = useRef(false)
 
@@ -91,7 +93,7 @@ export default function App() {
         setStorageError(!await saveTheme(next))
     }
 
-    function openPage(next: 'notices' | 'calendar') {
+    function openPage(next: 'notices' | 'calendar' | 'todos') {
         setPage(next)
         if (needsLogin) {
             setTab('account')
@@ -121,6 +123,9 @@ export default function App() {
                         aria-label={calendarNavigation.label}
                         title={calendarNavigation.label} aria-current={showCalendarPage ? 'page' : undefined}
                         onClick={() => openPage('calendar')}><Icon name={calendarNavigation.icon}/></button>
+                <button type="button" className={`icon-button rail-button ${showTodosPage ? 'is-active' : ''}`}
+                        aria-label="TODO" title="TODO" aria-current={showTodosPage ? 'page' : undefined}
+                        onClick={() => openPage('todos')}><Icon name="todo"/></button>
                 <div className="rail-bottom">
                     <SummaryQueuePanel username={account?.username} onOpenNotice={async ref => {
                         const result = await window.notices?.getNotice(ref)
@@ -206,6 +211,8 @@ export default function App() {
                             }}/>}
                         {showCalendarPage && accountLoaded && (!window.accounts || account?.status === 'signed-in') &&
                             <CalendarPage key={`${account?.username}-${preferences?.educationLevel}`}/>}
+                        {showTodosPage && accountLoaded && (!window.accounts || account?.status === 'signed-in') &&
+                            <TodosPage key={account?.username}/>}
                     </main>
                 </div>
             </div>

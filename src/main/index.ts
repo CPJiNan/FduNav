@@ -9,6 +9,7 @@ import {registerMessagePreferenceHandlers} from './message-preferences'
 import {registerLlmHandlers} from './llm'
 import {registerTimetableHandlers} from './timetable'
 import {registerCalendarHandlers} from './calendar'
+import {registerTodoHandlers} from './todos'
 
 let database: AppDatabase | undefined
 
@@ -80,6 +81,7 @@ app.whenReady().then(async () => {
         const accounts = await registerAccountHandlers(database, trusted)
         registerTimetableHandlers(database, accounts, trusted)
         registerCalendarHandlers(database, accounts, trusted)
+        registerTodoHandlers(database, accounts, trusted)
         const llm = registerLlmHandlers(database, trusted)
         registerNoticeHandlers(database, accounts, llm, trusted)
         registerMessagePreferenceHandlers(database, trusted)

@@ -3,6 +3,7 @@ import type {Theme} from '../shared/accounts'
 import type {Notice, NoticeList, NoticeRelevanceChoice, ParsedNotice} from '../shared/notices'
 import type {Timetable} from '../shared/timetable'
 import type {CalendarEvent} from '../shared/calendar'
+import type {Todo} from '../shared/todos'
 import {defaultSources, type MessageSource, type SourceId} from '../shared/sources.ts'
 import {
     emptyMessagePreferences,
@@ -41,6 +42,10 @@ export class AppDatabase {
                 PRIMARY KEY (username, kind)
             );
             CREATE TABLE IF NOT EXISTS calendar_events (
+                username TEXT NOT NULL, id TEXT NOT NULL, data TEXT NOT NULL,
+                PRIMARY KEY (username, id)
+            );
+            CREATE TABLE IF NOT EXISTS todos (
                 username TEXT NOT NULL, id TEXT NOT NULL, data TEXT NOT NULL,
                 PRIMARY KEY (username, id)
             );
@@ -114,6 +119,25 @@ export class AppDatabase {
         }
         this.db.exec('PRAGMA foreign_keys = ON;')
         this.syncSources()
+    }
+
+    getTodos(username: string): Todo[] {
+        return this.db.prepare('SELECT data FROM todos WHERE username = ?').all(username)
+            .map(row => JSON.parse(row.data as string) as Todo)
+    }
+
+    getTodo(username: string, id: string): Todo | null {
+        const row = this.db.prepare('SELECT data FROM todos WHERE username = ? AND id = ?').get(username, id)
+        return row ? JSON.parse(row.data as string) as Todo : null
+    }
+
+    saveTodo(username: string, todo: Todo) {
+        this.db.prepare(`INSERT INTO todos (username, id, data) VALUES (?, ?, ?)
+            ON CONFLICT(username, id) DO UPDATE SET data = excluded.data`).run(username, todo.id, JSON.stringify(todo))
+    }
+
+    removeTodo(username: string, id: string) {
+        this.db.prepare('DELETE FROM todos WHERE username = ? AND id = ?').run(username, id)
     }
 
     getLlmSettings(): SavedLlmSettings | null {

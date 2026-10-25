@@ -27,7 +27,9 @@ type IconName =
     | 'restore'
     | 'filter'
     | 'sparkles'
+    | 'todo'
 const paths: Record<IconName, string> = {
+    todo: 'M10 6h11M10 12h11M10 18h11M3 6l1 1 2-2M3 12l1 1 2-2M3 18l1 1 2-2',
     search: 'M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Zm-2 5 6 6',
     processor: 'M6 6h12v12H6ZM9 9h6v6H9ZM9 3v3m6-3v3M9 18v3m6-3v3M3 9h3m-3 6h3m12-6h3m-3 6h3',
     refresh: 'M20 4v5h-5M4 20v-5h5M4.9 9a7.5 7.5 0 0 1 12.4-2.3L20 9M4 15l2.7 2.3A7.5 7.5 0 0 0 19.1 15',
@@ -36,7 +38,7 @@ const paths: Record<IconName, string> = {
     chevron: 'm9 5 7 7-7 7',
     user: 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM4 21v-2a8 8 0 0 1 16 0v2',
     notices: 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4',
-    calendar: 'M4 5h16v16H4ZM4 10h16M8 3v4m8-4v4M8 14h2m4 0h2m-8 4h2m4 0h2',
+    calendar: 'M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2ZM8 3v4M16 3v4M3 10h18',
     plus: 'M12 5v14M5 12h14',
     settings: 'm9 3-.5 2-2 1-2-.5-2 3 1.5 1.5v3L2.5 15l2 3 2-.5 2 1L9 21h6l.5-2.5 2-1 2 .5 2-3-1.5-2v-3L21.5 9l-2-3-2 .5-2-1L15 3Z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0',
     tag: 'M3 3h8l10 10-8 8L3 11V3Zm4 4h.01',
