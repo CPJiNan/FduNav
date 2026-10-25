@@ -1,5 +1,4 @@
 import {DatabaseSync} from 'node:sqlite'
-import {defaultSummaryPrompt} from '../shared/llm.ts'
 import type {Theme} from '../shared/accounts'
 import type {Notice, NoticeList, ParsedNotice} from '../shared/notices'
 import type {Timetable} from '../shared/timetable'
@@ -8,7 +7,6 @@ import {defaultSources, type MessageSource, type SourceId} from '../shared/sourc
 import {
     emptyMessagePreferences,
     type MessagePreferences,
-    readSavedMessagePreferences,
     validateMessagePreferences
 } from '../shared/message-preferences.ts'
 
@@ -51,179 +49,42 @@ export class AppDatabase {
                 username TEXT NOT NULL, cookies BLOB NOT NULL,
                 target TEXT NOT NULL, last_login TEXT NOT NULL
             );
-            CREATE TABLE IF NOT EXISTS notices (url TEXT PRIMARY KEY, title TEXT NOT NULL, published TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS message_sources (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                url TEXT NOT NULL UNIQUE,
+                enabled INTEGER NOT NULL DEFAULT 1,
+                revision INTEGER NOT NULL DEFAULT 1,
+                list_url TEXT,
+                updated_at TEXT,
+                last_error TEXT
+            );
+            CREATE TABLE IF NOT EXISTS notices (
+                source_id TEXT NOT NULL REFERENCES message_sources (id) ON DELETE CASCADE,
+                url TEXT NOT NULL,
+                title TEXT NOT NULL,
+                published TEXT NOT NULL,
+                PRIMARY KEY (source_id, url)
+            );
+            CREATE INDEX IF NOT EXISTS notices_published ON notices (published DESC);
             CREATE TABLE IF NOT EXISTS llm_settings (
                 id INTEGER PRIMARY KEY CHECK (id = 1),
-                base_url TEXT NOT NULL, model TEXT NOT NULL, api_key BLOB
+                base_url TEXT NOT NULL, model TEXT NOT NULL, api_key BLOB,
+                summary_prompt TEXT NOT NULL DEFAULT ''
+            );
+            CREATE TABLE IF NOT EXISTS notice_summary_cache (
+                source_id TEXT NOT NULL,
+                url TEXT NOT NULL,
+                cache_key TEXT NOT NULL,
+                model TEXT NOT NULL,
+                summary TEXT NOT NULL,
+                relevance TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL,
+                PRIMARY KEY (source_id, url, cache_key),
+                FOREIGN KEY (source_id, url) REFERENCES notices (source_id, url) ON DELETE CASCADE
             );
         `)
         this.db.exec('PRAGMA foreign_keys = ON;')
-        if (Number(this.db.prepare('PRAGMA user_version').get()?.user_version) < 3) this.migrateSources()
-        if (Number(this.db.prepare('PRAGMA user_version').get()?.user_version) < 4) {
-            this.db.exec('BEGIN IMMEDIATE')
-            try {
-                this.db.exec(`
-                    DELETE
-                    FROM notices
-                    WHERE source_id IN
-                          (SELECT id FROM message_sources WHERE url = 'https://cec.fudan.edu.cn/')
-                      AND NOT EXISTS (SELECT 1
-                                      FROM message_sources
-                                      WHERE url = 'https://cec.fudan.edu.cn/23080/list.htm');
-                    UPDATE message_sources
-                    SET url        = 'https://cec.fudan.edu.cn/23080/list.htm',
-                        revision   = revision + 1,
-                        list_url   = NULL,
-                        updated_at = NULL,
-                        last_error = NULL
-                    WHERE url = 'https://cec.fudan.edu.cn/'
-                      AND NOT EXISTS
-                        (SELECT 1 FROM message_sources WHERE url = 'https://cec.fudan.edu.cn/23080/list.htm');
-                    PRAGMA
-                    user_version = 4;
-                    COMMIT;
-                `)
-            } catch (error) {
-                this.db.exec('ROLLBACK')
-                throw error
-            }
-        }
-        if (Number(this.db.prepare('PRAGMA user_version').get()?.user_version) < 5) {
-            this.db.exec('BEGIN IMMEDIATE')
-            try {
-                this.db.exec(`
-                    DROP TABLE IF EXISTS notice_tags;
-                    PRAGMA
-                    user_version = 5;
-                    COMMIT;
-                `)
-            } catch (error) {
-                this.db.exec('ROLLBACK')
-                throw error
-            }
-        }
-        if (Number(this.db.prepare('PRAGMA user_version').get()?.user_version) < 6) {
-            this.db.exec('BEGIN IMMEDIATE')
-            try {
-                this.db.exec(`
-                    UPDATE message_sources
-                    SET enabled = 0
-                    WHERE id = 'cec'
-                      AND revision = 1;
-                    PRAGMA
-                    user_version = 6;
-                    COMMIT;
-                `)
-            } catch (error) {
-                this.db.exec('ROLLBACK')
-                throw error
-            }
-        }
-        if (Number(this.db.prepare('PRAGMA user_version').get()?.user_version) < 8) {
-            const columns = this.db.prepare('PRAGMA table_info(message_sources)').all() as unknown as { name: string }[]
-            if (!columns.some(column => column.name === 'preset')) {
-                this.db.exec('PRAGMA user_version = 8;')
-            } else {
-                this.db.exec('BEGIN IMMEDIATE')
-                try {
-                    this.db.exec(`
-                        ALTER TABLE message_sources DROP COLUMN preset;
-                        PRAGMA
-                        user_version = 8;
-                        COMMIT;
-                    `)
-                } catch (error) {
-                    this.db.exec('ROLLBACK')
-                    throw error
-                }
-            }
-        }
-        if (Number(this.db.prepare('PRAGMA user_version').get()?.user_version) < 9) {
-            this.db.exec('BEGIN IMMEDIATE')
-            try {
-                this.db.exec(`
-                    CREATE TABLE IF NOT EXISTS notice_summaries
-                    (
-                        source_id
-                        TEXT
-                        NOT
-                        NULL,
-                        url
-                        TEXT
-                        NOT
-                        NULL,
-                        content_hash
-                        TEXT
-                        NOT
-                        NULL,
-                        model
-                        TEXT
-                        NOT
-                        NULL,
-                        summary
-                        TEXT
-                        NOT
-                        NULL,
-                        created_at
-                        TEXT
-                        NOT
-                        NULL,
-                        PRIMARY
-                        KEY
-                    (
-                        source_id,
-                        url
-                    ),
-                        FOREIGN KEY
-                    (
-                        source_id,
-                        url
-                    ) REFERENCES notices
-                    (
-                        source_id,
-                        url
-                    ) ON DELETE CASCADE
-                        );
-                    PRAGMA
-                    user_version = 9;
-                    COMMIT;
-                `)
-            } catch (error) {
-                this.db.exec('ROLLBACK')
-                throw error
-            }
-        }
-        if (Number(this.db.prepare('PRAGMA user_version').get()?.user_version) < 10) {
-            this.db.exec('BEGIN IMMEDIATE')
-            try {
-                this.db.exec("ALTER TABLE llm_settings ADD COLUMN summary_prompt TEXT NOT NULL DEFAULT ''; PRAGMA user_version = 10;")
-                this.db.prepare('UPDATE llm_settings SET summary_prompt = ?').run(defaultSummaryPrompt)
-                this.db.exec('COMMIT')
-            } catch (error) {
-                this.db.exec('ROLLBACK')
-                throw error
-            }
-        }
-        if (Number(this.db.prepare('PRAGMA user_version').get()?.user_version) < 11) {
-            this.db.exec('BEGIN IMMEDIATE')
-            try {
-                // Legacy entries cannot be attributed to an account or a complete request context.
-                this.db.exec(`
-                    DROP TABLE IF EXISTS notice_summaries;
-                    CREATE TABLE IF NOT EXISTS notice_summary_cache (
-                        source_id TEXT NOT NULL, url TEXT NOT NULL, cache_key TEXT NOT NULL,
-                        model TEXT NOT NULL, summary TEXT NOT NULL, created_at TEXT NOT NULL,
-                        PRIMARY KEY (source_id, url, cache_key),
-                        FOREIGN KEY (source_id, url) REFERENCES notices (source_id, url) ON DELETE CASCADE
-                    );
-                    PRAGMA user_version = 11;
-                    COMMIT;
-                `)
-            } catch (error) {
-                this.db.exec('ROLLBACK')
-                throw error
-            }
-        }
         this.syncSources()
     }
 
@@ -245,7 +106,7 @@ export class AppDatabase {
         this.db.prepare(`INSERT INTO llm_settings (id, base_url, model, api_key, summary_prompt)
                          VALUES (1, ?, ?, ?, ?) ON CONFLICT(id) DO
         UPDATE SET base_url = excluded.base_url, model = excluded.model, api_key = excluded.api_key,
-                   summary_prompt = excluded.summary_prompt`)
+            summary_prompt = excluded.summary_prompt`)
             .run(value.baseUrl, value.model, value.encryptedApiKey, value.summaryPrompt)
     }
 
@@ -309,7 +170,7 @@ export class AppDatabase {
     getMessagePreferences(): MessagePreferences {
         const row = this.db.prepare("SELECT value FROM preferences WHERE key = 'message_preferences'").get()
         if (!row) return emptyMessagePreferences()
-        const result = readSavedMessagePreferences(JSON.parse(String(row.value)))
+        const result = validateMessagePreferences(JSON.parse(String(row.value)))
         if (!result.ok) throw new Error('Invalid saved message preferences')
         if (JSON.stringify(result.data) !== row.value) this.setMessagePreferences(result.data)
         return result.data
@@ -350,22 +211,32 @@ export class AppDatabase {
                                   AND n.url = ?`).get(sourceId, url) as unknown as Notice ?? null
     }
 
-    getNoticeSummary(sourceId: string, url: string, cacheKey: string): { model: string; summary: string } | null {
-        return this.db.prepare(`SELECT model, summary FROM notice_summary_cache
-                                WHERE source_id = ? AND url = ? AND cache_key = ?`)
+    getNoticeSummary(sourceId: string, url: string, cacheKey: string): {
+        model: string;
+        summary: string;
+        relevance: string
+    } | null {
+        return this.db.prepare(`SELECT model, summary, relevance
+                                FROM notice_summary_cache
+                                WHERE source_id = ?
+                                  AND url = ?
+                                  AND cache_key = ?`)
             .get(sourceId, url, cacheKey) as unknown as {
             model: string;
-            summary: string
+            summary: string;
+            relevance: string
         } ?? null
     }
 
-    saveNoticeSummary(sourceId: string, url: string, cacheKey: string, model: string, summary: string) {
-        this.db.prepare(`INSERT INTO notice_summary_cache (source_id, url, cache_key, model, summary, created_at)
-                         VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(source_id, url, cache_key) DO
+    saveNoticeSummary(sourceId: string, url: string, cacheKey: string, model: string, summary: string,
+                      relevance: string) {
+        this.db.prepare(`INSERT INTO notice_summary_cache (source_id, url, cache_key, model, summary, relevance, created_at)
+                         VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(source_id, url, cache_key) DO
         UPDATE SET model = excluded.model,
             summary = excluded.summary,
+            relevance = excluded.relevance,
             created_at = excluded.created_at`)
-            .run(sourceId, url, cacheKey, model, summary, new Date().toISOString())
+            .run(sourceId, url, cacheKey, model, summary, relevance, new Date().toISOString())
     }
 
     saveNotices(items: ParsedNotice[], sourceId = 'jwc', expectedRevision?: number, listUrl?: string) {
@@ -430,55 +301,6 @@ export class AppDatabase {
 
     close() {
         this.db.close()
-    }
-
-    private migrateSources() {
-        this.db.exec('BEGIN IMMEDIATE')
-        try {
-            this.db.exec(`
-                CREATE TABLE message_sources
-                (
-                    id         TEXT PRIMARY KEY,
-                    name       TEXT    NOT NULL,
-                    url        TEXT    NOT NULL UNIQUE,
-                    enabled    INTEGER NOT NULL DEFAULT 1,
-                    revision   INTEGER NOT NULL DEFAULT 1,
-                    list_url   TEXT,
-                    updated_at TEXT,
-                    last_error TEXT
-                );
-                CREATE TABLE notices_v3
-                (
-                    source_id TEXT NOT NULL REFERENCES message_sources (id) ON DELETE CASCADE,
-                    url       TEXT NOT NULL,
-                    title     TEXT NOT NULL,
-                    published TEXT NOT NULL,
-                    PRIMARY KEY (source_id, url)
-                );
-            `)
-            const insert = this.db.prepare('INSERT INTO message_sources (id, name, url, enabled) VALUES (?, ?, ?, ?)')
-            for (const source of defaultSources) insert.run(source.id, source.name, source.url, Number(source.enabled))
-            this.db.exec(`
-                INSERT INTO notices_v3
-                SELECT 'jwc', url, title, published
-                FROM notices;
-                DROP TABLE notices;
-                ALTER TABLE notices_v3 RENAME TO notices;
-                CREATE INDEX notices_published ON notices (published DESC);
-                UPDATE message_sources
-                SET updated_at = (SELECT value FROM preferences WHERE key = 'notices_updated_at')
-                WHERE id = 'jwc';
-                DELETE
-                FROM preferences
-                WHERE key = 'notices_updated_at';
-                PRAGMA
-                user_version = 3;
-                COMMIT;
-            `)
-        } catch (error) {
-            this.db.exec('ROLLBACK')
-            throw error
-        }
     }
 
     private syncSources() {

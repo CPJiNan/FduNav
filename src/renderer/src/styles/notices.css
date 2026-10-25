@@ -277,6 +277,18 @@
     overflow-wrap: anywhere;
 }
 
+.notice-relevance {
+    margin-right: var(--space-2);
+    color: var(--color-danger);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    vertical-align: middle;
+}
+
+.notice-row .notice-relevance {
+    font-size: var(--font-size-xs);
+}
+
 .notice-meta {
     display: flex;
     align-items: center;

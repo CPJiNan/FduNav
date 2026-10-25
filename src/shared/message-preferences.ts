@@ -127,23 +127,6 @@ export function validateMessagePreferences(input: unknown): ValidationResult {
     }
 }
 
-export function readSavedMessagePreferences(input: unknown): ValidationResult {
-    if (input && typeof input === 'object' && !Array.isArray(input) &&
-        !('identity' in input) && 'enrollmentYear' in input) {
-        const legacy = input as Record<string, unknown>
-        return validateMessagePreferences({
-            ...emptyMessagePreferences(),
-            gender: legacy.gender === 'unspecified' ? '' : legacy.gender,
-            grade: legacy.enrollmentYear,
-            major: legacy.major,
-        })
-    }
-    if (input && typeof input === 'object' && !Array.isArray(input) && !('campus' in input)) {
-        return validateMessagePreferences({...input, campus: ''})
-    }
-    return validateMessagePreferences(input)
-}
-
 export function validateRequiredMessagePreferences(input: unknown): ValidationResult {
     const result = validateMessagePreferences(input)
     if (!result.ok) return result

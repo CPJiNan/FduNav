@@ -2,10 +2,14 @@ import {useEffect, useRef, useState} from 'react'
 import Markdown from 'react-markdown'
 import remarkBreaks from 'remark-breaks'
 import remarkGfm from 'remark-gfm'
-import type {Notice, NoticeDetail, NoticeList, NoticeSummary} from '../../shared/notices'
+import type {Notice, NoticeDetail, NoticeList, NoticeRelevance, NoticeSummary} from '../../shared/notices'
 import {Icon} from './Icon'
 import {NoticeBody} from './NoticeBody'
 import './styles/notices.css'
+
+function relevanceText(relevance: NoticeRelevance | null | undefined) {
+    return relevance === 'related' ? '[@与我有关]' : relevance === 'maybe' ? '[@可能有关]' : ''
+}
 
 export function NoticesPage({onLogin}: { onLogin: () => void }) {
     const [list, setList] = useState<NoticeList>({items: [], updatedAt: null, sources: []})
@@ -142,8 +146,14 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
         try {
             const result = await api.summarize({url: selected.url, sourceId: selected.sourceId}, force)
             if (request !== summaryRequest.current) return
-            if (result.ok) setSummary(result.data)
-            else setSummaryError(result.error)
+            if (result.ok) {
+                setSummary(result.data)
+                setList(current => ({
+                    ...current,
+                    items: current.items.map(item => item.sourceId === selected.sourceId && item.url === selected.url
+                        ? {...item, relevance: result.data.relevance} : item)
+                }))
+            } else setSummaryError(result.error)
         } catch {
             if (request === summaryRequest.current) setSummaryError('无法生成摘要，请稍后重试。')
         } finally {
@@ -151,10 +161,15 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
         }
     }
 
+    const selectedRelevance = selected
+        ? (list.items.find(item => item.sourceId === selected.sourceId && item.url === selected.url)?.relevance
+            ?? selected.relevance ?? null)
+        : null
+    const relevance = summary ? summary.relevance : selectedRelevance
     if (selected) return <article className="notices-page notice-detail">
         <button type="button" className="text-button" onClick={() => setSelected(null)}><Icon name="arrow"/>返回通知列表
         </button>
-        <h1>{selected.title}</h1>
+        <h1>{relevance && <span className="notice-relevance">{relevanceText(relevance)}</span>}{selected.title}</h1>
         <div className="notice-meta">
             <time dateTime={selected.published}>{selected.published}</time>
             <span>{selected.sourceName}</span>
@@ -263,7 +278,9 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
                 <button type="button" className="notice-open" onClick={() => setSelected(item)}>
                     <time dateTime={item.published}>
                         <strong>{item.published.slice(5)}</strong><span>{item.published.slice(0, 4)}</span></time>
-                    <div><h2><span className="notice-source-badge">{item.sourceName}</span>{item.title}</h2></div>
+                    <div><h2><span className="notice-source-badge">{item.sourceName}</span>{item.relevance &&
+                        <span className="notice-relevance">{relevanceText(item.relevance)}</span>}{item.title}</h2>
+                    </div>
                     <Icon name="chevron"/></button>
             </div>)}
             {!items.length && <div className="notice-empty" role="status">

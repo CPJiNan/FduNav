@@ -14,6 +14,7 @@ export interface NoticeRef {
 
 export interface Notice extends ParsedNotice, NoticeRef {
     sourceName: string
+    relevance?: NoticeRelevance | null
 }
 
 export interface NoticeList {
@@ -42,10 +43,13 @@ export interface NoticeDetail {
     attachmentError?: string
 }
 
+export type NoticeRelevance = 'related' | 'maybe'
+
 export interface NoticeSummary {
     content: string;
     model: string;
     cached: boolean
+    relevance: NoticeRelevance | null
 }
 
 export interface NoticesAPI {

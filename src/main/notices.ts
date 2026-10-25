@@ -50,9 +50,18 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
         return sourceUrl(value.url)
     }
 
+    const summaries = new NoticeSummaryService(db, llm, async ref => readNoticePdfs(await readDetail(ref)))
+
     handle('notices:list', async (force: unknown) => {
         if (force === true) await refresh.refresh()
-        return db.getNotices()
+        const list = db.getNotices()
+        return {
+            ...list,
+            items: list.items.map(item => {
+                const relevance = summaries.relevanceFor(item)
+                return relevance ? {...item, relevance} : item
+            })
+        }
     })
 
     async function readDetail(input: unknown) {
@@ -74,7 +83,6 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
     handle('notices:detail', async (input: unknown) => {
         return readNoticePdfs(await readDetail(input))
     })
-    const summaries = new NoticeSummaryService(db, llm, async ref => readNoticePdfs(await readDetail(ref)))
     handle('notices:summary', async (input: unknown) => {
         knownUrl(input)
         try {
