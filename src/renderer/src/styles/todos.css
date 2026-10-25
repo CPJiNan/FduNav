@@ -63,7 +63,7 @@
     color: var(--color-text-muted);
 }
 .todo-check[aria-pressed="true"], .is-completing .todo-check { color: var(--color-accent); }
-.todo-check:hover:not(:disabled):not([aria-disabled="true"]) { color: var(--color-accent); }
+.todo-check:hover:not(:disabled, [aria-disabled="true"]) { color: var(--color-accent); }
 .todo-check[aria-disabled="true"] { cursor: not-allowed; }
 .todo-row button:disabled { opacity: 1; }
 .todo-content {
