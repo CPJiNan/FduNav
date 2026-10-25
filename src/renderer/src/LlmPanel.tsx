@@ -1,5 +1,5 @@
 import {type FormEvent, useEffect, useRef, useState} from 'react'
-import {emptyLlmSettings, type LlmSettings, validateLlmSettings} from '../../shared/llm'
+import {emptyLlmSettings, type LlmSettings, summaryPromptMaxLength, validateLlmSettings} from '../../shared/llm'
 import './styles/llm.css'
 
 export function LlmPanel({active}: { active: boolean }) {
@@ -225,6 +225,17 @@ export function LlmPanel({active}: { active: boolean }) {
                     </select>
                     <button type="button" className="secondary-button"
                             onClick={() => void loadModels()}>{fetchingModels ? '获取中…' : '获取模型'}</button>
+                </div>
+            </div>
+            <div className="llm-field">
+                <label htmlFor="llm-summary-prompt">摘要提示词</label>
+                <div className="llm-prompt-control">
+                    <textarea id="llm-summary-prompt" value={settings.summaryPrompt} rows={10} required
+                              maxLength={summaryPromptMaxLength}
+                              onChange={event => {
+                                  setSettings({...settings, summaryPrompt: event.target.value});
+                                  edited()
+                              }}/>
                 </div>
             </div>
             <div className="llm-actions">

@@ -91,7 +91,7 @@
     font-weight: var(--font-weight-medium);
 }
 
-.llm-field > input, .llm-key-control > input, .llm-model-control select {
+.llm-field > input, .llm-key-control > input, .llm-model-control select, .llm-prompt-control textarea {
     width: 100%;
     min-width: 0;
     min-height: var(--size-touch-target);
@@ -101,6 +101,16 @@
     background: var(--color-bg-surface);
     color: var(--color-text-primary);
     font-size: var(--font-size-sm);
+}
+
+.llm-prompt-control {
+    min-width: 0;
+}
+
+.llm-prompt-control textarea {
+    display: block;
+    resize: vertical;
+    line-height: var(--line-height-relaxed);
 }
 
 .llm-field input::placeholder {
