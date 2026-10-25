@@ -331,6 +331,9 @@ export class AppDatabase {
     }
 
     getSources(): MessageSource[] {
+        const saved = this.db.prepare("SELECT value FROM preferences WHERE key = 'source_order'").get()
+        const ids = saved ? JSON.parse(saved.value as string) as string[] : []
+        const rank = new Map(ids.map((id, index) => [id, index]))
         return (this.db.prepare(`SELECT id,
                                         name,
                                         url,
@@ -342,8 +345,18 @@ export class AppDatabase {
                                  FROM message_sources
                                  ORDER BY rowid`).all()
             .map(row => ({...row, enabled: row.enabled === 1})) as unknown as MessageSource[])
-            .sort((a, b) => (defaultSourceRank.get(a.id) ?? defaultSources.length) -
+            .sort((a, b) => (rank.get(a.id) ?? ids.length) - (rank.get(b.id) ?? ids.length) ||
+                (defaultSourceRank.get(a.id) ?? defaultSources.length) -
                 (defaultSourceRank.get(b.id) ?? defaultSources.length))
+    }
+
+    reorderSources(ids: SourceId[]): MessageSource[] {
+        const sources = this.getSources()
+        if (ids.length !== sources.length || new Set(ids).size !== ids.length ||
+            ids.some(id => !sources.some(source => source.id === id))) throw new Error('消息来源排序无效。')
+        this.db.prepare("INSERT INTO preferences (key, value) VALUES ('source_order', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+            .run(JSON.stringify(ids))
+        return this.getSources()
     }
 
     getSource(id: string): MessageSource | undefined {

@@ -6,6 +6,7 @@ export const defaultSources = [
     {id: 'bwc', name: '保卫处', url: 'https://baoweichu.fudan.edu.cn/6707/list.htm', enabled: false},
     {id: 'zwc', name: '总务处', url: 'https://zongwuchu.fudan.edu.cn/16531/list.htm', enabled: false},
     {id: 'cwc', name: '财务处', url: 'https://cwc.fudan.edu.cn/12185/list.htm', enabled: false},
+    {id: 'fao', name: '国际合作与交流处', url: 'https://fao.fudan.edu.cn/15884/list.htm', enabled: false},
     {id: 'cec', name: '英语教学部', url: 'https://cec.fudan.edu.cn/23080/list.htm', enabled: false},
     {id: 'som', name: '马克思主义学院', url: 'https://som.fudan.edu.cn/15048/list.htm', enabled: false},
     {id: 'chinese', name: '中国语言文学系', url: 'https://chinese.fudan.edu.cn/tzgg/list.htm', enabled: false},
@@ -76,6 +77,8 @@ export interface SourcesAPI {
     list(): Promise<Result<MessageSource[]>>
 
     setEnabled(id: SourceId, enabled: boolean): Promise<Result<MessageSource[]>>
+
+    reorder(ids: SourceId[]): Promise<Result<MessageSource[]>>
 }
 
 export function isSourceId(value: unknown): value is SourceId {

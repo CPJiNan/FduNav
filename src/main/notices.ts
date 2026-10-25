@@ -178,6 +178,13 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
     })
 
     handle('sources:list', async () => db.getSources())
+    handle('sources:reorder', async (input: unknown) => {
+        if (!Array.isArray(input) || input.length !== db.getSources().length ||
+            new Set(input).size !== input.length || !input.every(isSourceId)) {
+            throw new AuthError('消息来源排序无效。')
+        }
+        return db.reorderSources(input)
+    })
     handle('sources:set-enabled', async (input: unknown) => {
         const value = input as Record<string, unknown> | null
         if (!value || !isSourceId(value.id) || typeof value.enabled !== 'boolean') {
