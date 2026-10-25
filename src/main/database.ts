@@ -1,6 +1,6 @@
 import {DatabaseSync} from 'node:sqlite'
 import type {Theme} from '../shared/accounts'
-import type {Notice, NoticeList, ParsedNotice} from '../shared/notices'
+import type {Notice, NoticeList, NoticeRelevanceChoice, ParsedNotice} from '../shared/notices'
 import type {Timetable} from '../shared/timetable'
 import type {CalendarEvent} from '../shared/calendar'
 import {defaultSources, type MessageSource, type SourceId} from '../shared/sources.ts'
@@ -67,6 +67,12 @@ export class AppDatabase {
                 PRIMARY KEY (source_id, url)
             );
             CREATE INDEX IF NOT EXISTS notices_published ON notices (published DESC);
+            CREATE TABLE IF NOT EXISTS notice_relevance_choices (
+                username TEXT NOT NULL, source_id TEXT NOT NULL, url TEXT NOT NULL,
+                relevance TEXT NOT NULL CHECK (relevance IN ('related', 'maybe', 'none')),
+                PRIMARY KEY (username, source_id, url),
+                FOREIGN KEY (source_id, url) REFERENCES notices (source_id, url) ON DELETE CASCADE
+            );
             CREATE TABLE IF NOT EXISTS llm_settings (
                 id INTEGER PRIMARY KEY CHECK (id = 1),
                 base_url TEXT NOT NULL, model TEXT NOT NULL, api_key BLOB,
@@ -84,6 +90,28 @@ export class AppDatabase {
                 FOREIGN KEY (source_id, url) REFERENCES notices (source_id, url) ON DELETE CASCADE
             );
         `)
+        if (this.db.prepare('PRAGMA table_info(notice_relevance_choices)').all().some(column => column.name === 'related')) {
+            this.db.exec('BEGIN IMMEDIATE')
+            try {
+                this.db.exec(`
+                    ALTER TABLE notice_relevance_choices RENAME TO notice_relevance_choices_legacy;
+                    CREATE TABLE notice_relevance_choices (
+                        username TEXT NOT NULL, source_id TEXT NOT NULL, url TEXT NOT NULL,
+                        relevance TEXT NOT NULL CHECK (relevance IN ('related', 'maybe', 'none')),
+                        PRIMARY KEY (username, source_id, url),
+                        FOREIGN KEY (source_id, url) REFERENCES notices (source_id, url) ON DELETE CASCADE
+                    );
+                    INSERT INTO notice_relevance_choices (username, source_id, url, relevance)
+                        SELECT username, source_id, url, CASE related WHEN 1 THEN 'related' ELSE 'none' END
+                        FROM notice_relevance_choices_legacy;
+                    DROP TABLE notice_relevance_choices_legacy;
+                    COMMIT;
+                `)
+            } catch (error) {
+                this.db.exec('ROLLBACK')
+                throw error
+            }
+        }
         this.db.exec('PRAGMA foreign_keys = ON;')
         this.syncSources()
     }
@@ -209,6 +237,18 @@ export class AppDatabase {
                                          JOIN message_sources s ON s.id = n.source_id
                                 WHERE n.source_id = ?
                                   AND n.url = ?`).get(sourceId, url) as unknown as Notice ?? null
+    }
+
+    getNoticeRelevanceChoice(username: string, sourceId: string, url: string): NoticeRelevanceChoice | null {
+        const row = this.db.prepare('SELECT relevance FROM notice_relevance_choices WHERE username = ? AND source_id = ? AND url = ?')
+            .get(username, sourceId, url)
+        return row ? row.relevance as NoticeRelevanceChoice : null
+    }
+
+    setNoticeRelevanceChoice(username: string, sourceId: string, url: string, relevance: NoticeRelevanceChoice) {
+        this.db.prepare(`INSERT INTO notice_relevance_choices (username, source_id, url, relevance) VALUES (?, ?, ?, ?)
+            ON CONFLICT(username, source_id, url) DO UPDATE SET relevance = excluded.relevance`)
+            .run(username, sourceId, url, relevance)
     }
 
     getNoticeSummary(sourceId: string, url: string, cacheKey: string): {

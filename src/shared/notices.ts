@@ -44,6 +44,7 @@ export interface NoticeDetail {
 }
 
 export type NoticeRelevance = 'related' | 'maybe'
+export type NoticeRelevanceChoice = NoticeRelevance | 'none'
 
 export interface NoticeSummary {
     content: string;
@@ -53,6 +54,21 @@ export interface NoticeSummary {
 }
 
 export interface NoticesAPI {
+    summaryQueue(): Promise<Result<SummaryTask[]>>
+
+    enqueueSummaries(notices: NoticeRef[]): Promise<Result<void>>
+
+    cancelSummaries(ids: string[]): Promise<Result<void>>
+
+    clearSummaryQueue(): Promise<Result<void>>
+
+    removeSummaries(ids: string[]): Promise<Result<void>>
+
+    getNotice(notice: NoticeRef): Promise<Result<Notice>>
+
+    setRelevance(notice: NoticeRef, relevance: NoticeRelevanceChoice): Promise<Result<NoticeRelevance | null>>
+
+    onSummaryQueueChanged(callback: (tasks: SummaryTask[]) => void): () => void
     list(refresh?: boolean): Promise<Result<NoticeList>>
 
     detail(notice: NoticeRef): Promise<Result<NoticeDetail>>
@@ -64,4 +80,15 @@ export interface NoticesAPI {
     openSource(notice: NoticeRef): Promise<Result<void>>
 
     openAttachment(notice: NoticeRef & { urlToOpen: string }): Promise<Result<void>>
+}
+
+export interface SummaryTask extends NoticeRef {
+    id: string
+    title: string
+    status: 'queued' | 'reading' | 'generating' | 'saving' | 'completed' | 'failed' | 'cancelled'
+    error?: string
+}
+
+export function summaryTaskFinished(task: SummaryTask): boolean {
+    return task.status === 'completed' || task.status === 'failed' || task.status === 'cancelled'
 }

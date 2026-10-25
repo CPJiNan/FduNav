@@ -5,13 +5,16 @@ import remarkGfm from 'remark-gfm'
 import type {Notice, NoticeDetail, NoticeList, NoticeRelevance, NoticeSummary} from '../../shared/notices'
 import {Icon} from './Icon'
 import {NoticeBody} from './NoticeBody'
+import {NoticeRelevanceMenu} from './NoticeRelevanceMenu'
 import './styles/notices.css'
 
 function relevanceText(relevance: NoticeRelevance | null | undefined) {
     return relevance === 'related' ? '[@与我有关]' : relevance === 'maybe' ? '[@可能有关]' : ''
 }
 
-export function NoticesPage({onLogin}: { onLogin: () => void }) {
+export function NoticesPage({onLogin, noticeToOpen, onNoticeOpened}: {
+    onLogin: () => void; noticeToOpen?: Notice | null; onNoticeOpened?: () => void
+}) {
     const [list, setList] = useState<NoticeList>({items: [], updatedAt: null, sources: []})
     const [loading, setLoading] = useState(!!window.notices)
     const [error, setError] = useState('')
@@ -23,14 +26,44 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
     const [summaryLoading, setSummaryLoading] = useState(false)
     const [summaryError, setSummaryError] = useState('')
     const [summaryOpen, setSummaryOpen] = useState(false)
+    const relevanceChoices = useRef(new Map<string, NoticeRelevance | null>())
     const [query, setQuery] = useState('')
     const [sourceId, setSourceId] = useState('')
     const [fromDate, setFromDate] = useState('')
     const [toDate, setToDate] = useState('')
     const [filterOpen, setFilterOpen] = useState(false)
+    const [multiSelect, setMultiSelect] = useState(false)
+    const [checked, setChecked] = useState<string[]>([])
+    const [enqueueing, setEnqueueing] = useState(false)
+    const noticeKey = (notice: Notice) => JSON.stringify([notice.sourceId, notice.url])
+    const effectiveRelevance = (notice: Notice, predicted: NoticeRelevance | null | undefined) =>
+        relevanceChoices.current.has(noticeKey(notice)) ? relevanceChoices.current.get(noticeKey(notice)) : predicted
     const listVersion = useRef(0)
     const summaryRequest = useRef(0)
     const api = window.notices
+
+    useEffect(() => {
+        if (!noticeToOpen) return
+        setSelected(noticeToOpen)
+        onNoticeOpened?.()
+    }, [noticeToOpen, onNoticeOpened])
+
+    useEffect(() => {
+        if (!api) return
+        let active = true
+        let version = 0
+        let completed = ''
+        const unsubscribe = api.onSummaryQueueChanged(tasks => {
+            const next = tasks.filter(task => task.status === 'completed').map(task => task.id).join(',')
+            if (next === completed) return
+            completed = next
+            const request = ++version
+            void api.list().then(result => {
+                if (active && request === version && result.ok) setList(result.data)
+            }).catch(() => {})
+        })
+        return () => { active = false; unsubscribe() }
+    }, [api])
 
     useEffect(() => {
         if (sourceId && !list.sources.some(source => source.id === sourceId && source.enabled)) setSourceId('')
@@ -134,6 +167,7 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
             setSummaryOpen(false)
             return
         }
+        setSummaryOpen(true)
         if (summaryLoading) return
         if (!force && summary) {
             setSummaryOpen(true)
@@ -161,19 +195,42 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
         }
     }
 
-    const selectedRelevance = selected
-        ? (list.items.find(item => item.sourceId === selected.sourceId && item.url === selected.url)?.relevance
-            ?? selected.relevance ?? null)
-        : null
-    const relevance = summary ? summary.relevance : selectedRelevance
+    async function enqueueSelected() {
+        if (!api || enqueueing) return
+        const notices = list.items.filter(item => checked.includes(noticeKey(item)))
+        if (!notices.length) return
+        setEnqueueing(true)
+        setError('')
+        try {
+            const result = await api.enqueueSummaries(notices.map(({sourceId, url}) => ({sourceId, url})))
+            if (result.ok) {
+                setChecked([])
+            } else setError(result.error)
+        } catch { setError('无法加入摘要队列，请重试。') }
+        finally { setEnqueueing(false) }
+    }
+
+    function updateRelevance(value: NoticeRelevance | null) {
+        if (!selected) return
+        relevanceChoices.current.set(noticeKey(selected), value)
+        setList(current => ({...current, items: current.items.map(item => noticeKey(item) === noticeKey(selected)
+            ? {...item, relevance: value} : item)}))
+        setSummary(current => current ? {...current, relevance: value} : current)
+    }
+
+    const listedNotice = selected && list.items.find(item => item.sourceId === selected.sourceId && item.url === selected.url)
+    const selectedRelevance = listedNotice ? listedNotice.relevance : selected?.relevance
+    const relevance = selected ? effectiveRelevance(selected, summary ? summary.relevance : selectedRelevance) : null
     if (selected) return <article className="notices-page notice-detail">
         <button type="button" className="text-button" onClick={() => setSelected(null)}><Icon name="arrow"/>返回通知列表
         </button>
-        <h1>{relevance && <span className="notice-relevance">{relevanceText(relevance)}</span>}{selected.title}</h1>
+        <h1>{relevance && <span className={`notice-relevance notice-relevance--${relevance}`}>{relevanceText(relevance)}</span>}{selected.title}</h1>
         <div className="notice-meta">
             <time dateTime={selected.published}>{selected.published}</time>
             <span>{selected.sourceName}</span>
-            <button type="button" className="text-button" onClick={() => void openSource()}>查看学校原文<Icon
+            <NoticeRelevanceMenu key={noticeKey(selected)} notice={selected} relevance={relevance}
+                                 onChanged={updateRelevance}/>
+            <button type="button" className="text-button" onClick={() => void openSource()}>查看原文<Icon
                 name="external"/>
             </button>
             <button type="button" className="icon-button notice-summary-button" aria-label="AI 摘要" title="AI 摘要"
@@ -238,6 +295,9 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
                         aria-label="筛选通知"
                         title="筛选通知" aria-expanded={filterOpen} aria-controls="notice-filter-settings"
                         onClick={() => setFilterOpen(value => !value)}><Icon name="filter"/></button>
+                <button type="button" className={`icon-button ${multiSelect ? 'is-active' : ''}`}
+                        aria-label="AI 摘要" title="AI 摘要" aria-pressed={multiSelect}
+                        onClick={() => { setMultiSelect(value => !value); setChecked([]) }}><Icon name="sparkles"/></button>
                 <button type="button" className="icon-button" aria-label={loading ? '正在刷新通知' : '刷新通知'}
                         title={loading ? '正在刷新通知' : '刷新通知'} disabled={loading || !api}
                         onClick={() => void refresh()}><Icon name="refresh"/></button>
@@ -267,6 +327,14 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
                     onClick={resetFilters}>重置筛选
             </button>
         </div>}
+        {multiSelect && <div className="notice-batch-actions">
+            <label><input type="checkbox" disabled={!items.length}
+                          checked={items.length > 0 && items.every(item => checked.includes(noticeKey(item)))}
+                          onChange={event => setChecked(event.target.checked ? items.map(noticeKey) : [])}/>全选</label>
+            <span>已选 {list.items.filter(item => checked.includes(noticeKey(item))).length} 条</span>
+            <button type="button" className="text-button" disabled={!api || !checked.length || enqueueing}
+                    onClick={() => void enqueueSelected()}>{enqueueing ? '加入中…' : '加入摘要队列'}</button>
+        </div>}
         {!api && <p className="account-notice">请在桌面应用中查看通知。</p>}
         {error &&
             <p className="account-error" role="alert">{error}{list.items.length > 0 && ' 当前展示上次缓存的通知。'}</p>}
@@ -274,12 +342,15 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
             .map(source => <p className="account-error" role="alert"
                               key={source.id}>{source.name}：{source.lastError}</p>)}
         <div className="notice-list" aria-busy={loading}>
-            {items.map(item => <div className="notice-row" key={`${item.sourceId}:${item.url}`}>
+            {items.map(item => <div className={`notice-row ${multiSelect ? 'notice-row--selectable' : ''}`} key={`${item.sourceId}:${item.url}`}>
+                {multiSelect && <input type="checkbox" aria-label={`选择通知：${item.title}`}
+                                       checked={checked.includes(noticeKey(item))} onChange={event => setChecked(value =>
+                    event.target.checked ? [...value, noticeKey(item)] : value.filter(key => key !== noticeKey(item)))}/>}
                 <button type="button" className="notice-open" onClick={() => setSelected(item)}>
                     <time dateTime={item.published}>
                         <strong>{item.published.slice(5)}</strong><span>{item.published.slice(0, 4)}</span></time>
-                    <div><h2><span className="notice-source-badge">{item.sourceName}</span>{item.relevance &&
-                        <span className="notice-relevance">{relevanceText(item.relevance)}</span>}{item.title}</h2>
+                    <div><h2><span className="notice-source-badge">{item.sourceName}</span>{effectiveRelevance(item, item.relevance) &&
+                        <span className={`notice-relevance notice-relevance--${effectiveRelevance(item, item.relevance)}`}>{relevanceText(effectiveRelevance(item, item.relevance))}</span>}{item.title}</h2>
                     </div>
                     <Icon name="chevron"/></button>
             </div>)}

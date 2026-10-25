@@ -7,6 +7,8 @@ import {CalendarPage} from './CalendarPage'
 import {MessagePreferencesPanel} from './MessagePreferencesPanel'
 import {SourcesPanel} from './SourcesPanel'
 import {LlmPanel} from './LlmPanel'
+import {SummaryQueuePanel} from './SummaryQueuePanel'
+import type {Notice} from '../../shared/notices'
 import type {AccountState} from '../../shared/accounts'
 import {type MessagePreferences, validateRequiredMessagePreferences} from '../../shared/message-preferences'
 import {readTheme, saveTheme, type Theme} from './theme'
@@ -32,6 +34,7 @@ export default function App() {
     const [theme, setTheme] = useState<Theme>(readTheme)
     const [settings, setSettings] = useState(false)
     const [page, setPage] = useState<'notices' | 'calendar'>('notices')
+    const [noticeToOpen, setNoticeToOpen] = useState<Notice | null>(null)
     const [tab, setTab] = useState<Tab>('theme')
     const [storageError, setStorageError] = useState(false)
     const [account, setAccount] = useState<AccountState | null>(null)
@@ -119,6 +122,14 @@ export default function App() {
                         title={calendarNavigation.label} aria-current={showCalendarPage ? 'page' : undefined}
                         onClick={() => openPage('calendar')}><Icon name={calendarNavigation.icon}/></button>
                 <div className="rail-bottom">
+                    <SummaryQueuePanel username={account?.username} onOpenNotice={async ref => {
+                        const result = await window.notices?.getNotice(ref)
+                        if (!result) throw new Error('通知服务不可用。')
+                        if (!result.ok) throw new Error(result.error)
+                        setNoticeToOpen(result.data)
+                        setPage('notices')
+                        setSettings(false)
+                    }}/>
                     <button type="button" ref={settingsButton}
                             className={`icon-button rail-button ${showSettings ? 'is-active' : ''}`}
                             aria-label="设置" title="设置" aria-current={showSettings ? 'page' : undefined}
@@ -189,7 +200,7 @@ export default function App() {
                             </div>
                         </div>
                         {showNoticesPage && accountLoaded && (!window.accounts || account?.status === 'signed-in') &&
-                            <NoticesPage onLogin={() => {
+                            <NoticesPage noticeToOpen={noticeToOpen} onNoticeOpened={() => setNoticeToOpen(null)} onLogin={() => {
                                 setTab('account');
                                 setSettings(true)
                             }}/>}
