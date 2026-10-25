@@ -80,8 +80,8 @@ app.whenReady().then(async () => {
         const accounts = await registerAccountHandlers(database, trusted)
         registerTimetableHandlers(database, accounts, trusted)
         registerCalendarHandlers(database, accounts, trusted)
-        registerLlmHandlers(database, trusted)
-        registerNoticeHandlers(database, accounts, trusted)
+        const llm = registerLlmHandlers(database, trusted)
+        registerNoticeHandlers(database, accounts, llm, trusted)
         registerMessagePreferenceHandlers(database, trusted)
     } catch {
         dialog.showErrorBox('无法打开应用数据', 'SQLite 数据库初始化失败，请检查应用数据目录的访问权限。')

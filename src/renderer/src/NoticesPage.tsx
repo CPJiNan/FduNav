@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState} from 'react'
-import type {Notice, NoticeDetail, NoticeList} from '../../shared/notices'
+import type {Notice, NoticeDetail, NoticeList, NoticeSummary} from '../../shared/notices'
 import {Icon} from './Icon'
 import {NoticeBody} from './NoticeBody'
 import './styles/notices.css'
@@ -12,12 +12,17 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
     const [detail, setDetail] = useState<NoticeDetail | null>(null)
     const [detailError, setDetailError] = useState('')
     const [detailLoading, setDetailLoading] = useState(false)
+    const [summary, setSummary] = useState<NoticeSummary | null>(null)
+    const [summaryLoading, setSummaryLoading] = useState(false)
+    const [summaryError, setSummaryError] = useState('')
+    const [summaryOpen, setSummaryOpen] = useState(false)
     const [query, setQuery] = useState('')
     const [sourceId, setSourceId] = useState('')
     const [fromDate, setFromDate] = useState('')
     const [toDate, setToDate] = useState('')
     const [filterOpen, setFilterOpen] = useState(false)
     const listVersion = useRef(0)
+    const summaryRequest = useRef(0)
     const api = window.notices
 
     useEffect(() => {
@@ -55,9 +60,14 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
     useEffect(() => {
         if (!selected || !api) return
         let cancelled = false
+        summaryRequest.current++
         setDetail(null);
         setDetailError('');
         setDetailLoading(true)
+        setSummary(null);
+        setSummaryError('');
+        setSummaryLoading(false);
+        setSummaryOpen(false)
         void api.detail({url: selected.url, sourceId: selected.sourceId}).then(result => {
             if (cancelled) return
             if (result.ok) setDetail(result.data)
@@ -110,6 +120,29 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
         }
     }
 
+    async function summarize() {
+        if (!api || !selected) return
+        if (summaryOpen) {
+            setSummaryOpen(false)
+            return
+        }
+        setSummaryOpen(true)
+        if (summary || summaryLoading) return
+        const request = ++summaryRequest.current
+        setSummaryLoading(true)
+        setSummaryError('')
+        try {
+            const result = await api.summarize({url: selected.url, sourceId: selected.sourceId})
+            if (request !== summaryRequest.current) return
+            if (result.ok) setSummary(result.data)
+            else setSummaryError(result.error)
+        } catch {
+            if (request === summaryRequest.current) setSummaryError('无法生成摘要，请稍后重试。')
+        } finally {
+            if (request === summaryRequest.current) setSummaryLoading(false)
+        }
+    }
+
     if (selected) return <article className="notices-page notice-detail">
         <button type="button" className="text-button" onClick={() => setSelected(null)}><Icon name="arrow"/>返回通知列表
         </button>
@@ -120,7 +153,19 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
             <button type="button" className="text-button" onClick={() => void openSource()}>查看学校原文<Icon
                 name="external"/>
             </button>
+            <button type="button" className="icon-button notice-summary-button" aria-label="AI 摘要" title="AI 摘要"
+                    aria-expanded={summaryOpen} aria-controls="notice-summary"
+                    disabled={detailLoading || !detail || detail.requiresLogin || !api}
+                    onClick={() => void summarize()}><Icon name="sparkles"/></button>
         </div>
+        {summaryOpen && <section id="notice-summary" className="notice-summary" aria-label="AI 摘要">
+            <div className="notice-summary-head"><Icon name="sparkles"/><strong>AI 摘要</strong>
+                <button type="button" className="text-button" onClick={() => setSummaryOpen(false)}>收起</button>
+            </div>
+            {summaryLoading && <p className="notice-summary-status" role="status">正在生成摘要…</p>}
+            {summaryError && <p className="account-error" role="alert">{summaryError}</p>}
+            {summary && <p className="notice-summary-text">{summary.content}</p>}
+        </section>}
         {error && <p className="account-error" role="alert">{error}</p>}
         {detailLoading && <p className="notice-empty" role="status">正在读取通知正文…</p>}
         {detailError && <div className="account-error" role="alert">{detailError}

@@ -42,10 +42,18 @@ export interface NoticeDetail {
     attachmentError?: string
 }
 
+export interface NoticeSummary {
+    content: string;
+    model: string;
+    cached: boolean
+}
+
 export interface NoticesAPI {
     list(refresh?: boolean): Promise<Result<NoticeList>>
 
     detail(notice: NoticeRef): Promise<Result<NoticeDetail>>
+
+    summarize(notice: NoticeRef): Promise<Result<NoticeSummary>>
 
     image(notice: NoticeRef & { imageUrl: string }): Promise<Result<string>>
 

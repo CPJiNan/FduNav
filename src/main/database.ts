@@ -136,6 +136,61 @@ export class AppDatabase {
                 }
             }
         }
+        if (Number(this.db.prepare('PRAGMA user_version').get()?.user_version) < 9) {
+            this.db.exec('BEGIN IMMEDIATE')
+            try {
+                this.db.exec(`
+                    CREATE TABLE IF NOT EXISTS notice_summaries
+                    (
+                        source_id
+                        TEXT
+                        NOT
+                        NULL,
+                        url
+                        TEXT
+                        NOT
+                        NULL,
+                        content_hash
+                        TEXT
+                        NOT
+                        NULL,
+                        model
+                        TEXT
+                        NOT
+                        NULL,
+                        summary
+                        TEXT
+                        NOT
+                        NULL,
+                        created_at
+                        TEXT
+                        NOT
+                        NULL,
+                        PRIMARY
+                        KEY
+                    (
+                        source_id,
+                        url
+                    ),
+                        FOREIGN KEY
+                    (
+                        source_id,
+                        url
+                    ) REFERENCES notices
+                    (
+                        source_id,
+                        url
+                    ) ON DELETE CASCADE
+                        );
+                    PRAGMA
+                    user_version = 9;
+                    COMMIT;
+                `)
+            } catch (error) {
+                this.db.exec('ROLLBACK')
+                throw error
+            }
+        }
         this.syncSources()
     }
 
@@ -247,6 +302,39 @@ export class AppDatabase {
 
     hasNotice(url: string, sourceId = 'jwc') {
         return !!this.db.prepare('SELECT 1 FROM notices WHERE url = ? AND source_id = ?').get(url, sourceId)
+    }
+
+    getNotice(sourceId: string, url: string): Notice | null {
+        return this.db.prepare(`SELECT n.url,
+                                       n.title,
+                                       n.published,
+                                       n.source_id AS sourceId,
+                                       s.name      AS sourceName
+                                FROM notices n
+                                         JOIN message_sources s ON s.id = n.source_id
+                                WHERE n.source_id = ?
+                                  AND n.url = ?`).get(sourceId, url) as unknown as Notice ?? null
+    }
+
+    getNoticeSummary(sourceId: string, url: string): { contentHash: string; model: string; summary: string } | null {
+        return this.db.prepare(`SELECT content_hash AS contentHash, model, summary
+                                FROM notice_summaries
+                                WHERE source_id = ?
+                                  AND url = ?`).get(sourceId, url) as unknown as {
+            contentHash: string;
+            model: string;
+            summary: string
+        } ?? null
+    }
+
+    saveNoticeSummary(sourceId: string, url: string, contentHash: string, model: string, summary: string) {
+        this.db.prepare(`INSERT INTO notice_summaries (source_id, url, content_hash, model, summary, created_at)
+                         VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(source_id, url) DO
+        UPDATE SET content_hash = excluded.content_hash,
+            model = excluded.model,
+            summary = excluded.summary,
+            created_at = excluded.created_at`)
+            .run(sourceId, url, contentHash, model, summary, new Date().toISOString())
     }
 
     saveNotices(items: ParsedNotice[], sourceId = 'jwc', expectedRevision?: number, listUrl?: string) {
