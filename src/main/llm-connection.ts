@@ -6,6 +6,22 @@ export interface Connection {
     apiKey: string
 }
 
+export interface ChatMessage {
+    role: 'system' | 'user';
+    content: string
+}
+
+export async function completeLlm(connection: Connection, messages: ChatMessage[], signal: AbortSignal,
+                                  request: typeof fetch = fetch): Promise<string> {
+    const data = await requestLlmJson(connection, '/chat/completions', {
+        method: 'POST', body: JSON.stringify({model: connection.model, messages, stream: false}),
+    }, request, 60_000, signal)
+    const payload = data as { error?: unknown; choices?: { message?: { content?: unknown } }[] } | null
+    const content = Array.isArray(payload?.choices) ? payload.choices[0]?.message?.content : undefined
+    if (payload?.error || typeof content !== 'string' || !content.trim()) throw new Error('模型未返回有效内容。')
+    return content
+}
+
 function statusError(status: number): string {
     if (status === 401) return '认证失败，请检查 API Key（HTTP 401）。'
     if (status === 403) return '访问被拒绝，请检查账号或模型权限（HTTP 403）。'
