@@ -55,7 +55,10 @@ async function requestSource(value: string, kind: 'page' | 'pdf' | 'image', refe
         const response = await new Promise<{ location?: string; bytes: Buffer; type: string }>((resolve, reject) => {
             const req = request(parsed, {
                 method: 'GET', agent: false, signal,
-                headers: {'User-Agent': 'Mozilla/5.0 FduNav/0.1', 'Accept-Encoding': 'identity', ...(referer ? {Referer: referer} : {})},
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 FduNav/0.1',
+                    'Accept-Encoding': 'identity', ...(referer ? {Referer: referer} : {})
+                },
 
                 lookup: (_hostname, options, callback) => {
                     if (options.all) callback(null, [address])

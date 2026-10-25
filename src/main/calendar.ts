@@ -14,9 +14,12 @@ export function registerCalendarHandlers(db: AppDatabase, accounts: AccountServi
                 const account = accounts.getState()
                 if (account.status !== 'signed-in' || !account.username) throw new AuthError('请先登录账号。')
                 return {ok: true, data: action(account.username, input)}
-            } catch (error) { return {ok: false, error: error instanceof AuthError ? error.message : '日程操作失败，请重试。'} }
+            } catch (error) {
+                return {ok: false, error: error instanceof AuthError ? error.message : '日程操作失败，请重试。'}
+            }
         })
     }
+
     handle('calendar:list', username => db.getCalendarEvents(username))
     handle('calendar:save', (username, input) => {
         const result = validateCalendarEvent(input)

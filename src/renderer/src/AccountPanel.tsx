@@ -35,8 +35,7 @@ export function AccountPanel({account, onChange}: {
                 handledAccount.current = result.data
                 setError(accountWarning(result.data))
                 onChange(result.data)
-            }
-            else {
+            } else {
                 setError(result.error)
                 const state = await api?.getState().catch(() => null)
                 if (state?.ok) {
@@ -87,8 +86,9 @@ export function AccountPanel({account, onChange}: {
         </form>}
         {account?.username && <>
             <div className="account-actions">
-                {account.status === 'unverified' && <button type="button" className="secondary-button" disabled={!!busy || !api}
-                                                            onClick={() => api && void perform('正在验证会话…', () => api.verify())}>验证会话</button>}
+                {account.status === 'unverified' &&
+                    <button type="button" className="secondary-button" disabled={!!busy || !api}
+                            onClick={() => api && void perform('正在验证会话…', () => api.verify())}>验证会话</button>}
                 <button type="button" className="secondary-button" disabled={!!busy || !api}
                         onClick={() => api && void perform('正在退出…', () => api.logout())}>退出登录
                 </button>

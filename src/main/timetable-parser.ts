@@ -1,10 +1,10 @@
 import {load} from 'cheerio'
 import {AuthError} from './fudan-auth.ts'
-import {dateAfter, validDate, type Semester, type TimetableCourse} from '../shared/timetable.ts'
+import {dateAfter, type Semester, type TimetableCourse, validDate} from '../shared/timetable.ts'
 
 const invalid = () => new AuthError('无法解析学校课表数据，学校页面可能已更新。')
 
-export function parseSemesters(html: string): {semesters: Semester[]; defaultId: string} {
+export function parseSemesters(html: string): { semesters: Semester[]; defaultId: string } {
     const $ = load(html)
     const expression = html.match(/\b(?:var|let|const)\s+semesters\s*=\s*JSON\.parse\(\s*((?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'))\s*\)/)?.[1]
     if (!expression) throw invalid()
@@ -14,7 +14,9 @@ export function parseSemesters(html: string): {semesters: Semester[]; defaultId:
         const text = expression[0] === '"' ? JSON.parse(expression)
             : expression.slice(1, -1).replace(/\\([\\'"/])/g, '$1').replace(/\\x([0-9a-f]{2})/gi, (_m, hex) => String.fromCharCode(parseInt(hex, 16)))
         rows = JSON.parse(text)
-    } catch { throw invalid() }
+    } catch {
+        throw invalid()
+    }
     const entries = array(rows)
     if (!entries.length) throw invalid()
     const semesters: Semester[] = entries.map(value => {
@@ -31,7 +33,11 @@ export function parseSemesters(html: string): {semesters: Semester[]; defaultId:
 }
 
 function json(text: string): unknown {
-    try { return JSON.parse(text) } catch { throw invalid() }
+    try {
+        return JSON.parse(text)
+    } catch {
+        throw invalid()
+    }
 }
 
 function record(value: unknown): Record<string, unknown> {

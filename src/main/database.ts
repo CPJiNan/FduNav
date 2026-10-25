@@ -178,7 +178,11 @@ export class AppDatabase {
     getTimetable(username: string, kind: Timetable['kind']): Timetable | null {
         const row = this.db.prepare('SELECT data FROM timetable_cache WHERE username = ? AND kind = ?').get(username, kind)
         if (!row) return null
-        try { return JSON.parse(String(row.data)) as Timetable } catch { return null }
+        try {
+            return JSON.parse(String(row.data)) as Timetable
+        } catch {
+            return null
+        }
     }
 
     saveTimetable(username: string, timetable: Timetable) {

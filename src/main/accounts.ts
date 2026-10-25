@@ -1,9 +1,16 @@
 import {BrowserWindow, ipcMain, type IpcMainInvokeEvent} from 'electron'
 import {CookieJar} from 'tough-cookie'
 import type {AppDatabase} from './database'
-import {AdditionalAuthenticationRequired, authenticate, AuthError, FudanTransport, isAuthUrl, verifySession} from './fudan-auth'
+import {
+    AdditionalAuthenticationRequired,
+    authenticate,
+    AuthError,
+    FudanTransport,
+    isAuthUrl,
+    verifySession
+} from './fudan-auth'
 import {completeInteractiveAuthentication} from './interactive-auth'
-import {clearReaderSession, readAuthenticatedPage, readAuthenticatedImage} from './authenticated-page'
+import {clearReaderSession, readAuthenticatedImage, readAuthenticatedPage} from './authenticated-page'
 import type {AccountState, LoginInput, Result, Theme} from '../shared/accounts'
 import {secureStorage} from './secure-storage'
 
@@ -169,8 +176,10 @@ export class AccountService {
                 }
                 return parse(page.text)
             })
-            this.db.saveAccount({username: this.state.username!, target: this.target, last_login: this.state.lastLogin!,
-                cookies: await secureStorage.encrypt(JSON.stringify(jar.serializeSync()))})
+            this.db.saveAccount({
+                username: this.state.username!, target: this.target, last_login: this.state.lastLogin!,
+                cookies: await secureStorage.encrypt(JSON.stringify(jar.serializeSync()))
+            })
             this.jar = jar
             return result
         })

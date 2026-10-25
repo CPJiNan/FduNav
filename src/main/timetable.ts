@@ -3,14 +3,20 @@ import type {AppDatabase} from './database'
 import type {AccountService} from './accounts'
 import {AuthError} from './fudan-auth.ts'
 import type {Result} from '../shared/accounts'
-import {validDate, type Timetable} from '../shared/timetable.ts'
-import {parseSemesters, parseUndergraduateCourses, parsePostgraduateCourses} from './timetable-parser.ts'
+import {type Timetable, validDate} from '../shared/timetable.ts'
+import {parsePostgraduateCourses, parseSemesters, parseUndergraduateCourses} from './timetable-parser.ts'
 
 const timetableUrl = 'https://fdjwgl.fudan.edu.cn/student/for-std/course-table'
 const postgraduateUrl = 'https://yjsxk.fudan.edu.cn/yjsxkapp/sys/xsxkappfudan/xsxkCourse/loadKbxx.do'
 
 export function registerTimetableHandlers(db: AppDatabase, accounts: AccountService, trusted: (event: IpcMainInvokeEvent) => boolean) {
-    let pending: {username: string; kind: Timetable['kind']; semesterId: unknown; promise: Promise<Result<Timetable>>} | null = null
+    let pending: {
+        username: string;
+        kind: Timetable['kind'];
+        semesterId: unknown;
+        promise: Promise<Result<Timetable>>
+    } | null = null
+
     function context() {
         const account = accounts.getState()
         if (account.status !== 'signed-in' || !account.username) throw new AuthError('请先登录账号。')
@@ -20,6 +26,7 @@ export function registerTimetableHandlers(db: AppDatabase, accounts: AccountServ
         const kind: Timetable['kind'] = preferences.educationLevel === 'undergraduate' ? 'undergraduate' : 'postgraduate'
         return {username: account.username, kind}
     }
+
     ipcMain.handle('timetable:get', async (event, input: unknown): Promise<Result<Timetable>> => {
         if (!trusted(event)) return {ok: false, error: '请求来源无效。'}
         try {
@@ -39,22 +46,36 @@ export function registerTimetableHandlers(db: AppDatabase, accounts: AccountServ
             const promise = accounts.withServiceSession<Timetable>(async read => {
                 if (kind === 'postgraduate') {
                     const courses = await read(`${postgraduateUrl}?_=${Date.now()}`, parsePostgraduateCourses)
-                    return {kind, semesters: [], semesterId: '', startDate: cached?.startDate ?? null, courses, updatedAt: new Date().toISOString()}
+                    return {
+                        kind,
+                        semesters: [],
+                        semesterId: '',
+                        startDate: cached?.startDate ?? null,
+                        courses,
+                        updatedAt: new Date().toISOString()
+                    }
                 }
                 const {semesters, defaultId} = await read(timetableUrl, parseSemesters)
                 const selected = semesters.find(item => item.id === (semesterId ?? cached?.semesterId ?? defaultId))
                     ?? semesters.find(item => item.id === defaultId)!
                 const courses = await read(`${timetableUrl}/semester/${selected.id}/print-data`, parseUndergraduateCourses)
-                return {kind, semesters, semesterId: selected.id,
+                return {
+                    kind, semesters, semesterId: selected.id,
                     startDate: cached?.semesterId === selected.id ? cached.startDate ?? selected.startDate : selected.startDate,
-                    courses, updatedAt: new Date().toISOString()}
+                    courses, updatedAt: new Date().toISOString()
+                }
             }, parent).then((data): Result<Timetable> => {
                 const current = context()
                 if (current.username !== username || current.kind !== kind) throw new AuthError('账号或消息偏好已变更，请重新获取课表。')
                 db.saveTimetable(username, data)
                 return {ok: true, data}
-            }).catch((error): Result<Timetable> => ({ok: false, error: error instanceof AuthError ? error.message : '获取课表失败，请稍后重试。'}))
-                .finally(() => { pending = null })
+            }).catch((error): Result<Timetable> => ({
+                ok: false,
+                error: error instanceof AuthError ? error.message : '获取课表失败，请稍后重试。'
+            }))
+                .finally(() => {
+                    pending = null
+                })
             pending = {username, kind, semesterId, promise}
             return promise
         } catch (error) {

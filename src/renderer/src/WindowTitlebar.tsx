@@ -27,7 +27,8 @@ export function WindowTitlebar() {
     const hint = (value: string) => controls ? value : `${value}（桌面应用中可用）`
     return <header className="window-titlebar">
         <div className="window-controls" role="group" aria-label="窗口控制">
-            <button type="button" className="window-button" aria-label="最小化窗口" title={hint('最小化窗口')} disabled={!controls}
+            <button type="button" className="window-button" aria-label="最小化窗口" title={hint('最小化窗口')}
+                    disabled={!controls}
                     onClick={() => controls?.minimize()}><Icon name="minimize"/></button>
             <button type="button" className="window-button" aria-label={label} title={hint(label)}
                     disabled={!controls} onClick={() => controls?.toggleMaximize()}><Icon

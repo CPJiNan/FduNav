@@ -14,6 +14,9 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
     const [detailLoading, setDetailLoading] = useState(false)
     const [query, setQuery] = useState('')
     const [sourceId, setSourceId] = useState('')
+    const [fromDate, setFromDate] = useState('')
+    const [toDate, setToDate] = useState('')
+    const [filterOpen, setFilterOpen] = useState(false)
     const listVersion = useRef(0)
     const api = window.notices
 
@@ -108,12 +111,14 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
     }
 
     if (selected) return <article className="notices-page notice-detail">
-        <button type="button" className="text-button" onClick={() => setSelected(null)}><Icon name="arrow"/>返回通知列表</button>
+        <button type="button" className="text-button" onClick={() => setSelected(null)}><Icon name="arrow"/>返回通知列表
+        </button>
         <h1>{selected.title}</h1>
         <div className="notice-meta">
             <time dateTime={selected.published}>{selected.published}</time>
             <span>{selected.sourceName}</span>
-            <button type="button" className="text-button" onClick={() => void openSource()}>查看学校原文<Icon name="external"/>
+            <button type="button" className="text-button" onClick={() => void openSource()}>查看学校原文<Icon
+                name="external"/>
             </button>
         </div>
         {error && <p className="account-error" role="alert">{error}</p>}
@@ -137,24 +142,55 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
         </>}
     </article>
 
+    function resetFilters() {
+        setSourceId('')
+        setFromDate('')
+        setToDate('')
+    }
+
+    const filtersActive = !!sourceId || !!fromDate || !!toDate
     const items = list.items.filter(item => (!sourceId || item.sourceId === sourceId) &&
+        (!fromDate || item.published >= fromDate) && (!toDate || item.published <= toDate) &&
         item.title.toLocaleLowerCase().includes(query.toLocaleLowerCase().trim())).slice(0, 200)
     const updatedAt = sourceId ? list.sources.find(source => source.id === sourceId)?.updatedAt : list.updatedAt
     return <section className="notices-page" aria-label="通知">
         <div className="notices-filter"><label htmlFor="notice-search" className="notice-search"><Icon
             name="search"/><input id="notice-search" type="search" placeholder="搜索通知标题" aria-label="搜索通知标题"
                                   value={query} onChange={event => setQuery(event.target.value)}/></label>
-            <div className="notice-actions"><select className="notice-source-select" aria-label="消息来源"
-                                                    value={sourceId}
-                                                    onChange={event => setSourceId(event.target.value)}>
-                <option value="">全部来源</option>
-                {list.sources.filter(source => source.enabled).map(source => <option key={source.id}
-                                                                                     value={source.id}>{source.name}</option>)}
-            </select>
-                <button type="button" className="secondary-button" disabled={loading || !api} onClick={() => void refresh()}><Icon
-                    name="refresh"/>{loading ? '刷新中…' : '刷新通知'}</button>
+            <div className="notice-actions">
+                <button type="button" className={`icon-button ${filtersActive ? 'is-active' : ''}`}
+                        aria-label="筛选通知"
+                        title="筛选通知" aria-expanded={filterOpen} aria-controls="notice-filter-settings"
+                        onClick={() => setFilterOpen(value => !value)}><Icon name="filter"/></button>
+                <button type="button" className="icon-button" aria-label={loading ? '正在刷新通知' : '刷新通知'}
+                        title={loading ? '正在刷新通知' : '刷新通知'} disabled={loading || !api}
+                        onClick={() => void refresh()}><Icon name="refresh"/></button>
             </div>
         </div>
+        {filterOpen && <div id="notice-filter-settings" className="notice-settings">
+            <div className="notice-filter-field">
+                <label htmlFor="notice-source-filter">来源</label>
+                <select id="notice-source-filter" aria-label="消息来源" value={sourceId}
+                        onChange={event => setSourceId(event.target.value)}>
+                    <option value="">全部来源</option>
+                    {list.sources.filter(source => source.enabled).map(source => <option key={source.id}
+                                                                                         value={source.id}>{source.name}</option>)}
+                </select>
+            </div>
+            <div className="notice-filter-field">
+                <span className="notice-filter-label">发布时间</span>
+                <div className="notice-date-range">
+                    <input type="date" aria-label="开始日期" value={fromDate} max={toDate || undefined}
+                           onChange={event => setFromDate(event.target.value)}/>
+                    <span>至</span>
+                    <input type="date" aria-label="结束日期" value={toDate} min={fromDate || undefined}
+                           onChange={event => setToDate(event.target.value)}/>
+                </div>
+            </div>
+            <button type="button" className="text-button" disabled={!filtersActive}
+                    onClick={resetFilters}>重置筛选
+            </button>
+        </div>}
         {!api && <p className="account-notice">请在桌面应用中查看通知。</p>}
         {error &&
             <p className="account-error" role="alert">{error}{list.items.length > 0 && ' 当前展示上次缓存的通知。'}</p>}
@@ -170,7 +206,7 @@ export function NoticesPage({onLogin}: { onLogin: () => void }) {
                     <Icon name="chevron"/></button>
             </div>)}
             {!items.length && <div className="notice-empty" role="status">
-                <h2>{loading ? '正在获取最新通知…' : query ? '没有匹配的通知' : '暂无通知'}</h2></div>}
+                <h2>{loading ? '正在获取最新通知…' : query || filtersActive ? '没有匹配的通知' : '暂无通知'}</h2></div>}
         </div>
         {updatedAt &&
             <p className="notice-updated">上次更新：{new Date(updatedAt).toLocaleString('zh-CN')}</p>}

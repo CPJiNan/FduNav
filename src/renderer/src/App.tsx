@@ -110,10 +110,12 @@ export default function App() {
     return <><WindowTitlebar/>
         <div className="app-shell">
             <nav className="app-rail" aria-label="应用导航">
-                <button type="button" className={`icon-button rail-button ${showNoticesPage ? 'is-active' : ''}`} aria-label={noticesNavigation.label}
+                <button type="button" className={`icon-button rail-button ${showNoticesPage ? 'is-active' : ''}`}
+                        aria-label={noticesNavigation.label}
                         title={noticesNavigation.label} aria-current={showNoticesPage ? 'page' : undefined}
                         onClick={() => openPage('notices')}><Icon name={noticesNavigation.icon}/></button>
-                <button type="button" className={`icon-button rail-button ${showCalendarPage ? 'is-active' : ''}`} aria-label={calendarNavigation.label}
+                <button type="button" className={`icon-button rail-button ${showCalendarPage ? 'is-active' : ''}`}
+                        aria-label={calendarNavigation.label}
                         title={calendarNavigation.label} aria-current={showCalendarPage ? 'page' : undefined}
                         onClick={() => openPage('calendar')}><Icon name={calendarNavigation.icon}/></button>
                 <div className="rail-bottom">
@@ -131,7 +133,8 @@ export default function App() {
                             <div className="settings-layout">
                                 <div className="settings-tabs" role="tablist" aria-label="设置分类"
                                      aria-orientation="vertical">
-                                    {tabs.map((item, index) => <button type="button" key={item.id} id={`settings-tab-${item.id}`}
+                                    {tabs.map((item, index) => <button type="button" key={item.id}
+                                                                       id={`settings-tab-${item.id}`}
                                                                        role="tab" aria-selected={tab === item.id}
                                                                        aria-controls={`settings-panel-${item.id}`}
                                                                        tabIndex={tab === item.id ? 0 : -1}

@@ -82,7 +82,9 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
             const image = await accounts.readImage(imageUrl, referer)
             requireReady()
             return image
-        } catch { throw new AuthError('图片加载失败，请重试。') }
+        } catch {
+            throw new AuthError('图片加载失败，请重试。')
+        }
     })
     handle('notices:open-source', async (input: unknown) => {
         await shell.openExternal(knownUrl(input))

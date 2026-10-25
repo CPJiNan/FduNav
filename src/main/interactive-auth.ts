@@ -1,9 +1,9 @@
 import {randomUUID} from 'node:crypto'
 import {BrowserWindow, session} from 'electron'
 import type {CookieJar} from 'tough-cookie'
-import {AuthError, FudanTransport, validateUrl, verifySession} from './fudan-auth.ts'
 import type {AdditionalAuthenticationRequired, Transport} from './fudan-auth.ts'
-import {browserCookies, browserCookieJar} from './auth-cookies.ts'
+import {AuthError, FudanTransport, validateUrl, verifySession} from './fudan-auth.ts'
+import {browserCookieJar, browserCookies} from './auth-cookies.ts'
 
 export async function completeInteractiveAuthentication(
     challenge: AdditionalAuthenticationRequired, jar: CookieJar, parent?: BrowserWindow,
@@ -97,15 +97,21 @@ export async function completeInteractiveAuthentication(
                     checking = false
                 }
             }
-            authWindow.webContents.on('did-stop-loading', () => { void checkSession() })
-            authWindow.webContents.on('did-navigate-in-page', () => { void checkSession() })
+            authWindow.webContents.on('did-stop-loading', () => {
+                void checkSession()
+            })
+            authWindow.webContents.on('did-navigate-in-page', () => {
+                void checkSession()
+            })
             void authWindow.loadURL(loginUrl).catch(error => {
                 if (error?.code !== 'ERR_ABORTED') finish(new AuthError('无法加载学校认证页面，请检查网络后重试。'))
             })
         })
     } finally {
         if (window && !window.isDestroyed()) window.destroy()
-        await browserSession.clearStorageData().catch(() => {})
-        await browserSession.closeAllConnections().catch(() => {})
+        await browserSession.clearStorageData().catch(() => {
+        })
+        await browserSession.closeAllConnections().catch(() => {
+        })
     }
 }

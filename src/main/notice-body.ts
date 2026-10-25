@@ -13,7 +13,9 @@ export function noticeImageUrl(raw: string, baseUrl: string): string | null {
         const url = new URL(raw.trim(), baseUrl)
         if (url.protocol === 'http:' && (url.hostname === 'fudan.edu.cn' || url.hostname.endsWith('.fudan.edu.cn'))) url.protocol = 'https:'
         return sourceUrl(url.href)
-    } catch { return null }
+    } catch {
+        return null
+    }
 }
 
 export function parseNoticeBody(nodes: AnyNode[], baseUrl?: string): NoticeBodyNode[] {
@@ -45,9 +47,11 @@ export function parseNoticeBody(nodes: AnyNode[], baseUrl?: string): NoticeBodyN
         if (!allowedTags.has(tag)) return children
         const align = /(?:^|;)\s*text-align\s*:\s*(left|center|right|justify)\b/i.exec(style)?.[1]?.toLowerCase() ?? attrs.align?.toLowerCase()
         const cellSpan = (value?: string) => value && /^\d+$/.test(value) ? Math.max(1, Math.min(100, Number(value))) : undefined
-        return [{type: 'element', tag, children,
+        return [{
+            type: 'element', tag, children,
             ...(['left', 'center', 'right', 'justify'].includes(align) ? {align: align as 'left' | 'center' | 'right' | 'justify'} : {}),
-            ...(['td', 'th'].includes(tag) ? {colSpan: cellSpan(attrs.colspan), rowSpan: cellSpan(attrs.rowspan)} : {})}]
+            ...(['td', 'th'].includes(tag) ? {colSpan: cellSpan(attrs.colspan), rowSpan: cellSpan(attrs.rowspan)} : {})
+        }]
     }
     return nodes.flatMap(node => visit(node, 0))
 }

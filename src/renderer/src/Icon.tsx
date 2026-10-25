@@ -25,6 +25,7 @@ type IconName =
     | 'minimize'
     | 'maximize'
     | 'restore'
+    | 'filter'
 const paths: Record<IconName, string> = {
     search: 'M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Zm-2 5 6 6',
     processor: 'M6 6h12v12H6ZM9 9h6v6H9ZM9 3v3m6-3v3M9 18v3m6-3v3M3 9h3m-3 6h3m12-6h3m-3 6h3',
@@ -52,6 +53,7 @@ const paths: Record<IconName, string> = {
     minimize: 'M5 12h14',
     maximize: 'M5 5h14v14H5Z',
     restore: 'M8 8V4h12v12h-4M4 8h12v12H4Z',
+    filter: 'M4 5h16l-6 7v5l-4 2v-7L4 5Z',
 }
 
 export function Icon({name, className = ''}: { name: IconName; className?: string }) {

@@ -6,9 +6,9 @@ export function imageDataUrl(bytes: Uint8Array): string {
     const data = Buffer.from(bytes)
     const type = data.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) ? 'png'
         : data[0] === 255 && data[1] === 216 && data[2] === 255 ? 'jpeg'
-        : /^GIF8[79]a$/.test(data.subarray(0, 6).toString('ascii')) ? 'gif'
-        : data.subarray(0, 4).toString('ascii') === 'RIFF' && data.subarray(8, 12).toString('ascii') === 'WEBP' ? 'webp'
-        : data.subarray(0, 2).toString('ascii') === 'BM' ? 'bmp' : null
+            : /^GIF8[79]a$/.test(data.subarray(0, 6).toString('ascii')) ? 'gif'
+                : data.subarray(0, 4).toString('ascii') === 'RIFF' && data.subarray(8, 12).toString('ascii') === 'WEBP' ? 'webp'
+                    : data.subarray(0, 2).toString('ascii') === 'BM' ? 'bmp' : null
     if (!type || data.length > maxImageBytes) throw new Error('图片格式不支持或文件过大。')
     return `data:image/${type};base64,${data.toString('base64')}`
 }
@@ -45,7 +45,11 @@ export async function fetchNoticeImage(value: string, referer: string, request: 
                 chunks.push(chunk)
             }
             return imageDataUrl(Buffer.concat(chunks))
-        } finally { await reader.cancel().catch(() => {}); reader.releaseLock() }
+        } finally {
+            await reader.cancel().catch(() => {
+            });
+            reader.releaseLock()
+        }
     }
     throw new Error('图片重定向次数过多。')
 }

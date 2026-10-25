@@ -27,7 +27,8 @@ export interface Timetable {
 }
 
 export interface TimetableAPI {
-    get(options?: {refresh?: boolean; semesterId?: string}): Promise<Result<Timetable>>
+    get(options?: { refresh?: boolean; semesterId?: string }): Promise<Result<Timetable>>
+
     setStartDate(date: string): Promise<Result<Timetable>>
 }
 

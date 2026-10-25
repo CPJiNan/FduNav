@@ -26,10 +26,12 @@ export type NoticeBodyTag = 'p' | 'div' | 'span' | 'br' | 'hr' | 'strong' | 'b' 
     'sub' | 'sup' | 'ul' | 'ol' | 'li' | 'table' | 'thead' | 'tbody' | 'tfoot' | 'tr' | 'td' | 'th' |
     'blockquote' | 'h2' | 'h3' | 'h4' | 'figure' | 'figcaption' | 'pre'
 
-export type NoticeBodyNode = {type: 'text'; text: string} |
-    {type: 'image'; url: string; alt: string; width?: number; height?: number} |
-    {type: 'element'; tag: NoticeBodyTag; children: NoticeBodyNode[];
-        align?: 'left' | 'center' | 'right' | 'justify'; colSpan?: number; rowSpan?: number}
+export type NoticeBodyNode = { type: 'text'; text: string } |
+    { type: 'image'; url: string; alt: string; width?: number; height?: number } |
+    {
+        type: 'element'; tag: NoticeBodyTag; children: NoticeBodyNode[];
+        align?: 'left' | 'center' | 'right' | 'justify'; colSpan?: number; rowSpan?: number
+    }
 
 export interface NoticeDetail {
     content: string;
@@ -45,7 +47,7 @@ export interface NoticesAPI {
 
     detail(notice: NoticeRef): Promise<Result<NoticeDetail>>
 
-    image(notice: NoticeRef & {imageUrl: string}): Promise<Result<string>>
+    image(notice: NoticeRef & { imageUrl: string }): Promise<Result<string>>
 
     openSource(notice: NoticeRef): Promise<Result<void>>
 
