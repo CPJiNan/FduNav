@@ -69,11 +69,6 @@ export class SummaryQueue {
         this.changed()
     }
 
-    clearFinished(owner: string) {
-        this.entries = this.entries.filter(entry => entry.owner !== owner || !summaryTaskFinished(entry.task))
-        this.changed()
-    }
-
     remove(ids: string[], owner: string) {
         this.cancel(ids, owner)
         const selected = new Set(ids)

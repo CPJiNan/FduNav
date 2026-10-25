@@ -18,6 +18,9 @@ export function NoticesPage({onLogin, noticeToOpen, onNoticeOpened}: {
     const [list, setList] = useState<NoticeList>({items: [], updatedAt: null, sources: []})
     const [loading, setLoading] = useState(!!window.notices)
     const [error, setError] = useState('')
+    const [readError, setReadError] = useState('')
+    const readNotices = useRef(new Set<string>())
+    const mounted = useRef(true)
     const [selected, setSelected] = useState<Notice | null>(null)
     const [detail, setDetail] = useState<NoticeDetail | null>(null)
     const [detailError, setDetailError] = useState('')
@@ -41,6 +44,30 @@ export function NoticesPage({onLogin, noticeToOpen, onNoticeOpened}: {
     const listVersion = useRef(0)
     const summaryRequest = useRef(0)
     const api = window.notices
+
+    useEffect(() => {
+        mounted.current = true
+        return () => { mounted.current = false }
+    }, [])
+
+    useEffect(() => {
+        if (!selected || !api || selected.read) return
+        const key = noticeKey(selected)
+        if (readNotices.current.has(key)) return
+        readNotices.current.add(key)
+        setReadError('')
+        // Keep local read markers even if a previously requested list arrives later.
+        setList(current => ({...current}))
+        void api.markRead({sourceId: selected.sourceId, url: selected.url}).then(result => {
+            if (!result.ok) throw new Error(result.error)
+            if (mounted.current) setList(current => ({...current, items: current.items.map(item =>
+                noticeKey(item) === key ? {...item, read: true} : item)}))
+        }).catch(() => {
+            if (!mounted.current) return
+            readNotices.current.delete(key)
+            setReadError('已读状态保存失败，请重新打开通知重试。')
+        })
+    }, [selected, api])
 
     useEffect(() => {
         if (!noticeToOpen) return
@@ -265,6 +292,7 @@ export function NoticesPage({onLogin, noticeToOpen, onNoticeOpened}: {
             </div>}
         </section>}
         {error && <p className="account-error" role="alert">{error}</p>}
+        {readError && <p className="account-error" role="alert">{readError}</p>}
         {detailLoading && <p className="notice-empty" role="status">正在读取通知正文…</p>}
         {detailError && <div className="account-error" role="alert">{detailError}
             <button type="button" className="text-button" onClick={() => setSelected({...selected})}>重试</button>
@@ -349,6 +377,7 @@ export function NoticesPage({onLogin, noticeToOpen, onNoticeOpened}: {
                     onClick={() => void enqueueSelected()}>{enqueueing ? '加入中…' : '加入摘要队列'}</button>
         </div>}
         {!api && <p className="account-notice">请在桌面应用中查看通知。</p>}
+        {readError && <p className="account-error" role="alert">{readError}</p>}
         {error &&
             <p className="account-error" role="alert">{error}{list.items.length > 0 && ' 当前展示上次缓存的通知。'}</p>}
         {list.sources.filter(source => source.enabled && source.lastError && (!sourceId || source.id === sourceId))
@@ -368,6 +397,8 @@ export function NoticesPage({onLogin, noticeToOpen, onNoticeOpened}: {
                         className="notice-source-badge">{item.sourceName}</span>{effectiveRelevance(item, item.relevance) &&
                         <span
                             className={`notice-relevance notice-relevance--${effectiveRelevance(item, item.relevance)}`}>{relevanceText(effectiveRelevance(item, item.relevance))}</span>}{item.title}
+                        <span className={`notice-read-indicator${!item.read && !readNotices.current.has(noticeKey(item)) ? ' is-unread' : ''}`}
+                              role="img" aria-label="未读" aria-hidden={item.read || readNotices.current.has(noticeKey(item))}/>
                     </h2>
                     </div>
                     <Icon name="chevron"/></button>

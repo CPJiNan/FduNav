@@ -56,6 +56,7 @@ const notices: NoticesAPI = {
     clearSummaryQueue: () => ipcRenderer.invoke('notices:clear-summary-queue'),
     removeSummaries: ids => ipcRenderer.invoke('notices:remove-summaries', ids),
     getNotice: notice => ipcRenderer.invoke('notices:get', notice),
+    markRead: notice => ipcRenderer.invoke('notices:mark-read', notice),
     setRelevance: (notice, relevance) => ipcRenderer.invoke('notices:set-relevance', {...notice, relevance}),
     onSummaryQueueChanged: callback => {
         const listener = (_event: IpcRendererEvent, tasks: SummaryTask[]) => callback(tasks)

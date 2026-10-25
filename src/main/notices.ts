@@ -105,6 +105,12 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
         return value.relevance === 'none' ? null : value.relevance
     })
 
+    handle('notices:mark-read', async (input: unknown) => {
+        knownUrl(input)
+        const ref = input as NoticeRef
+        db.markNoticeRead(db.getAccount()!.username, ref.sourceId, ref.url)
+    })
+
     handle('notices:list', async (force: unknown) => {
         if (force === true) await refresh.refresh()
         const list = db.getNotices()
@@ -123,12 +129,12 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
         const isJwc = new URL(url).hostname === 'jwc.fudan.edu.cn'
         let html = isJwc ? await accounts.readNotice(url) : await accounts.readPage(url)
         if (html === null && !isJwc) html = await accounts.readPageWithBrowser(url)
-        if (html === null) return {content: '', imageCount: 0, requiresLogin: true, attachments: []}
+        if (html === null) return {content: '', body: [], imageCount: 0, requiresLogin: true, attachments: []}
         const detail = parseNoticeDetail(html, url, source.id)
         if (!detail) throw new AuthError('无法读取通知正文，请查看学校原文。')
         const key = detailKey(input as NoticeRef)
         detailImages.delete(key)
-        detailImages.set(key, new Set(noticeImageUrls(detail.body ?? [])))
+        detailImages.set(key, new Set(noticeImageUrls(detail.body)))
         if (detailImages.size > 64) detailImages.delete(detailImages.keys().next().value!)
         return detail
     }

@@ -52,7 +52,7 @@ function NoticeImage({node, notice}: { node: Extract<NoticeBodyNode, { type: 'im
 }
 
 export function NoticeBody({detail, notice}: { detail: NoticeDetail; notice: NoticeRef }) {
-    if (!detail.body?.length) return <div className="notice-body">{detail.content}</div>
+    if (!detail.body.length) return <div className="notice-body">{detail.content}</div>
 
     function renderNode(node: NoticeBodyNode, key: string): ReactNode {
         if (node.type === 'text') return node.text
