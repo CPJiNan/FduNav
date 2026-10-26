@@ -7,6 +7,14 @@ import type {LlmAPI} from '../shared/llm'
 import type {TimetableAPI} from '../shared/timetable'
 import type {CalendarAPI} from '../shared/calendar'
 import type {TodosAPI} from '../shared/todos'
+import type {GeneralSettingsAPI} from '../shared/general-settings'
+
+const generalSettings: GeneralSettingsAPI = {
+    get: () => ipcRenderer.invoke('settings:get-general'),
+    setLaunchAtLogin: enabled => ipcRenderer.invoke('settings:set-launch-at-login', enabled),
+    setCloseAction: action => ipcRenderer.invoke('settings:set-close-action', action),
+}
+contextBridge.exposeInMainWorld('generalSettings', generalSettings)
 
 const todos: TodosAPI = {
     list: () => ipcRenderer.invoke('todos:list'),
@@ -59,6 +67,7 @@ const notices: NoticesAPI = {
     removeSummaries: ids => ipcRenderer.invoke('notices:remove-summaries', ids),
     getNotice: notice => ipcRenderer.invoke('notices:get', notice),
     markRead: notice => ipcRenderer.invoke('notices:mark-read', notice),
+    markManyRead: notices => ipcRenderer.invoke('notices:mark-many-read', notices),
     setRelevance: (notice, relevance) => ipcRenderer.invoke('notices:set-relevance', {...notice, relevance}),
     onSummaryQueueChanged: callback => {
         const listener = (_event: IpcRendererEvent, tasks: SummaryTask[]) => callback(tasks)

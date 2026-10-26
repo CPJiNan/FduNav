@@ -6,6 +6,7 @@ import type {Notice, NoticeDetail, NoticeList, NoticeRelevance, NoticeSummary} f
 import {Icon} from './Icon'
 import {NoticeBody} from './NoticeBody'
 import {NoticeRelevanceMenu} from './NoticeRelevanceMenu'
+import {NoticeReadDialog} from './NoticeReadDialog'
 import './styles/notices.css'
 
 function relevanceText(relevance: NoticeRelevance | null | undefined) {
@@ -19,6 +20,10 @@ export function NoticesPage({onLogin, noticeToOpen, onNoticeOpened}: {
     const [loading, setLoading] = useState(!!window.notices)
     const [error, setError] = useState('')
     const [readError, setReadError] = useState('')
+    const [readCandidates, setReadCandidates] = useState<Notice[] | null>(null)
+    const [markingRead, setMarkingRead] = useState(false)
+    const [batchReadError, setBatchReadError] = useState('')
+    const [readStatus, setReadStatus] = useState('')
     const readNotices = useRef(new Set<string>())
     const mounted = useRef(true)
     const [selected, setSelected] = useState<Notice | null>(null)
@@ -248,6 +253,32 @@ export function NoticesPage({onLogin, noticeToOpen, onNoticeOpened}: {
         }
     }
 
+    async function markAllRead() {
+        if (!api || !readCandidates?.length || markingRead) return
+        setMarkingRead(true)
+        setBatchReadError('')
+        try {
+            const result = await api.markManyRead(readCandidates.map(({sourceId, url}) => ({sourceId, url})))
+            if (!mounted.current) return
+            if (!result.ok) {
+                setBatchReadError(result.error)
+                return
+            }
+            const keys = new Set(readCandidates.map(noticeKey))
+            keys.forEach(key => readNotices.current.add(key))
+            setList(current => ({
+                ...current, items: current.items.map(item => keys.has(noticeKey(item)) ? {...item, read: true} : item)
+            }))
+            setReadStatus(`已将 ${keys.size} 条通知标记为已读。`)
+            setReadError('')
+            setReadCandidates(null)
+        } catch {
+            if (mounted.current) setBatchReadError('已读状态保存失败，请重试。')
+        } finally {
+            if (mounted.current) setMarkingRead(false)
+        }
+    }
+
     function updateRelevance(value: NoticeRelevance | null) {
         if (!selected) return
         relevanceChoices.current.set(noticeKey(selected), value)
@@ -327,6 +358,7 @@ export function NoticesPage({onLogin, noticeToOpen, onNoticeOpened}: {
     const items = list.items.filter(item => (!sourceId || item.sourceId === sourceId) &&
         (!fromDate || item.published >= fromDate) && (!toDate || item.published <= toDate) &&
         item.title.toLocaleLowerCase().includes(query.toLocaleLowerCase().trim())).slice(0, 200)
+    const unreadItems = items.filter(item => !item.read && !readNotices.current.has(noticeKey(item)))
     const updatedAt = sourceId ? list.sources.find(source => source.id === sourceId)?.updatedAt : list.updatedAt
     return <section className="notices-page" aria-label="通知">
         <div className="notices-filter"><label htmlFor="notice-search" className="notice-search"><Icon
@@ -337,6 +369,13 @@ export function NoticesPage({onLogin, noticeToOpen, onNoticeOpened}: {
                         aria-label="筛选通知"
                         title="筛选通知" aria-expanded={filterOpen} aria-controls="notice-filter-settings"
                         onClick={() => setFilterOpen(value => !value)}><Icon name="filter"/></button>
+                <button type="button" className="icon-button" aria-label="一键已读" title="一键已读"
+                        disabled={!api || !unreadItems.length || markingRead} aria-haspopup="dialog"
+                        onClick={() => {
+                            setReadStatus('')
+                            setBatchReadError('')
+                            setReadCandidates(unreadItems)
+                        }}><Icon name="clean"/></button>
                 <button type="button" className={`icon-button ${multiSelect ? 'is-active' : ''}`}
                         aria-label="AI 摘要" title="AI 摘要" aria-pressed={multiSelect}
                         onClick={() => {
@@ -381,6 +420,9 @@ export function NoticesPage({onLogin, noticeToOpen, onNoticeOpened}: {
                     onClick={() => void enqueueSelected()}>{enqueueing ? '加入中…' : '加入摘要队列'}</button>
         </div>}
         {!api && <p className="account-notice">请在桌面应用中查看通知。</p>}
+        {readStatus && <p className="account-notice" role="status">{readStatus}</p>}
+        {readCandidates && <NoticeReadDialog count={readCandidates.length} busy={markingRead} error={batchReadError}
+                                             onConfirm={() => void markAllRead()} onClose={() => setReadCandidates(null)}/>}
         {readError && <p className="account-error" role="alert">{readError}</p>}
         {error &&
             <p className="account-error" role="alert">{error}{list.items.length > 0 && ' 当前展示上次缓存的通知。'}</p>}

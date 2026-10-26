@@ -8,6 +8,7 @@ import {TodosPage} from './TodosPage'
 import {MessagePreferencesPanel} from './MessagePreferencesPanel'
 import {SourcesPanel} from './SourcesPanel'
 import {LlmPanel} from './LlmPanel'
+import {GeneralPanel} from './GeneralPanel'
 import {SummaryQueuePanel} from './SummaryQueuePanel'
 import type {Notice} from '../../shared/notices'
 import type {AccountState} from '../../shared/accounts'
@@ -21,6 +22,7 @@ const themes = [
     {value: 'auto', label: '跟随系统', icon: 'monitor'},
 ] as const
 const tabs = [
+    {id: 'general', label: '通用', icon: 'settings'},
     {id: 'account', label: '账号', icon: 'user'},
     {id: 'theme', label: '主题', icon: 'sun'},
     {id: 'messages', label: '消息偏好', icon: 'tag'},
@@ -36,7 +38,7 @@ export default function App() {
     const [settings, setSettings] = useState(false)
     const [page, setPage] = useState<'notices' | 'calendar' | 'todos'>('notices')
     const [noticeToOpen, setNoticeToOpen] = useState<Notice | null>(null)
-    const [tab, setTab] = useState<Tab>('theme')
+    const [tab, setTab] = useState<Tab>('general')
     const [storageError, setStorageError] = useState(false)
     const [account, setAccount] = useState<AccountState | null>(null)
     const [accountLoaded, setAccountLoaded] = useState(!window.accounts)
@@ -163,6 +165,7 @@ export default function App() {
                                 </div>
                                 <section className="settings-panel" role="tabpanel" id={`settings-panel-${tab}`}
                                          aria-labelledby={`settings-tab-${tab}`} tabIndex={0}>
+                                    {tab === 'general' && showSettings && <GeneralPanel/>}
                                     {tab === 'account' && <AccountPanel account={account} onChange={setAccount}/>}
                                     {tab === 'theme' && <>
                                         <fieldset className="theme-options" aria-label="外观模式">

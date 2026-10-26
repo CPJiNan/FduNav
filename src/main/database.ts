@@ -1,6 +1,7 @@
 import {DatabaseSync} from 'node:sqlite'
 import type {Theme} from '../shared/accounts'
-import type {Notice, NoticeList, NoticeRelevanceChoice, ParsedNotice} from '../shared/notices'
+import {isCloseAction, type CloseAction} from '../shared/general-settings'
+import type {Notice, NoticeList, NoticeRef, NoticeRelevanceChoice, ParsedNotice} from '../shared/notices'
 import type {Timetable} from '../shared/timetable'
 import type {CalendarEvent} from '../shared/calendar'
 import type {Todo} from '../shared/todos'
@@ -180,6 +181,16 @@ export class AppDatabase {
         return value === 'light' || value === 'dark' || value === 'auto' ? value : null
     }
 
+    getCloseAction(): CloseAction {
+        const value = this.db.prepare("SELECT value FROM preferences WHERE key = 'close_action'").get()?.value
+        return isCloseAction(value) ? value : 'tray'
+    }
+
+    setCloseAction(action: CloseAction) {
+        this.db.prepare("INSERT INTO preferences (key, value) VALUES ('close_action', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+            .run(action)
+    }
+
     getCalendarEvents(username: string): CalendarEvent[] {
         return this.db.prepare('SELECT data FROM calendar_events WHERE username = ? ORDER BY id').all(username)
             .map(row => JSON.parse(String(row.data)) as CalendarEvent)
@@ -258,6 +269,17 @@ export class AppDatabase {
     markNoticeRead(username: string, sourceId: string, url: string) {
         this.db.prepare(`INSERT INTO notice_reads (username, source_id, url) VALUES (?, ?, ?)
                          ON CONFLICT(username, source_id, url) DO NOTHING`).run(username, sourceId, url)
+    }
+
+    markNoticesRead(username: string, notices: NoticeRef[]) {
+        this.db.exec('BEGIN IMMEDIATE')
+        try {
+            for (const notice of notices) this.markNoticeRead(username, notice.sourceId, notice.url)
+            this.db.exec('COMMIT')
+        } catch (error) {
+            this.db.exec('ROLLBACK')
+            throw error
+        }
     }
 
     getNoticeRelevanceChoice(username: string, sourceId: string, url: string): NoticeRelevanceChoice | null {

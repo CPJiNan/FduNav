@@ -111,6 +111,16 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
         db.markNoticeRead(db.getAccount()!.username, ref.sourceId, ref.url)
     })
 
+    handle('notices:mark-many-read', async (input: unknown) => {
+        if (!Array.isArray(input) || !input.length) throw new AuthError('请选择需要标记已读的通知。')
+        input.forEach(knownUrl)
+        try {
+            db.markNoticesRead(db.getAccount()!.username, input as NoticeRef[])
+        } catch {
+            throw new AuthError('已读状态保存失败，请重试。')
+        }
+    })
+
     handle('notices:list', async (force: unknown) => {
         if (force === true) await refresh.refresh()
         const list = db.getNotices()

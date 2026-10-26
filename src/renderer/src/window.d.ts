@@ -6,9 +6,11 @@ import type {LlmAPI} from '../../shared/llm'
 import type {TimetableAPI} from '../../shared/timetable'
 import type {CalendarAPI} from '../../shared/calendar'
 import type {TodosAPI} from '../../shared/todos'
+import type {GeneralSettingsAPI} from '../../shared/general-settings'
 
 declare global {
     interface Window {
+        generalSettings?: GeneralSettingsAPI
         accounts?: AccountAPI
         notices?: NoticesAPI
         messagePreferences?: MessagePreferencesAPI

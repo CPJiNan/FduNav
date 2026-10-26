@@ -69,6 +69,8 @@ export interface NoticesAPI {
 
     markRead(notice: NoticeRef): Promise<Result<void>>
 
+    markManyRead(notices: NoticeRef[]): Promise<Result<void>>
+
     setRelevance(notice: NoticeRef, relevance: NoticeRelevanceChoice): Promise<Result<NoticeRelevance | null>>
 
     onSummaryQueueChanged(callback: (tasks: SummaryTask[]) => void): () => void
