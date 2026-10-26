@@ -31,8 +31,14 @@ type IconName =
     | 'todo'
     | 'grip'
     | 'dashboard'
+    | 'chat'
+    | 'send'
+    | 'stop'
     | 'pencil'
 const paths: Record<IconName, string> = {
+    chat: 'M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2V11.5A8.5 8.5 0 0 1 10.5 3h2a8.5 8.5 0 0 1 8.5 8.5ZM7 9h9M7 13h6',
+    send: 'm12 4-7 7m7-7 7 7M12 4v16',
+    stop: 'M6 6h12v12H6Z',
     pencil: 'm16 3 5 5L8 21H3v-5L16 3Zm-3 3 5 5M3 16l5 5',
     dashboard: 'M10 13a2 2 0 1 0 4 0a2 2 0 1 0-4 0M13.45 11.55l2.05-2.05M6.4 20a9 9 0 1 1 11.2 0l-11.2 0',
     grip: 'M9 5h.01M15 5h.01M9 12h.01M15 12h.01M9 19h.01M15 19h.01',

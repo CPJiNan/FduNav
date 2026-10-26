@@ -10,6 +10,20 @@ import type {TodosAPI} from '../shared/todos'
 import type {GeneralSettingsAPI} from '../shared/general-settings'
 import type {NotificationSettingsAPI} from '../shared/notification-settings'
 import type {AppInfoAPI} from '../shared/app-info'
+import type {ChatAPI, ChatState} from '../shared/chat'
+
+const chat: ChatAPI = {
+    get: () => ipcRenderer.invoke('chat:get'),
+    send: text => ipcRenderer.invoke('chat:send', text),
+    cancel: () => ipcRenderer.invoke('chat:cancel'),
+    clear: () => ipcRenderer.invoke('chat:clear'),
+    onChanged: callback => {
+        const listener = (_event: IpcRendererEvent, state: ChatState) => callback(state)
+        ipcRenderer.on('chat:changed', listener)
+        return () => ipcRenderer.removeListener('chat:changed', listener)
+    },
+}
+contextBridge.exposeInMainWorld('chat', chat)
 
 const appInfo: AppInfoAPI = {
     get: () => ipcRenderer.invoke('app:info'),

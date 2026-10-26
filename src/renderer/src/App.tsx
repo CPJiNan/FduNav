@@ -13,6 +13,7 @@ import {NotificationSettingsPanel} from './NotificationSettingsPanel'
 import {SummaryQueuePanel} from './SummaryQueuePanel'
 import {AboutPanel} from './AboutPanel'
 import {DashboardPage} from './DashboardPage'
+import {ChatPage} from './ChatPage'
 import type {Notice} from '../../shared/notices'
 import type {CalendarView} from '../../shared/calendar'
 import type {AccountState} from '../../shared/accounts'
@@ -34,7 +35,7 @@ const calendarNavigation = {label: '日历', icon: 'calendar'} as const
 
 export default function App() {
     const [settings, setSettings] = useState(false)
-    const [page, setPage] = useState<'dashboard' | 'notices' | 'calendar' | 'todos'>('dashboard')
+    const [page, setPage] = useState<'dashboard' | 'notices' | 'chat' | 'calendar' | 'todos'>('dashboard')
     const [noticeToOpen, setNoticeToOpen] = useState<Notice | null>(null)
     const [calendarInitialView, setCalendarInitialView] = useState<CalendarView>('week')
     const [tab, setTab] = useState<Tab>('general')
@@ -54,6 +55,7 @@ export default function App() {
     const showCalendarPage = !showSettings && page === 'calendar'
     const showTodosPage = !showSettings && page === 'todos'
     const showDashboardPage = !showSettings && page === 'dashboard'
+    const showChatPage = !showSettings && page === 'chat'
     const settingsButton = useRef<HTMLButtonElement>(null)
     const settingsWasOpen = useRef(false)
 
@@ -113,7 +115,7 @@ export default function App() {
         return () => window.removeEventListener('keydown', onKey)
     }, [needsSetup])
 
-    function openPage(next: 'dashboard' | 'notices' | 'calendar' | 'todos', calendarView: CalendarView = 'week') {
+    function openPage(next: 'dashboard' | 'notices' | 'chat' | 'calendar' | 'todos', calendarView: CalendarView = 'week') {
         if (next === 'calendar') setCalendarInitialView(calendarView)
         setPage(next)
         if (needsLogin) {
@@ -148,6 +150,9 @@ export default function App() {
                         {hasUnread && <span className="rail-unread-dot" aria-hidden="true"/>}
                     </span>
                 </button>
+                <button type="button" className={`icon-button rail-button ${showChatPage ? 'is-active' : ''}`}
+                        aria-label="聊天" title="聊天" aria-current={showChatPage ? 'page' : undefined}
+                        onClick={() => openPage('chat')}><Icon name="chat"/></button>
                 <button type="button" className={`icon-button rail-button ${showCalendarPage ? 'is-active' : ''}`}
                         aria-label={calendarNavigation.label}
                         title={calendarNavigation.label} aria-current={showCalendarPage ? 'page' : undefined}
@@ -217,6 +222,10 @@ export default function App() {
                                              setTab('account');
                                              setSettings(true)
                                          }}/>}
+                        {showChatPage && accountLoaded && (!window.accounts || account?.status === 'signed-in') &&
+                            <ChatPage key={account?.username} username={account?.username ?? ''}
+                                      onOpenNotice={notice => { setNoticeToOpen(notice); openPage('notices') }}
+                                      onSettings={() => { setTab('llm'); setSettings(true) }}/>}
                         {showCalendarPage && accountLoaded && (!window.accounts || account?.status === 'signed-in') &&
                             <CalendarPage key={`${account?.username}-${preferences?.educationLevel}`} initialView={calendarInitialView}/>}
                         {showTodosPage && accountLoaded && (!window.accounts || account?.status === 'signed-in') &&

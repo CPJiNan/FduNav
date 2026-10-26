@@ -26,7 +26,7 @@ export function registerCalendarHandlers(db: AppDatabase, accounts: AccountServi
     }
 
     handle('calendar:list', username => db.getCalendarEvents(username))
-    handle('calendar:save', (username, input) => {
+    function save(username: string, input: unknown) {
         const result = validateCalendarEvent(input)
         if (!result.ok) throw new AuthError(result.error)
         if (result.data.id && !db.hasCalendarEvent(username, result.data.id)) throw new AuthError('日程不存在或已被删除。')
@@ -34,13 +34,15 @@ export function registerCalendarHandlers(db: AppDatabase, accounts: AccountServi
         db.saveCalendarEvent(username, event)
         reminders.changed(username, event.id)
         return event
-    })
-    handle('calendar:remove', (username, input) => {
+    }
+    function remove(username: string, input: unknown) {
         if (typeof input !== 'string' || !db.hasCalendarEvent(username, input)) throw new AuthError('日程不存在或已被删除。')
         db.removeCalendarEvent(username, input)
         reminders.changed(username, input)
         return null
-    })
+    }
+    handle('calendar:save', save)
+    handle('calendar:remove', remove)
 
     ipcMain.handle('calendar:sync-exams', async (event): Promise<Result<{ added: number; total: number }>> => {
         if (!trusted(event)) return {ok: false, error: '请求来源无效。'}
@@ -67,4 +69,5 @@ export function registerCalendarHandlers(db: AppDatabase, accounts: AccountServi
             }
         }
     })
+    return {save, remove}
 }

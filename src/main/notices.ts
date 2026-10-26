@@ -300,7 +300,8 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
         const notice = db.getNotice(ref.sourceId, ref.url)!
         return {...notice, relevance: summaries.relevanceFor(notice)}
     })
-    handle('notices:set-relevance', async (input: unknown) => {
+    function setRelevance(input: unknown) {
+        requireReady()
         knownUrl(input)
         const value = input as NoticeRef & { relevance?: unknown }
         if (value.relevance !== 'related' && value.relevance !== 'maybe' && value.relevance !== 'none') {
@@ -308,8 +309,13 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
         }
         db.setNoticeRelevanceChoice(db.getAccount()!.username, value.sourceId, value.url, value.relevance)
         remindNotice(detailKey(value), true)
+        for (const sender of listSubscribers) {
+            if (sender.isDestroyed()) listSubscribers.delete(sender)
+            else sender.send('notices:changed')
+        }
         return value.relevance === 'none' ? null : value.relevance
-    })
+    }
+    handle('notices:set-relevance', async input => setRelevance(input))
 
     handle('notices:mark-read', async (input: unknown) => {
         knownUrl(input)
@@ -332,15 +338,14 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
     handle('notices:list', async (force: unknown, event) => {
         listSubscribers.add(event.sender)
         if (force === true) await refreshNotices()
-        const list = db.getNotices()
-        return {
-            ...list,
-            items: list.items.map(item => {
-                const relevance = summaries.relevanceFor(item)
-                return relevance ? {...item, relevance} : item
-            })
-        }
+        return listNotices()
     })
+
+    function listNotices() {
+        requireReady()
+        const list = db.getNotices()
+        return {...list, items: list.items.map(item => ({...item, relevance: summaries.relevanceFor(item)}))}
+    }
 
     async function readDetail(input: unknown) {
         const url = knownUrl(input)
@@ -418,4 +423,8 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
         publishUnreadState()
         return sources
     }, false)
+    return {list: listNotices, detail: async (ref: NoticeRef) => {
+        requireReady()
+        return readNoticePdfs(await readDetail(ref))
+    }, setRelevance}
 }
