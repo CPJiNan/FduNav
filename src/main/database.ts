@@ -133,8 +133,9 @@ export class AppDatabase {
     }
 
     saveTodo(username: string, todo: Todo) {
-        this.db.prepare(`INSERT INTO todos (username, id, data) VALUES (?, ?, ?)
-            ON CONFLICT(username, id) DO UPDATE SET data = excluded.data`).run(username, todo.id, JSON.stringify(todo))
+        this.db.prepare(`INSERT INTO todos (username, id, data)
+                         VALUES (?, ?, ?) ON CONFLICT(username, id) DO
+        UPDATE SET data = excluded.data`).run(username, todo.id, JSON.stringify(todo))
     }
 
     removeTodo(username: string, id: string) {
@@ -147,8 +148,9 @@ export class AppDatabase {
     }
 
     markTodoReminderDelivered(username: string, id: string, remindAt: number) {
-        this.db.prepare(`INSERT INTO todo_reminder_deliveries (username, todo_id, remind_at) VALUES (?, ?, ?)
-            ON CONFLICT(username, todo_id) DO UPDATE SET remind_at = excluded.remind_at`).run(username, id, remindAt)
+        this.db.prepare(`INSERT INTO todo_reminder_deliveries (username, todo_id, remind_at)
+                         VALUES (?, ?, ?) ON CONFLICT(username, todo_id) DO
+        UPDATE SET remind_at = excluded.remind_at`).run(username, id, remindAt)
     }
 
     clearTodoReminderDelivery(username: string, id: string, remindAt: number) {
@@ -289,8 +291,9 @@ export class AppDatabase {
     }
 
     markCalendarReminderDelivered(username: string, id: string, remindAt: number) {
-        this.db.prepare(`INSERT INTO calendar_reminder_deliveries (username, event_id, remind_at) VALUES (?, ?, ?)
-            ON CONFLICT(username, event_id) DO UPDATE SET remind_at = excluded.remind_at`).run(username, id, remindAt)
+        this.db.prepare(`INSERT INTO calendar_reminder_deliveries (username, event_id, remind_at)
+                         VALUES (?, ?, ?) ON CONFLICT(username, event_id) DO
+        UPDATE SET remind_at = excluded.remind_at`).run(username, id, remindAt)
     }
 
     clearCalendarReminderDelivery(username: string, id: string, remindAt: number) {
@@ -328,21 +331,32 @@ export class AppDatabase {
     }
 
     hasUnreadNotices(username: string): boolean {
-        return !!this.db.prepare(`SELECT 1 FROM notices n
-            JOIN message_sources s ON s.id = n.source_id
-            WHERE s.enabled = 1 AND NOT EXISTS (
-                SELECT 1 FROM notice_reads r WHERE r.username = ? AND r.source_id = n.source_id AND r.url = n.url
-            ) LIMIT 1`).get(username)
+        return !!this.db.prepare(`SELECT 1
+                                  FROM notices n
+                                           JOIN message_sources s ON s.id = n.source_id
+                                  WHERE s.enabled = 1
+                                    AND NOT EXISTS (SELECT 1
+                                                    FROM notice_reads r
+                                                    WHERE r.username = ?
+                                                      AND r.source_id = n.source_id
+                                                      AND r.url = n.url)
+                                      LIMIT 1`).get(username)
     }
 
     getNotices(username = this.getAccount()?.username ?? ''): NoticeList {
-        const rows = this.db.prepare(`SELECT n.url, n.title, n.published, n.source_id AS sourceId, s.name AS sourceName,
-                                            r.url IS NOT NULL AS read
-                                       FROM notices n
-                                                JOIN message_sources s ON s.id = n.source_id
-                                                LEFT JOIN notice_reads r ON r.source_id = n.source_id AND r.url = n.url AND r.username = ?
-                                       WHERE s.enabled = 1
-                                       ORDER BY n.published DESC, n.title, n.source_id`).all(username) as unknown as (Omit<Notice, 'read'> & {
+        const rows = this.db.prepare(`SELECT n.url,
+                                             n.title,
+                                             n.published,
+                                             n.source_id AS sourceId,
+                                             s.name      AS sourceName,
+                                             r.url IS NOT NULL AS read
+                                      FROM notices n
+                                          JOIN message_sources s
+                                      ON s.id = n.source_id
+                                          LEFT JOIN notice_reads r ON r.source_id = n.source_id AND r.url = n.url AND r.username = ?
+                                      WHERE s.enabled = 1
+                                      ORDER BY n.published
+                                          DESC, n.title, n.source_id`).all(username) as unknown as (Omit<Notice, 'read'> & {
             read: number
         })[]
         const items = rows.map(row => ({...row, read: !!row.read}))
@@ -357,24 +371,26 @@ export class AppDatabase {
 
     getNotice(sourceId: string, url: string, username = this.getAccount()?.username ?? ''): Notice | null {
         const row = this.db.prepare(`SELECT n.url,
-                                       n.title,
-                                       n.published,
-                                       n.source_id AS sourceId,
-                                       s.name      AS sourceName,
-                                       r.url IS NOT NULL AS read
-                                FROM notices n
-                                         JOIN message_sources s ON s.id = n.source_id
+                                            n.title,
+                                            n.published,
+                                            n.source_id AS sourceId,
+                                            s.name      AS sourceName,
+                                            r.url IS NOT NULL AS read
+                                     FROM notices n
+                                         JOIN message_sources s
+                                     ON s.id = n.source_id
                                          LEFT JOIN notice_reads r ON r.source_id = n.source_id AND r.url = n.url AND r.username = ?
-                                WHERE n.source_id = ?
-                                  AND n.url = ?`).get(username, sourceId, url) as unknown as (Omit<Notice, 'read'> & {
+                                     WHERE n.source_id = ?
+                                       AND n.url = ?`).get(username, sourceId, url) as unknown as (Omit<Notice, 'read'> & {
             read: number
         }) | undefined
         return row ? {...row, read: !!row.read} : null
     }
 
     markNoticeRead(username: string, sourceId: string, url: string) {
-        this.db.prepare(`INSERT INTO notice_reads (username, source_id, url) VALUES (?, ?, ?)
-                         ON CONFLICT(username, source_id, url) DO NOTHING`).run(username, sourceId, url)
+        this.db.prepare(`INSERT INTO notice_reads (username, source_id, url)
+                         VALUES (?, ?,
+                                 ?) ON CONFLICT(username, source_id, url) DO NOTHING`).run(username, sourceId, url)
     }
 
     markNoticesRead(username: string, notices: NoticeRef[]) {
@@ -395,8 +411,9 @@ export class AppDatabase {
     }
 
     setNoticeRelevanceChoice(username: string, sourceId: string, url: string, relevance: NoticeRelevanceChoice) {
-        this.db.prepare(`INSERT INTO notice_relevance_choices (username, source_id, url, relevance) VALUES (?, ?, ?, ?)
-            ON CONFLICT(username, source_id, url) DO UPDATE SET relevance = excluded.relevance`)
+        this.db.prepare(`INSERT INTO notice_relevance_choices (username, source_id, url, relevance)
+                         VALUES (?, ?, ?, ?) ON CONFLICT(username, source_id, url) DO
+        UPDATE SET relevance = excluded.relevance`)
             .run(username, sourceId, url, relevance)
     }
 

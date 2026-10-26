@@ -39,6 +39,7 @@ export function CalendarPage() {
     const pending = useRef(false)
     const previousFocus = useRef<HTMLElement | null>(null)
     const page = useRef<HTMLElement | null>(null)
+    const examSynced = useRef(false)
 
     const loadTimetable = useCallback(async (refresh = false, semesterId?: string, showSemesterStart = false) => {
         if (pending.current) return
@@ -88,6 +89,26 @@ export function CalendarPage() {
             if (id === eventRequestId.current) setEventsLoading(false)
         }
     }, [])
+
+    const syncExams = useCallback(async (reportError = false) => {
+        if (!window.calendar) return
+        try {
+            const result = await window.calendar.syncExams()
+            if (!result.ok) {
+                if (reportError) setEventError(result.error)
+                return
+            }
+            if (result.data.added > 0) await loadEvents()
+        } catch {
+            if (reportError) setEventError('同步考试安排失败，请重试。')
+        }
+    }, [loadEvents])
+
+    useEffect(() => {
+        if (examSynced.current) return
+        examSynced.current = true
+        void syncExams()
+    }, [syncExams])
 
     useEffect(() => {
         const timer = window.setTimeout(() => {
@@ -205,7 +226,8 @@ export function CalendarPage() {
                         disabled={busy || eventsLoading}
                         onClick={() => {
                             void loadTimetable(true, timetable?.semesterId || undefined);
-                            void loadEvents()
+                            void loadEvents();
+                            void syncExams(true)
                         }}><Icon name="refresh"/></button>
                 <button type="button" className="icon-button" aria-label="新建日程" title="新建日程"
                         onClick={() => openItem(null)}><Icon name="plus"/></button>

@@ -6,6 +6,7 @@ import {AuthError} from './fudan-auth'
 import {validateCalendarEvent} from '../shared/calendar'
 import type {Result} from '../shared/accounts'
 import {CalendarReminderService} from './calendar-reminders'
+import {examEvent, parseExamPage} from './exam-import'
 
 export function registerCalendarHandlers(db: AppDatabase, accounts: AccountService,
                                          trusted: (event: IpcMainInvokeEvent) => boolean, onReminderClick: () => void) {
@@ -39,5 +40,31 @@ export function registerCalendarHandlers(db: AppDatabase, accounts: AccountServi
         db.removeCalendarEvent(username, input)
         reminders.changed(username, input)
         return null
+    })
+
+    ipcMain.handle('calendar:sync-exams', async (event): Promise<Result<{ added: number; total: number }>> => {
+        if (!trusted(event)) return {ok: false, error: '请求来源无效。'}
+        try {
+            const account = accounts.getState()
+            if (account.status !== 'signed-in' || !account.username) throw new AuthError('请先登录账号。')
+            const html = await accounts.readExamPage()
+            if (!html) throw new AuthError('无法读取考试安排，请重新登录教务系统。')
+            const exams = parseExamPage(html)
+            if (!exams.length) throw new AuthError('未识别到考试安排，请确认教务系统页面可访问。')
+            let added = 0
+            for (const exam of exams) {
+                const item = examEvent(exam)
+                if (db.hasCalendarEvent(account.username, item.id)) continue
+                db.saveCalendarEvent(account.username, item)
+                reminders.changed(account.username, item.id)
+                added++
+            }
+            return {ok: true, data: {added, total: exams.length}}
+        } catch (error) {
+            return {
+                ok: false,
+                error: error instanceof AuthError ? error.message : '同步考试安排失败，请稍后重试。'
+            }
+        }
     })
 }

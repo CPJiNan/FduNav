@@ -10,7 +10,12 @@ import {
     verifySession
 } from './fudan-auth'
 import {completeInteractiveAuthentication} from './interactive-auth'
-import {clearReaderSession, readAuthenticatedImage, readAuthenticatedPage} from './authenticated-page'
+import {
+    clearReaderSession,
+    readAuthenticatedImage,
+    readAuthenticatedPage,
+    readExamPage as readExamPageFromBrowser
+} from './authenticated-page'
 import type {AccountState, LoginInput, Result, Theme} from '../shared/accounts'
 import {secureStorage} from './secure-storage'
 
@@ -150,6 +155,10 @@ export class AccountService {
 
     async readPageWithBrowser(url: string): Promise<string | null> {
         return readAuthenticatedPage(url, this.jar)
+    }
+
+    async readExamPage(): Promise<string | null> {
+        return readExamPageFromBrowser(this.jar)
     }
 
     async readImage(url: string, referer: string): Promise<string> {

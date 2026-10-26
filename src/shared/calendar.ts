@@ -30,6 +30,8 @@ export interface CalendarAPI {
     save(input: CalendarEventInput): Promise<Result<CalendarEvent>>
 
     remove(id: string): Promise<Result<null>>
+
+    syncExams(): Promise<Result<{ added: number; total: number }>>
 }
 
 export interface CalendarOccurrence {

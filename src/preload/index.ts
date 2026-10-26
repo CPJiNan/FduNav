@@ -38,6 +38,7 @@ const calendar: CalendarAPI = {
     list: () => ipcRenderer.invoke('calendar:list'),
     save: input => ipcRenderer.invoke('calendar:save', input),
     remove: id => ipcRenderer.invoke('calendar:remove', id),
+    syncExams: () => ipcRenderer.invoke('calendar:sync-exams'),
 }
 contextBridge.exposeInMainWorld('calendar', calendar)
 

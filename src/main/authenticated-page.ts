@@ -94,3 +94,57 @@ export async function readAuthenticatedPage(value: string, jar: CookieJar | null
         if (!window.isDestroyed()) window.destroy()
     }
 }
+
+export async function readExamPage(jar: CookieJar | null): Promise<string | null> {
+    if (!jar) return null
+    const reader = session.fromPartition(PARTITION)
+    await seedCookies(jar, reader)
+    const window = new BrowserWindow({
+        show: false,
+        webPreferences: {session: reader, sandbox: true, contextIsolation: true, nodeIntegration: false},
+    })
+    window.webContents.setWindowOpenHandler(() => ({action: 'deny'}))
+    try {
+        await window.loadURL('https://fdjwgl.fudan.edu.cn/student/home')
+        await wait(1000)
+        const clickDeadline = Date.now() + 6_000
+        while (Date.now() < clickDeadline) {
+            const clicked = await window.webContents.executeJavaScript(`(() => {
+                const link = [...document.querySelectorAll('a')]
+                    .find(item => (item.textContent || '').includes('考试信息'))
+                if (link) {
+                    link.click()
+                    return true
+                }
+                return false
+            })()`).catch(() => false)
+            if (clicked) break
+            await wait(250)
+        }
+        const deadline = Date.now() + 20_000
+        while (Date.now() < deadline) {
+            if (window.isDestroyed()) return null
+            const html: unknown = await window.webContents.executeJavaScript(`(() => {
+                for (const frame of document.querySelectorAll('iframe')) {
+                    try {
+                        if ((frame.getAttribute('src') || '').includes('exam-arrange') && frame.contentDocument) {
+                            return frame.contentDocument.documentElement.outerHTML
+                        }
+                    } catch {
+                    }
+                }
+                return null
+            })()`).catch(() => null)
+            if (typeof html === 'string' && /\d{4}[-/.年]\d{1,2}/.test(html) &&
+                (html.includes('考试') || html.includes('考场'))) {
+                return html
+            }
+            await wait(500)
+        }
+        return null
+    } catch {
+        return null
+    } finally {
+        if (!window.isDestroyed()) window.destroy()
+    }
+}
