@@ -30,7 +30,11 @@ type IconName =
     | 'sparkles'
     | 'todo'
     | 'grip'
+    | 'dashboard'
+    | 'pencil'
 const paths: Record<IconName, string> = {
+    pencil: 'm16 3 5 5L8 21H3v-5L16 3Zm-3 3 5 5M3 16l5 5',
+    dashboard: 'M10 13a2 2 0 1 0 4 0a2 2 0 1 0-4 0M13.45 11.55l2.05-2.05M6.4 20a9 9 0 1 1 11.2 0l-11.2 0',
     grip: 'M9 5h.01M15 5h.01M9 12h.01M15 12h.01M9 19h.01M15 19h.01',
     todo: 'M10 6h11M10 12h11M10 18h11M3 6l1 1 2-2M3 12l1 1 2-2M3 18l1 1 2-2',
     search: 'M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Zm-2 5 6 6',

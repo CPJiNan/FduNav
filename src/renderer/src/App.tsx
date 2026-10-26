@@ -12,7 +12,9 @@ import {GeneralPanel} from './GeneralPanel'
 import {NotificationSettingsPanel} from './NotificationSettingsPanel'
 import {SummaryQueuePanel} from './SummaryQueuePanel'
 import {AboutPanel} from './AboutPanel'
+import {DashboardPage} from './DashboardPage'
 import type {Notice} from '../../shared/notices'
+import type {CalendarView} from '../../shared/calendar'
 import type {AccountState} from '../../shared/accounts'
 import {type MessagePreferences, validateRequiredMessagePreferences} from '../../shared/message-preferences'
 import './styles/app.css'
@@ -32,8 +34,9 @@ const calendarNavigation = {label: '日历', icon: 'calendar'} as const
 
 export default function App() {
     const [settings, setSettings] = useState(false)
-    const [page, setPage] = useState<'notices' | 'calendar' | 'todos'>('notices')
+    const [page, setPage] = useState<'dashboard' | 'notices' | 'calendar' | 'todos'>('dashboard')
     const [noticeToOpen, setNoticeToOpen] = useState<Notice | null>(null)
+    const [calendarInitialView, setCalendarInitialView] = useState<CalendarView>('week')
     const [tab, setTab] = useState<Tab>('general')
     const [account, setAccount] = useState<AccountState | null>(null)
     const [unreadState, setUnreadState] = useState<{ username: string | null; unread: boolean }>({
@@ -50,6 +53,7 @@ export default function App() {
     const showNoticesPage = !showSettings && page === 'notices'
     const showCalendarPage = !showSettings && page === 'calendar'
     const showTodosPage = !showSettings && page === 'todos'
+    const showDashboardPage = !showSettings && page === 'dashboard'
     const settingsButton = useRef<HTMLButtonElement>(null)
     const settingsWasOpen = useRef(false)
 
@@ -109,7 +113,8 @@ export default function App() {
         return () => window.removeEventListener('keydown', onKey)
     }, [needsSetup])
 
-    function openPage(next: 'notices' | 'calendar' | 'todos') {
+    function openPage(next: 'dashboard' | 'notices' | 'calendar' | 'todos', calendarView: CalendarView = 'week') {
+        if (next === 'calendar') setCalendarInitialView(calendarView)
         setPage(next)
         if (needsLogin) {
             setTab('account')
@@ -131,6 +136,9 @@ export default function App() {
     return <><WindowTitlebar/>
         <div className="app-shell">
             <nav className="app-rail" aria-label="应用导航">
+                <button type="button" className={`icon-button rail-button ${showDashboardPage ? 'is-active' : ''}`}
+                        aria-label="仪表盘" title="仪表盘" aria-current={showDashboardPage ? 'page' : undefined}
+                        onClick={() => openPage('dashboard')}><Icon name="dashboard"/></button>
                 <button type="button" className={`icon-button rail-button ${showNoticesPage ? 'is-active' : ''}`}
                         aria-label={hasUnread ? '通知，有未读消息' : noticesNavigation.label}
                         title={hasUnread ? '通知（有未读消息）' : noticesNavigation.label}
@@ -199,6 +207,9 @@ export default function App() {
                                 </section>
                             </div>
                         </div>
+                        {showDashboardPage && accountLoaded && (!window.accounts || account?.status === 'signed-in') &&
+                            <DashboardPage key={`${account?.username}-${preferences?.educationLevel}`} onNavigate={openPage}
+                                           onOpenNotice={notice => { setNoticeToOpen(notice); openPage('notices') }}/>}
                         {showNoticesPage && accountLoaded && (!window.accounts || account?.status === 'signed-in') &&
                             <NoticesPage key={account?.username} noticeToOpen={noticeToOpen}
                                          onNoticeOpened={() => setNoticeToOpen(null)}
@@ -207,7 +218,7 @@ export default function App() {
                                              setSettings(true)
                                          }}/>}
                         {showCalendarPage && accountLoaded && (!window.accounts || account?.status === 'signed-in') &&
-                            <CalendarPage key={`${account?.username}-${preferences?.educationLevel}`}/>}
+                            <CalendarPage key={`${account?.username}-${preferences?.educationLevel}`} initialView={calendarInitialView}/>}
                         {showTodosPage && accountLoaded && (!window.accounts || account?.status === 'signed-in') &&
                             <TodosPage key={account?.username}/>}
                     </main>

@@ -50,6 +50,7 @@ const calendar: CalendarAPI = {
 contextBridge.exposeInMainWorld('calendar', calendar)
 
 const timetable: TimetableAPI = {
+    cached: () => ipcRenderer.invoke('timetable:cached'),
     get: options => ipcRenderer.invoke('timetable:get', options),
     setStartDate: date => ipcRenderer.invoke('timetable:set-start-date', date),
     openSyllabus: courseId => ipcRenderer.invoke('timetable:open-syllabus', courseId),

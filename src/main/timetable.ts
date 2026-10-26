@@ -27,6 +27,19 @@ export function registerTimetableHandlers(db: AppDatabase, accounts: AccountServ
         return {username: account.username, kind}
     }
 
+    ipcMain.handle('timetable:cached', (event): Result<Timetable | null> => {
+        if (!trusted(event)) return {ok: false, error: '请求来源无效。'}
+        try {
+            const account = accounts.getState()
+            if (account.status !== 'signed-in') throw new AuthError('请先登录账号。')
+            if (db.getMessagePreferences().identity !== 'student') return {ok: true, data: null}
+            const {username, kind} = context()
+            return {ok: true, data: db.getTimetable(username, kind)}
+        } catch (error) {
+            return {ok: false, error: error instanceof AuthError ? error.message : '无法读取课表。'}
+        }
+    })
+
     ipcMain.handle('timetable:get', async (event, input: unknown): Promise<Result<Timetable>> => {
         if (!trusted(event)) return {ok: false, error: '请求来源无效。'}
         try {
