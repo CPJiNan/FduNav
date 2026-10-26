@@ -21,6 +21,7 @@ import {registerTimetableHandlers} from './timetable'
 import {registerCalendarHandlers} from './calendar'
 import {registerTodoHandlers} from './todos'
 import {registerGeneralSettingsHandlers} from './general-settings'
+import {registerAppInfoHandlers} from './app-info'
 
 let database: AppDatabase | undefined
 let mainWindow: BrowserWindow | null = null
@@ -29,6 +30,8 @@ let quitting = false
 const userDataPath = app.getPath('userData')
 app.setName('FduNav')
 app.setPath('userData', userDataPath)
+app.setPath('sessionData', userDataPath)
+app.setPath('cache', join(userDataPath, 'Cache'))
 const primaryInstance = app.requestSingleInstanceLock()
 if (!primaryInstance) app.quit()
 if (process.platform === 'win32') app.setAppUserModelId('top.cpjinan.fdunav')
@@ -162,6 +165,7 @@ app.whenReady().then(async () => {
         mkdirSync(app.getPath('userData'), {recursive: true})
         database = new AppDatabase(join(app.getPath('userData'), 'fdunav.sqlite'))
         const trusted = (event: IpcMainInvokeEvent) => !!senderWindow(event) && isAppUrl(event.senderFrame?.url ?? '')
+        registerAppInfoHandlers(trusted)
         registerGeneralSettingsHandlers(database, trusted)
         const accounts = await registerAccountHandlers(database, trusted)
         registerTimetableHandlers(database, accounts, trusted)

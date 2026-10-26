@@ -9,6 +9,13 @@ import type {CalendarAPI} from '../shared/calendar'
 import type {TodosAPI} from '../shared/todos'
 import type {GeneralSettingsAPI} from '../shared/general-settings'
 import type {NotificationSettingsAPI} from '../shared/notification-settings'
+import type {AppInfoAPI} from '../shared/app-info'
+
+const appInfo: AppInfoAPI = {
+    get: () => ipcRenderer.invoke('app:info'),
+    openRepository: () => ipcRenderer.invoke('app:open-repository'),
+}
+contextBridge.exposeInMainWorld('appInfo', appInfo)
 
 const notificationSettings: NotificationSettingsAPI = {
     get: () => ipcRenderer.invoke('settings:get-notifications'),

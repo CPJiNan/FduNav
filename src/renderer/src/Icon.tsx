@@ -53,7 +53,7 @@ const paths: Record<IconName, string> = {
     check: 'm5 12 4 4L19 6',
     arrow: 'm14 6-6 6 6 6M8 12h13',
     book: 'M12 5c-3-2-6-2-9-1v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1Zm0 0v15',
-    info: 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM12 11v6m0-10v.1',
+    info: 'M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0M12 9h.01M11 12h1v4h1',
     compass: 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-6-3-2 4-4 2 2-4Z',
     close: 'm6 6 12 12M6 18 18 6',
     minimize: 'M5 12h14',

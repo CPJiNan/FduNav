@@ -11,6 +11,7 @@ import {LlmPanel} from './LlmPanel'
 import {GeneralPanel} from './GeneralPanel'
 import {NotificationSettingsPanel} from './NotificationSettingsPanel'
 import {SummaryQueuePanel} from './SummaryQueuePanel'
+import {AboutPanel} from './AboutPanel'
 import type {Notice} from '../../shared/notices'
 import type {AccountState} from '../../shared/accounts'
 import {type MessagePreferences, validateRequiredMessagePreferences} from '../../shared/message-preferences'
@@ -23,6 +24,7 @@ const tabs = [
     {id: 'messages', label: '消息偏好', icon: 'tag'},
     {id: 'sources', label: '消息来源', icon: 'folder'},
     {id: 'llm', label: 'LLM', icon: 'processor'},
+    {id: 'about', label: '关于', icon: 'info'},
 ] as const
 type Tab = typeof tabs[number]['id']
 const noticesNavigation = {label: '通知', icon: 'notices'} as const
@@ -173,8 +175,8 @@ export default function App() {
                                                                        role="tab" aria-selected={tab === item.id}
                                                                        aria-controls={`settings-panel-${item.id}`}
                                                                        tabIndex={tab === item.id ? 0 : -1}
-                                                                       disabled={needsLogin ? item.id !== 'account'
-                                                                           : needsPreferences && item.id !== 'messages' && item.id !== 'account'}
+                                                                       disabled={needsLogin ? item.id !== 'account' && item.id !== 'about'
+                                                                           : needsPreferences && item.id !== 'messages' && item.id !== 'account' && item.id !== 'about'}
                                                                        onKeyDown={event => tabKey(event, index)}
                                                                        onClick={() => setTab(item.id)}
                                                                        className={`settings-tab ${tab === item.id ? 'is-active' : ''}`}>
@@ -185,6 +187,7 @@ export default function App() {
                                     {tab === 'general' && showSettings && <GeneralPanel/>}
                                     {tab === 'notifications' && showSettings && <NotificationSettingsPanel/>}
                                     {tab === 'account' && <AccountPanel account={account} onChange={setAccount}/>}
+                                    {tab === 'about' && <AboutPanel/>}
                                     <div hidden={tab !== 'messages'}><MessagePreferencesPanel
                                         requiredProfile={account?.status === 'signed-in'}
                                         onChange={setPreferences} onSaved={value => {

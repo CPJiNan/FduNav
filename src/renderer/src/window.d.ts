@@ -8,9 +8,11 @@ import type {CalendarAPI} from '../../shared/calendar'
 import type {TodosAPI} from '../../shared/todos'
 import type {GeneralSettingsAPI} from '../../shared/general-settings'
 import type {NotificationSettingsAPI} from '../../shared/notification-settings'
+import type {AppInfoAPI} from '../../shared/app-info'
 
 declare global {
     interface Window {
+        appInfo?: AppInfoAPI
         generalSettings?: GeneralSettingsAPI
         notificationSettings?: NotificationSettingsAPI
         accounts?: AccountAPI
