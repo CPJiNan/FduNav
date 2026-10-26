@@ -16,7 +16,7 @@
     "dev": "electron-vite dev",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "build": "npm run typecheck && electron-vite build",
-    "build:win": "npm run build && npx --yes electron-builder@26.0.12 --win --x64",
+    "build:win": "npm run build && npx --yes electron-builder@26.0.12 --win --x64 --publish never",
     "start": "electron-vite preview"
   },
   "dependencies": {
