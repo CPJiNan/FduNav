@@ -10,12 +10,15 @@ import {
 import {dateAfter} from '../../shared/timetable'
 import {eventTime} from './CalendarViews'
 import {Icon} from './Icon'
+import {calendarReminderOptions, type CalendarReminderMinutes} from '../../shared/calendar-reminders'
 
 export function CalendarEventDialog({date, startMinute = 9 * 60, item, create, onClose, onSaved, onRemoved}: {
     date: string; startMinute?: number; item: CalendarOccurrence | null; create: boolean; onClose: () => void;
     onSaved: (event: CalendarEvent) => void; onRemoved: (id: string) => void
 }) {
     const dialog = useRef<HTMLDialogElement>(null)
+    const reminderEdited = useRef(false)
+    const [loadingDefaultReminder, setLoadingDefaultReminder] = useState(create && !!window.notificationSettings)
     const [editing, setEditing] = useState(create)
     const [draft, setDraft] = useState<CalendarEventInput>(() => {
         if (item?.event) return item.event
@@ -29,6 +32,7 @@ export function CalendarEventDialog({date, startMinute = 9 * 60, item, create, o
             startTime: timeLabel(startMinute),
             endTime: timeLabel(endDate !== date ? (startMinute + 60) % 1440 : Math.min(startMinute + 60, 1439)),
             allDay: false,
+            reminderMinutes: 30,
             location: '',
             notes: '',
         }
@@ -40,6 +44,22 @@ export function CalendarEventDialog({date, startMinute = 9 * 60, item, create, o
         dialog.current?.showModal()
     }, [])
 
+    useEffect(() => {
+        if (!create || !window.notificationSettings) return
+        let active = true
+        void window.notificationSettings.get().then(result => {
+            if (!active) return
+            if (result.ok) {
+                if (!reminderEdited.current) setDraft(current => ({...current, reminderMinutes: result.data.calendarDefaultReminder}))
+            } else setError(result.error)
+        }).catch(() => {
+            if (active) setError('无法读取默认提醒时间，请确认提醒时间后保存。')
+        }).finally(() => {
+            if (active) setLoadingDefaultReminder(false)
+        })
+        return () => { active = false }
+    }, [create])
+
     function change<K extends keyof CalendarEventInput>(key: K, value: CalendarEventInput[K]) {
         setDraft(current => ({
             ...current, [key]: value,
@@ -50,7 +70,7 @@ export function CalendarEventDialog({date, startMinute = 9 * 60, item, create, o
 
     async function save(event: FormEvent) {
         event.preventDefault()
-        if (busy) return
+        if (busy || loadingDefaultReminder) return
         if (!window.calendar) {
             setError('日程服务未加载，请重启应用后再保存。');
             return
@@ -143,6 +163,13 @@ export function CalendarEventDialog({date, startMinute = 9 * 60, item, create, o
                 {!draft.allDay && <label>结束时间<input type="time" value={draft.endTime} required disabled={busy}
                                                         onChange={event => change('endTime', event.target.value)}/></label>}
             </div>
+            <label>提醒时间<select value={draft.reminderMinutes} disabled={busy}
+                                   onChange={event => {
+                                       reminderEdited.current = true
+                                       change('reminderMinutes', Number(event.target.value) as CalendarReminderMinutes)
+                                   }}>
+                {calendarReminderOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select></label>
             <label>地点<input value={draft.location} maxLength={500} disabled={busy}
                               onChange={event => change('location', event.target.value)}/></label>
             <label>备注<textarea value={draft.notes} maxLength={5000} rows={3} disabled={busy}
@@ -150,7 +177,7 @@ export function CalendarEventDialog({date, startMinute = 9 * 60, item, create, o
             {error && <p className="account-error" role="alert">{error}</p>}
             <div className="calendar-dialog-actions">
                 <button type="button" className="secondary-button" disabled={busy} onClick={onClose}>取消</button>
-                <button type="submit" className="primary-button" disabled={busy}>{busy ? '正在保存…' : '保存'}</button>
+                <button type="submit" className="primary-button" disabled={busy || loadingDefaultReminder}>{busy ? '正在保存…' : '保存'}</button>
             </div>
         </form> : <>
             <dl className="calendar-event-details">
@@ -158,6 +185,10 @@ export function CalendarEventDialog({date, startMinute = 9 * 60, item, create, o
                 <dd>{item?.event ? `${item.event.startDate}${item.event.endDate !== item.event.startDate ? ` — ${item.event.endDate}` : ''}` : item?.date}</dd>
                 <dt>时间</dt>
                 <dd>{item?.event ? (item.event.allDay ? '全天' : `${item.event.startTime}–${item.event.endTime}`) : item && eventTime(item)}</dd>
+                {item?.event && <>
+                    <dt>提醒</dt>
+                    <dd>{calendarReminderOptions.find(option => option.value === item.event!.reminderMinutes)?.label || '无'}</dd>
+                </>}
                 <dt>地点</dt>
                 <dd>{item?.location || '未设置'}</dd>
                 {item?.course && <>

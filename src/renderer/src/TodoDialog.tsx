@@ -1,5 +1,6 @@
 import {useEffect, useRef} from 'react'
 import type {TodoInput} from '../../shared/todos'
+import {calendarReminderOptions, type CalendarReminderMinutes} from '../../shared/calendar-reminders'
 import {Icon} from './Icon'
 import './styles/calendar.css'
 
@@ -43,6 +44,14 @@ export function TodoDialog({draft, busy, error, onChange, onSave, onClose}: {
             <label>截止日期<input type="date" min="1900-01-01" max="2100-12-31" value={draft.dueDate}
                                   disabled={busy}
                                   onChange={event => onChange({...draft, dueDate: event.target.value})}/></label>
+            <label>截止时间<input type="time" step={60} value={draft.dueTime} required={!!draft.dueDate}
+                                  disabled={busy || !draft.dueDate}
+                                  onChange={event => onChange({...draft, dueTime: event.target.value})}/></label>
+            <label>提醒时间<select value={draft.reminderMinutes} disabled={busy || !draft.dueDate}
+                                  onChange={event => onChange({...draft, reminderMinutes: Number(event.target.value) as CalendarReminderMinutes})}>
+                {calendarReminderOptions.map(option =>
+                    <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select></label>
             <label>备注<textarea rows={3} maxLength={5000} value={draft.notes} disabled={busy}
                                  onChange={event => onChange({...draft, notes: event.target.value})}/></label>
             {error && <p className="account-error" role="alert">{error}</p>}

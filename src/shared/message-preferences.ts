@@ -84,6 +84,21 @@ export const emptyMessagePreferences = (): MessagePreferences => ({
     identity: '', gender: '', department: '', educationLevel: '', grade: null, major: '', campus: '',
 })
 
+export function validateRequiredMessagePreferences(input: unknown): ValidationResult {
+    const result = validateMessagePreferences(input)
+    if (!result.ok) return result
+    const fields = [
+        ['identity', '身份'], ['gender', '性别'], ['department', '院系'], ['educationLevel', '学历阶段'],
+        ['grade', '年级'], ['major', '专业'], ['campus', '校区'],
+    ] as const
+    for (const [field, label] of fields) {
+        if (result.data[field] === '' || result.data[field] === null) {
+            return {ok: false, field, error: `请填写${label}。`}
+        }
+    }
+    return result
+}
+
 type ValidationResult = { ok: true; data: MessagePreferences } |
     { ok: false; error: string; field: keyof MessagePreferences }
 
@@ -125,19 +140,4 @@ export function validateMessagePreferences(input: unknown): ValidationResult {
             campus: value.campus as MessagePreferences['campus'],
         }
     }
-}
-
-export function validateRequiredMessagePreferences(input: unknown): ValidationResult {
-    const result = validateMessagePreferences(input)
-    if (!result.ok) return result
-    const fields = [
-        ['identity', '身份'], ['gender', '性别'], ['department', '院系'], ['educationLevel', '学历阶段'],
-        ['grade', '年级'], ['major', '专业'], ['campus', '校区'],
-    ] as const
-    for (const [field, label] of fields) {
-        if (result.data[field] === '' || result.data[field] === null) {
-            return {ok: false, field, error: `请填写${label}。`}
-        }
-    }
-    return result
 }

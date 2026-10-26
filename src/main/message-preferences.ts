@@ -4,7 +4,7 @@ import type {Result} from '../shared/accounts'
 import {
     type MessagePreferences,
     validateMessagePreferences,
-    validateRequiredMessagePreferences
+    validateRequiredMessagePreferences,
 } from '../shared/message-preferences'
 
 export function registerMessagePreferenceHandlers(db: AppDatabase, trusted: (event: IpcMainInvokeEvent) => boolean) {

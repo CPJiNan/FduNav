@@ -12,6 +12,7 @@ export function SourcesPanel({active}: { active: boolean }) {
     const [dragging, setDragging] = useState<SourceId | null>(null)
     const [dropTarget, setDropTarget] = useState<{ id: SourceId; after: boolean } | null>(null)
     const [status, setStatus] = useState('')
+    const [query, setQuery] = useState('')
     const mutation = useRef(false)
     const requestVersion = useRef(0)
     const api = window.sources
@@ -95,7 +96,23 @@ export function SourcesPanel({active}: { active: boolean }) {
         }
     }
 
+    const search = query.trim().toLocaleLowerCase()
+    const visibleSources = sources.filter(source =>
+        `${source.name} ${source.url}`.toLocaleLowerCase().includes(search))
+
     return <div className="sources-panel" aria-busy={busy}>
+        <div className="source-search">
+            <Icon name="search"/>
+            <input type="search" aria-label="搜索消息来源" placeholder="搜索名称或网址"
+                   value={query} disabled={!loaded} onChange={event => {
+                       setQuery(event.target.value)
+                       setDragging(null)
+                       setDropTarget(null)
+                   }}/>
+        </div>
+        {loaded && search && !visibleSources.length && <p className="source-search-result source-status" role="status">
+            未找到匹配的消息来源
+        </p>}
         <span className="source-sort-announcement" role="status">{status}</span>
         {busy && <span className="source-status" role="status">处理中…</span>}
         {!api && <p className="account-error" role="alert">消息来源服务不可用。</p>}
@@ -105,7 +122,7 @@ export function SourcesPanel({active}: { active: boolean }) {
                                        onClick={() => setRetry(value => value + 1)}>重试</button>}
         </div>}
         <ul className="source-list" aria-label="消息来源">
-            {sources.map((source, index) => <li key={source.id}
+            {visibleSources.map((source, index) => <li key={source.id}
                                                 className={`${dragging === source.id ? 'is-dragging' : ''} ${dropTarget?.id === source.id ? dropTarget.after ? 'drop-after' : 'drop-before' : ''}`}
                                                 onDragOver={event => {
                                                     if (!dragging || busy) return
@@ -146,7 +163,7 @@ export function SourcesPanel({active}: { active: boolean }) {
                             if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return
                             event.preventDefault()
                             const after = event.key === 'ArrowDown'
-                            const target = sources[index + (after ? 1 : -1)]
+                            const target = visibleSources[index + (after ? 1 : -1)]
                             if (target) void move(source.id, target.id, after)
                         }}><Icon name="grip"/></button>
                 <div className="source-info"><strong>{source.name}</strong><span

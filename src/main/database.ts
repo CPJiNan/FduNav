@@ -1,9 +1,11 @@
 import {DatabaseSync} from 'node:sqlite'
 import type {Theme} from '../shared/accounts'
 import {isCloseAction, type CloseAction} from '../shared/general-settings'
+import {isNoticeRefreshInterval, isNoticeReminderMode, type NoticeRefreshInterval, type NoticeReminderMode} from '../shared/notification-settings'
 import type {Notice, NoticeList, NoticeRef, NoticeRelevanceChoice, ParsedNotice} from '../shared/notices'
 import type {Timetable} from '../shared/timetable'
 import type {CalendarEvent} from '../shared/calendar'
+import {isCalendarReminderMinutes, type CalendarReminderMinutes} from '../shared/calendar-reminders'
 import type {Todo} from '../shared/todos'
 import {defaultSources, type MessageSource, type SourceId} from '../shared/sources.ts'
 import {
@@ -46,9 +48,19 @@ export class AppDatabase {
                 username TEXT NOT NULL, id TEXT NOT NULL, data TEXT NOT NULL,
                 PRIMARY KEY (username, id)
             );
+            CREATE TABLE IF NOT EXISTS calendar_reminder_deliveries (
+                username TEXT NOT NULL, event_id TEXT NOT NULL, remind_at INTEGER NOT NULL,
+                PRIMARY KEY (username, event_id),
+                FOREIGN KEY (username, event_id) REFERENCES calendar_events (username, id) ON DELETE CASCADE
+            );
             CREATE TABLE IF NOT EXISTS todos (
                 username TEXT NOT NULL, id TEXT NOT NULL, data TEXT NOT NULL,
                 PRIMARY KEY (username, id)
+            );
+            CREATE TABLE IF NOT EXISTS todo_reminder_deliveries (
+                username TEXT NOT NULL, todo_id TEXT NOT NULL, remind_at INTEGER NOT NULL,
+                PRIMARY KEY (username, todo_id),
+                FOREIGN KEY (username, todo_id) REFERENCES todos (username, id) ON DELETE CASCADE
             );
             CREATE TABLE IF NOT EXISTS account (
                 id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -124,6 +136,21 @@ export class AppDatabase {
         this.db.prepare('DELETE FROM todos WHERE username = ? AND id = ?').run(username, id)
     }
 
+    todoReminderDelivered(username: string, id: string, remindAt: number): boolean {
+        return !!this.db.prepare('SELECT 1 FROM todo_reminder_deliveries WHERE username = ? AND todo_id = ? AND remind_at = ?')
+            .get(username, id, remindAt)
+    }
+
+    markTodoReminderDelivered(username: string, id: string, remindAt: number) {
+        this.db.prepare(`INSERT INTO todo_reminder_deliveries (username, todo_id, remind_at) VALUES (?, ?, ?)
+            ON CONFLICT(username, todo_id) DO UPDATE SET remind_at = excluded.remind_at`).run(username, id, remindAt)
+    }
+
+    clearTodoReminderDelivery(username: string, id: string, remindAt: number) {
+        this.db.prepare('DELETE FROM todo_reminder_deliveries WHERE username = ? AND todo_id = ? AND remind_at = ?')
+            .run(username, id, remindAt)
+    }
+
     getLlmSettings(): SavedLlmSettings | null {
         return this.db.prepare('SELECT base_url AS baseUrl, model, api_key AS encryptedApiKey, summary_prompt AS summaryPrompt FROM llm_settings WHERE id = 1')
             .get() as unknown as SavedLlmSettings ?? null
@@ -186,6 +213,57 @@ export class AppDatabase {
         return isCloseAction(value) ? value : 'tray'
     }
 
+    getNoticeRefreshInterval(): NoticeRefreshInterval {
+        const value = Number(this.db.prepare("SELECT value FROM preferences WHERE key = 'notice_refresh_interval'").get()?.value)
+        return isNoticeRefreshInterval(value) ? value : 0
+    }
+
+    getCalendarDefaultReminder(): CalendarReminderMinutes {
+        const stored = this.db.prepare("SELECT value FROM preferences WHERE key = 'calendar_default_reminder'").get()?.value
+        const value = stored === undefined ? undefined : Number(stored)
+        return isCalendarReminderMinutes(value) ? value : 30
+    }
+
+    getTodoDefaultReminder(): CalendarReminderMinutes {
+        const stored = this.db.prepare("SELECT value FROM preferences WHERE key = 'todo_default_reminder'").get()?.value
+        const value = stored === undefined ? undefined : Number(stored)
+        return isCalendarReminderMinutes(value) ? value : 120
+    }
+
+    setTodoDefaultReminder(minutes: CalendarReminderMinutes) {
+        this.db.prepare("INSERT INTO preferences (key, value) VALUES ('todo_default_reminder', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+            .run(String(minutes))
+    }
+
+    setCalendarDefaultReminder(minutes: CalendarReminderMinutes) {
+        this.db.prepare("INSERT INTO preferences (key, value) VALUES ('calendar_default_reminder', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+            .run(String(minutes))
+    }
+
+    getNoticeReminderMode(): NoticeReminderMode {
+        const value = this.db.prepare("SELECT value FROM preferences WHERE key = 'notice_reminder_mode'").get()?.value
+        return isNoticeReminderMode(value) ? value : 'all'
+    }
+
+    setNoticeReminderMode(mode: NoticeReminderMode) {
+        this.db.prepare("INSERT INTO preferences (key, value) VALUES ('notice_reminder_mode', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+            .run(mode)
+    }
+
+    getNoticeAutoSummary(): boolean {
+        return this.db.prepare("SELECT value FROM preferences WHERE key = 'notice_auto_summary'").get()?.value === 'true'
+    }
+
+    setNoticeAutoSummary(enabled: boolean) {
+        this.db.prepare("INSERT INTO preferences (key, value) VALUES ('notice_auto_summary', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+            .run(String(enabled))
+    }
+
+    setNoticeRefreshInterval(interval: NoticeRefreshInterval) {
+        this.db.prepare("INSERT INTO preferences (key, value) VALUES ('notice_refresh_interval', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+            .run(String(interval))
+    }
+
     setCloseAction(action: CloseAction) {
         this.db.prepare("INSERT INTO preferences (key, value) VALUES ('close_action', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
             .run(action)
@@ -198,6 +276,21 @@ export class AppDatabase {
 
     hasCalendarEvent(username: string, id: string) {
         return !!this.db.prepare('SELECT 1 FROM calendar_events WHERE username = ? AND id = ?').get(username, id)
+    }
+
+    calendarReminderDelivered(username: string, id: string, remindAt: number): boolean {
+        return !!this.db.prepare('SELECT 1 FROM calendar_reminder_deliveries WHERE username = ? AND event_id = ? AND remind_at = ?')
+            .get(username, id, remindAt)
+    }
+
+    markCalendarReminderDelivered(username: string, id: string, remindAt: number) {
+        this.db.prepare(`INSERT INTO calendar_reminder_deliveries (username, event_id, remind_at) VALUES (?, ?, ?)
+            ON CONFLICT(username, event_id) DO UPDATE SET remind_at = excluded.remind_at`).run(username, id, remindAt)
+    }
+
+    clearCalendarReminderDelivery(username: string, id: string, remindAt: number) {
+        this.db.prepare('DELETE FROM calendar_reminder_deliveries WHERE username = ? AND event_id = ? AND remind_at = ?')
+            .run(username, id, remindAt)
     }
 
     saveCalendarEvent(username: string, event: CalendarEvent) {
@@ -227,6 +320,14 @@ export class AppDatabase {
         this.db.prepare("INSERT INTO preferences (key, value) VALUES ('message_preferences', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
             .run(JSON.stringify(result.data))
         return result.data
+    }
+
+    hasUnreadNotices(username: string): boolean {
+        return !!this.db.prepare(`SELECT 1 FROM notices n
+            JOIN message_sources s ON s.id = n.source_id
+            WHERE s.enabled = 1 AND NOT EXISTS (
+                SELECT 1 FROM notice_reads r WHERE r.username = ? AND r.source_id = n.source_id AND r.url = n.url
+            ) LIMIT 1`).get(username)
     }
 
     getNotices(username = this.getAccount()?.username ?? ''): NoticeList {

@@ -11,7 +11,7 @@ const filters = [{value: 'pending', label: '待完成'}, {value: 'completed', la
 }] as const
 type Filter = typeof filters[number]['value']
 type TodoTransition = { todo: Todo; stage: 'line' | 'exit' }
-const emptyTodo = (): TodoInput => ({title: '', notes: '', dueDate: '', completed: false})
+const emptyTodo = (): TodoInput => ({title: '', notes: '', dueDate: '', dueTime: '23:59', reminderMinutes: 120, completed: false})
 
 export function TodosPage() {
     const [todos, setTodos] = useState<Todo[]>([])
@@ -24,6 +24,7 @@ export function TodosPage() {
     const [error, setError] = useState('')
     const [editor, setEditor] = useState<TodoInput | null>(null)
     const [today, setToday] = useState(localToday)
+    const [now, setNow] = useState(Date.now)
     const active = useRef(true)
     const pending = useRef(false)
     const pendingToggles = useRef(new Set<string>())
@@ -57,11 +58,17 @@ export function TodosPage() {
         active.current = true
         // Deferring the initial read also prevents duplicate requests under Strict Mode.
         const start = window.setTimeout(() => void load(), 0)
-        const timer = window.setInterval(() => setToday(localToday()), 60_000)
+        let timer: number
+        function updateClock() {
+            setToday(localToday())
+            setNow(Date.now())
+            timer = window.setTimeout(updateClock, 60_000 - Date.now() % 60_000)
+        }
+        updateClock()
         return () => {
             active.current = false;
             window.clearTimeout(start);
-            window.clearInterval(timer)
+            window.clearTimeout(timer)
         }
     }, [])
 
@@ -69,6 +76,28 @@ export function TodosPage() {
         previousFocus.current = document.activeElement as HTMLElement
         setEditor({...todo})
         setError('')
+    }
+
+    async function createTodo() {
+        if (pending.current) return
+        pending.current = true
+        setBusy(true)
+        setError('')
+        try {
+            const draft = emptyTodo()
+            if (window.notificationSettings) {
+                const result = await window.notificationSettings.get()
+                if (!active.current) return
+                if (!result.ok) {setError(result.error); return}
+                draft.reminderMinutes = result.data.todoDefaultReminder
+            }
+            openEditor(draft)
+        } catch {
+            if (active.current) setError('无法读取默认提醒时间，请重试。')
+        } finally {
+            pending.current = false
+            if (active.current) setBusy(false)
+        }
     }
 
     const editing = editor !== null
@@ -183,9 +212,10 @@ export function TodosPage() {
     const remaining = todos.filter(todo => !todo.completed).length
     const visible = todos.filter(todo => filter === 'all' || todo.completed === (filter === 'completed'))
         .sort((left, right) => Number(left.completed) - Number(right.completed) ||
-            (left.dueDate || '9999').localeCompare(right.dueDate || '9999') || right.createdAt.localeCompare(left.createdAt))
+            (left.dueDate ? `${left.dueDate}T${left.dueTime}` : '9999').localeCompare(
+                right.dueDate ? `${right.dueDate}T${right.dueTime}` : '9999') || right.createdAt.localeCompare(left.createdAt))
 
-    return <section className="todos-page" aria-label="TODO">
+    return <section className="todos-page" aria-label="待办">
         <div className="todos-toolbar">
             <div className="todos-filters" role="group" aria-label="筛选待办">
                 {filters.map(item => <button key={item.value} type="button" aria-pressed={filter === item.value}
@@ -195,11 +225,11 @@ export function TodosPage() {
                 </button>)}
             </div>
             <button ref={addButton} type="button" className="primary-button todos-add"
-                    disabled={!loaded || busy || editing || toggling.size > 0} onClick={() => openEditor(emptyTodo())}>
+                    disabled={!loaded || busy || editing || toggling.size > 0} onClick={() => void createTodo()}>
                 <Icon name="plus"/>新增待办
             </button>
         </div>
-        {!api && <p className="account-notice">请在桌面应用中使用 TODO；若已打开桌面应用，请重启以加载待办服务。</p>}
+        {!api && <p className="account-notice">请在桌面应用中使用待办；若已打开桌面应用，请重启以加载待办服务。</p>}
         {error && !editor && <div className="account-error" role="alert">{error}{!loaded && api &&
             <button type="button" className="text-button" disabled={loading}
                     onClick={() => void load()}>重试</button>}</div>}
@@ -214,6 +244,8 @@ export function TodosPage() {
             <ul className="todo-list" aria-label="待办列表" aria-busy={busy || toggling.size > 0}>
                 {visible.map(todo => {
                     const transition = transitions[todo.id]
+                    const dueAt = `${todo.dueDate}T${todo.dueTime}`
+                    const overdue = !todo.completed && new Date(dueAt).getTime() < now
                     return <li key={todo.id} className={`todo-row${todo.completed ? ' is-completed' : ''}${
                         transition ? ` is-transitioning ${transition.todo.completed ? 'is-completing' : 'is-reopening'}${transition.stage === 'exit' ? ' is-leaving' : ''}` : ''}`}
                                onAnimationEnd={event => {
@@ -235,9 +267,9 @@ export function TodosPage() {
                         }}>{todo.title}</span></span>
                             {todo.notes && <span className="todo-notes">{todo.notes}</span>}
                             {todo.dueDate && <span
-                                className={`todo-due${!todo.completed && todo.dueDate < today ? ' is-overdue' : ''}`}>
-                            <Icon name="calendar"/><time dateTime={todo.dueDate}>{todo.dueDate}</time>
-                                {!todo.completed && (todo.dueDate < today ? '已逾期' : todo.dueDate === today ? '今天截止' : '')}
+                                className={`todo-due${overdue ? ' is-overdue' : ''}`}>
+                            <Icon name="calendar"/><time dateTime={dueAt}>{todo.dueDate} {todo.dueTime}</time>
+                                {!todo.completed && (overdue ? '已逾期' : todo.dueDate === today ? '今天截止' : '')}
                         </span>}
                         </button>
                         <button type="button" className="icon-button todo-delete"
@@ -248,7 +280,7 @@ export function TodosPage() {
                 })}
             </ul>
             {!visible.length && <div className="todos-empty" role="status"><Icon name="todo"/>
-                <p>{filter === 'completed' ? '暂无已完成的待办' : filter === 'pending' ? '暂无待完成的代办' : '暂无待办'}</p>
+                <p>{filter === 'completed' ? '暂无已完成的待办' : filter === 'pending' ? '暂无待完成的待办' : '暂无待办'}</p>
             </div>}
         </>}
     </section>

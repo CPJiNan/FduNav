@@ -10,7 +10,7 @@ import {
     genderOptions,
     identityOptions,
     type MessagePreferences,
-    validateRequiredMessagePreferences
+    validateRequiredMessagePreferences,
 } from '../shared/message-preferences.ts'
 
 const structuredOutputInstruction = '只输出一个 JSON 对象，不要输出 Markdown 代码块或额外文字：{"relevance":"related|maybe|none","summary":"摘要正文"}。relevance：related 明确相关，maybe 可能相关，none 无关或无法判断。summary 字段使用 Markdown 格式。'
@@ -142,12 +142,13 @@ export class NoticeSummaryService {
     private contextFor(notice: Notice) {
         const account = this.db.getAccount()
         if (!account) throw new Error('请先登录。')
-        const preferences = validateRequiredMessagePreferences(this.db.getMessagePreferences())
-        if (!preferences.ok) throw new Error('请先完善消息偏好。')
+        const checked = validateRequiredMessagePreferences(this.db.getMessagePreferences())
+        if (!checked.ok) throw new Error('请先完善消息偏好。')
+        const preferences = checked.data
         const settings = this.llm.get()
         return {
-            notice, preferences: preferences.data, settings, username: account.username,
-            key: summaryCacheKey(notice, preferences.data, settings, account.username)
+            notice, preferences, settings, username: account.username,
+            key: summaryCacheKey(notice, preferences, settings, account.username)
         }
     }
 

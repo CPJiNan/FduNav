@@ -111,6 +111,27 @@ export function NoticesPage({onLogin, noticeToOpen, onNoticeOpened}: {
 
     useEffect(() => {
         if (!api) return
+        let active = true
+        const unsubscribe = api.onChanged(() => {
+            const version = ++listVersion.current
+            void api.list().then(result => {
+                if (!active || version !== listVersion.current) return
+                if (result.ok) {
+                    setList(result.data)
+                    setError('')
+                } else setError(result.error)
+            }).catch(() => {
+                if (active && version === listVersion.current) setError('无法连接通知服务，请重试。')
+            })
+        })
+        return () => {
+            active = false
+            unsubscribe()
+        }
+    }, [api])
+
+    useEffect(() => {
+        if (!api) return
         let cancelled = false
 
         async function load() {

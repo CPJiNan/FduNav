@@ -18,6 +18,7 @@ let tray: Tray | null = null
 let quitting = false
 const primaryInstance = app.requestSingleInstanceLock()
 if (!primaryInstance) app.quit()
+if (process.platform === 'win32') app.setAppUserModelId('top.cpjinan.fdunav')
 
 function showMainWindow() {
     if (quitting) return
@@ -145,10 +146,10 @@ app.whenReady().then(async () => {
         registerGeneralSettingsHandlers(database, trusted)
         const accounts = await registerAccountHandlers(database, trusted)
         registerTimetableHandlers(database, accounts, trusted)
-        registerCalendarHandlers(database, accounts, trusted)
-        registerTodoHandlers(database, accounts, trusted)
+        registerCalendarHandlers(database, accounts, trusted, showMainWindow)
+        registerTodoHandlers(database, accounts, trusted, showMainWindow)
         const llm = registerLlmHandlers(database, trusted)
-        registerNoticeHandlers(database, accounts, llm, trusted)
+        registerNoticeHandlers(database, accounts, llm, trusted, showMainWindow)
         registerMessagePreferenceHandlers(database, trusted)
     } catch {
         dialog.showErrorBox('无法打开应用数据', 'SQLite 数据库初始化失败，请检查应用数据目录的访问权限。')
