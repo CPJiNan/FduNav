@@ -10,7 +10,6 @@ export function LlmPanel({active}: { active: boolean }) {
     const [busy, setBusy] = useState(false)
     const [toggling, setToggling] = useState(false)
     const [error, setError] = useState('')
-    const [saved, setSaved] = useState(false)
     const [testing, setTesting] = useState(false)
     const [testResult, setTestResult] = useState('')
     const [models, setModels] = useState<string[] | null>(null)
@@ -51,7 +50,6 @@ export function LlmPanel({active}: { active: boolean }) {
     }, [active, loaded, settings.enabled, busy, toggling])
 
     function edited() {
-        setSaved(false);
         setError('');
         setTestResult('');
         setModelStatus('')
@@ -116,7 +114,6 @@ export function LlmPanel({active}: { active: boolean }) {
     async function save(event: FormEvent) {
         event.preventDefault()
         if (!api || busy || toggling || !loaded || !settings.enabled) return
-        setSaved(false)
         setTestResult('')
         const result = validateLlmSettings({...settings, apiKey, clearApiKey})
         if (!result.ok) {
@@ -131,7 +128,6 @@ export function LlmPanel({active}: { active: boolean }) {
                 setSettings(value => ({...response.data, enabled: value.enabled}))
                 setApiKey('')
                 setClearApiKey(false)
-                setSaved(true)
             } else setError(response.error)
         } catch {
             setError('无法保存 LLM 设置，请重试。')
@@ -143,7 +139,6 @@ export function LlmPanel({active}: { active: boolean }) {
 
     async function testConnection() {
         if (!api || busy || toggling || !loaded || !settings.enabled) return
-        setSaved(false)
         setTestResult('')
         const result = validateLlmSettings({...settings, apiKey, clearApiKey})
         if (!result.ok) {
@@ -195,7 +190,7 @@ export function LlmPanel({active}: { active: boolean }) {
                 <div className="llm-key-control">
                     <input id="llm-api-key" type="password" value={apiKey} maxLength={4096} autoComplete="new-password"
                            autoCapitalize="none" spellCheck={false} disabled={clearApiKey}
-                           placeholder={settings.hasApiKey ? '已保存' : '可选'}
+                           placeholder={settings.hasApiKey ? '已配置密钥' : '可选'}
                            onChange={event => {
                                setApiKey(event.target.value);
                                setModels(null);
@@ -247,7 +242,6 @@ export function LlmPanel({active}: { active: boolean }) {
         </fieldset>
         {!api && <p className="account-error" role="alert">LLM 设置服务不可用。</p>}
         {busy && !loaded && <p className="llm-status" role="status">读取中…</p>}
-        {saved && <p className="llm-status" role="status">已保存</p>}
         {testing && <p className="llm-status" role="status">正在测试连接…</p>}
         {fetchingModels && <p className="llm-status" role="status">正在获取模型…</p>}
         {modelStatus && <p className="llm-status" role="status">{modelStatus}</p>}

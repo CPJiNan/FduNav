@@ -1,4 +1,5 @@
 import type {Result} from './accounts'
+import {isCalendarReminderMinutes, type CalendarReminderMinutes} from './calendar-reminders'
 import {courseStartTimes, dateAfter, type Timetable, type TimetableCourse, validDate} from './timetable'
 
 export type CalendarView = 'year' | 'month' | 'week' | 'day' | 'agenda'
@@ -14,6 +15,7 @@ export interface CalendarEventInput {
     startTime: string
     endTime: string
     allDay: boolean
+    reminderMinutes: CalendarReminderMinutes
     location: string
     notes: string
 }
@@ -115,6 +117,7 @@ export function validateCalendarEvent(input: unknown): Result<CalendarEventInput
         error: '请选择有效的起止日期。'
     }
     if (typeof value.allDay !== 'boolean') return {ok: false, error: '全天选项无效。'}
+    if (!isCalendarReminderMinutes(value.reminderMinutes)) return {ok: false, error: '请选择有效的提醒时间。'}
     const validTime = (time: unknown): time is string => typeof time === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(time)
     if (!value.allDay && (!validTime(value.startTime) || !validTime(value.endTime) ||
         (value.startDate === value.endDate && value.endTime <= value.startTime))) return {
@@ -130,6 +133,7 @@ export function validateCalendarEvent(input: unknown): Result<CalendarEventInput
             id: value.id as string | undefined, title: value.title.trim(), startDate: value.startDate,
             endDate: value.endDate, startTime: value.allDay ? '00:00' : value.startTime as string,
             endTime: value.allDay ? '00:00' : value.endTime as string, allDay: value.allDay,
+            reminderMinutes: value.reminderMinutes,
             location: value.location.trim(), notes: value.notes.trim()
         }
     }

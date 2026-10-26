@@ -26,6 +26,7 @@ type IconName =
     | 'maximize'
     | 'restore'
     | 'filter'
+    | 'clean'
     | 'sparkles'
     | 'todo'
     | 'grip'
@@ -59,6 +60,7 @@ const paths: Record<IconName, string> = {
     maximize: 'M5 5h14v14H5Z',
     restore: 'M8 8V4h12v12h-4M4 8h12v12H4Z',
     filter: 'M4 5h16l-6 7v5l-4 2v-7L4 5Z',
+    clean: 'M10.5 13V3a1.5 1.5 0 0 1 3 0v10M9 14c1.5-1.5 4.5-1.5 6 0 .6 2 2 3 5 5-5 3-11 3-16 0 3-2 4.4-3 5-5ZM10 17q-.7 1.8-2.5 3M12 17v3M14 17q.7 1.8 2.5 3',
     sparkles: 'M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.4L12 3ZM5 15l.8 2.2L8 18l-2.2.8L5 21l-.8-2.2L2 18l2.2-.8L5 15ZM19 14l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6L19 14Z',
 }
 
@@ -66,6 +68,6 @@ export function Icon({name, className = ''}: { name: IconName; className?: strin
     return <svg className={`icon ${className}`} width="20" height="20" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round"
                 aria-hidden="true">
-        <path d={paths[name]}/>
+        <path d={paths[name]} transform={name === 'clean' ? 'rotate(25 12 12)' : undefined}/>
     </svg>
 }

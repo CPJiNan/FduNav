@@ -123,7 +123,7 @@
     visibility: hidden;
 }
 
-.calendar-page select, .calendar-settings input, .calendar-event-form input:not([type="checkbox"]), .calendar-event-form textarea {
+.calendar-page select, .calendar-settings input, .calendar-event-form input:not([type="checkbox"]), .calendar-event-form select, .calendar-event-form textarea {
     min-height: 44px;
     max-width: 100%;
     min-width: 0;

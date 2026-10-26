@@ -55,6 +55,10 @@ export interface NoticeSummary {
 }
 
 export interface NoticesAPI {
+    unreadState(): Promise<Result<{username: string | null; unread: boolean}>>
+
+    onUnreadChanged(callback: (state: {username: string | null; unread: boolean}) => void): () => void
+
     summaryQueue(): Promise<Result<SummaryTask[]>>
 
     enqueueSummaries(notices: NoticeRef[]): Promise<Result<void>>
@@ -69,9 +73,13 @@ export interface NoticesAPI {
 
     markRead(notice: NoticeRef): Promise<Result<void>>
 
+    markManyRead(notices: NoticeRef[]): Promise<Result<void>>
+
     setRelevance(notice: NoticeRef, relevance: NoticeRelevanceChoice): Promise<Result<NoticeRelevance | null>>
 
     onSummaryQueueChanged(callback: (tasks: SummaryTask[]) => void): () => void
+
+    onChanged(callback: () => void): () => void
 
     list(refresh?: boolean): Promise<Result<NoticeList>>
 

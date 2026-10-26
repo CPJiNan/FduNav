@@ -1,11 +1,14 @@
 import type {Result} from './accounts'
 import {validDate} from './timetable.ts'
+import {calendarReminderSchedule, isCalendarReminderMinutes, type CalendarReminderMinutes} from './calendar-reminders'
 
 export interface TodoInput {
     id?: string
     title: string
     notes: string
     dueDate: string
+    dueTime: string
+    reminderMinutes: CalendarReminderMinutes
     completed: boolean
 }
 
@@ -37,10 +40,21 @@ export function validateTodo(input: unknown): Result<TodoInput> {
         return {ok: false, error: '请选择有效的截止日期。'}
     }
     if (typeof value.completed !== 'boolean') return {ok: false, error: '待办状态无效。'}
+    if (typeof value.dueTime !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(value.dueTime)) {
+        return {ok: false, error: '请选择有效的截止时间。'}
+    }
+    if (!isCalendarReminderMinutes(value.reminderMinutes)) return {ok: false, error: '请选择有效的提醒时间。'}
     return {
         ok: true, data: {
             id: value.id as string | undefined, title: value.title.trim(), notes: value.notes.trim(),
-            dueDate: value.dueDate as string, completed: value.completed
+            dueDate: value.dueDate as string, dueTime: value.dueTime,
+            reminderMinutes: value.reminderMinutes, completed: value.completed
         }
     }
+}
+
+export function todoReminderSchedule(todo: TodoInput) {
+    if (todo.completed || !todo.dueDate) return null
+    return calendarReminderSchedule({startDate: todo.dueDate, startTime: todo.dueTime,
+        allDay: false, reminderMinutes: todo.reminderMinutes})
 }

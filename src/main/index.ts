@@ -1,4 +1,4 @@
-import {app, BrowserWindow, dialog, ipcMain, type IpcMainEvent, type IpcMainInvokeEvent} from 'electron'
+import {app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, Tray, type IpcMainEvent, type IpcMainInvokeEvent} from 'electron'
 import {join} from 'node:path'
 import {existsSync, mkdirSync} from 'node:fs'
 import {pathToFileURL} from 'node:url'
@@ -10,8 +10,56 @@ import {registerLlmHandlers} from './llm'
 import {registerTimetableHandlers} from './timetable'
 import {registerCalendarHandlers} from './calendar'
 import {registerTodoHandlers} from './todos'
+import {registerGeneralSettingsHandlers} from './general-settings'
 
 let database: AppDatabase | undefined
+let mainWindow: BrowserWindow | null = null
+let tray: Tray | null = null
+let quitting = false
+const primaryInstance = app.requestSingleInstanceLock()
+if (!primaryInstance) app.quit()
+if (process.platform === 'win32') app.setAppUserModelId('top.cpjinan.fdunav')
+
+function showMainWindow() {
+    if (quitting) return
+    if (!mainWindow || mainWindow.isDestroyed()) {
+        if (database) createWindow()
+        return
+    }
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.show()
+    mainWindow.focus()
+}
+
+function appIconPath() {
+    return [join(app.getAppPath(), 'resources/icon.png'), join(__dirname, '../../resources/icon.png')].find(existsSync)
+}
+
+function ensureTray() {
+    if (tray && !tray.isDestroyed()) return
+    const path = appIconPath()
+    if (!path) throw new Error('未找到托盘图标。')
+    const icon = nativeImage.createFromPath(path).resize({width: 32, height: 32})
+    if (icon.isEmpty()) throw new Error('无法读取托盘图标。')
+    const next = new Tray(icon)
+    try {
+        next.setToolTip('FduNav')
+        next.setContextMenu(Menu.buildFromTemplate([
+            {label: '打开 FduNav', click: showMainWindow},
+            {type: 'separator'},
+            {label: '退出 FduNav', click: () => app.quit()},
+        ]))
+        next.on('click', showMainWindow)
+        next.on('double-click', showMainWindow)
+        tray = next
+    } catch (error) {
+        next.destroy()
+        throw error
+    }
+}
+
+app.on('second-instance', showMainWindow)
+app.on('before-quit', () => { quitting = true })
 
 function isAppUrl(value: string) {
     try {
@@ -40,10 +88,6 @@ ipcMain.on('window:close', event => senderWindow(event)?.close())
 ipcMain.handle('window:is-maximized', event => senderWindow(event)?.isMaximized() ?? false)
 
 function createWindow(): void {
-    const icon = [
-        join(app.getAppPath(), 'resources/icon.png'),
-        join(__dirname, '../../resources/icon.png')
-    ].find(existsSync)
     const window = new BrowserWindow({
         width: 1000,
         height: 700,
@@ -51,13 +95,28 @@ function createWindow(): void {
         minHeight: 420,
         frame: false,
         title: 'FduNav',
-        icon,
+        icon: appIconPath(),
         webPreferences: {
             preload: join(__dirname, '../preload/index.js'),
             contextIsolation: true,
             nodeIntegration: false,
             sandbox: true
         }
+    })
+    mainWindow = window
+    window.on('closed', () => { mainWindow = null })
+    window.on('query-session-end', () => { quitting = true })
+    window.on('close', event => {
+        if (quitting) return
+        event.preventDefault()
+        if (database?.getCloseAction() === 'tray') {
+            try {
+                ensureTray()
+                window.hide()
+            } catch {
+                dialog.showErrorBox('无法最小化至托盘', '托盘初始化失败，窗口已保留。请重试或在通用设置中选择“退出 FduNav”。')
+            }
+        } else app.quit()
     })
 
     window.setMenu(null)
@@ -79,16 +138,18 @@ function createWindow(): void {
 }
 
 app.whenReady().then(async () => {
+    if (!primaryInstance) return
     try {
         mkdirSync(app.getPath('userData'), {recursive: true})
         database = new AppDatabase(join(app.getPath('userData'), 'fdunav.sqlite'))
         const trusted = (event: IpcMainInvokeEvent) => !!senderWindow(event) && isAppUrl(event.senderFrame?.url ?? '')
+        registerGeneralSettingsHandlers(database, trusted)
         const accounts = await registerAccountHandlers(database, trusted)
         registerTimetableHandlers(database, accounts, trusted)
-        registerCalendarHandlers(database, accounts, trusted)
-        registerTodoHandlers(database, accounts, trusted)
+        registerCalendarHandlers(database, accounts, trusted, showMainWindow)
+        registerTodoHandlers(database, accounts, trusted, showMainWindow)
         const llm = registerLlmHandlers(database, trusted)
-        registerNoticeHandlers(database, accounts, llm, trusted)
+        registerNoticeHandlers(database, accounts, llm, trusted, showMainWindow)
         registerMessagePreferenceHandlers(database, trusted)
     } catch {
         dialog.showErrorBox('无法打开应用数据', 'SQLite 数据库初始化失败，请检查应用数据目录的访问权限。')
@@ -97,12 +158,13 @@ app.whenReady().then(async () => {
     }
     createWindow()
 
-    app.on('activate', () => {
-        if (BrowserWindow.getAllWindows().length === 0) createWindow()
-    })
+    app.on('activate', showMainWindow)
 })
 
-app.on('will-quit', () => database?.close())
+app.on('will-quit', () => {
+    tray?.destroy()
+    database?.close()
+})
 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit()

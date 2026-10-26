@@ -35,7 +35,7 @@ button:disabled {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    max-width: 400px;
+    width: 100%;
     gap: var(--space-2);
 }
 
@@ -221,6 +221,22 @@ h2 {
 .rail-button.is-active {
     background: var(--color-bg-selected);
     color: var(--color-text-primary);
+}
+
+.rail-notice-icon {
+    position: relative;
+    display: inline-flex;
+}
+
+.rail-unread-dot {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-full);
+    background: var(--color-accent);
+    pointer-events: none;
 }
 
 .rail-bottom {

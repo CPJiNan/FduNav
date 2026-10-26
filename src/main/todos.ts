@@ -3,9 +3,12 @@ import type {AppDatabase} from './database'
 import type {AccountService} from './accounts'
 import type {Result} from '../shared/accounts'
 import {TodoError, TodoService} from './todo-service'
+import {TodoReminderService} from './todo-reminders'
 
-export function registerTodoHandlers(db: AppDatabase, accounts: AccountService, trusted: (event: IpcMainInvokeEvent) => boolean) {
+export function registerTodoHandlers(db: AppDatabase, accounts: AccountService,
+                                     trusted: (event: IpcMainInvokeEvent) => boolean, onReminderClick: () => void) {
     const service = new TodoService(db)
+    const reminders = new TodoReminderService(db, onReminderClick)
 
     function handle<T>(channel: string, action: (username: string, input: unknown) => T) {
         ipcMain.handle(channel, (event, input): Result<T> => {
@@ -21,6 +24,14 @@ export function registerTodoHandlers(db: AppDatabase, accounts: AccountService, 
     }
 
     handle('todos:list', username => db.getTodos(username))
-    handle('todos:save', (username, input) => service.save(username, input))
-    handle('todos:remove', (username, input) => service.remove(username, input))
+    handle('todos:save', (username, input) => {
+        const todo = service.save(username, input)
+        reminders.changed(username, todo.id)
+        return todo
+    })
+    handle('todos:remove', (username, input) => {
+        const result = service.remove(username, input)
+        reminders.changed(username, input as string)
+        return result
+    })
 }
