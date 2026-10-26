@@ -224,7 +224,7 @@ export function CalendarEventDialog({date, startMinute = 9 * 60, item, create, o
             </>}</div>}
             {item?.course && <button type="button" className="text-button" disabled={busy}
                                      aria-busy={busy} onClick={() => void openSyllabus()}>
-                {busy ? '正在打开…' : '查看教学大纲'}<Icon name="book"/>
+                {busy ? '正在打开…' : '查看教学大纲'}<Icon name="external"/>
             </button>}
         </>}
     </dialog>
