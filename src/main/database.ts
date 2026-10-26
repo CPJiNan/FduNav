@@ -45,6 +45,7 @@ export class AppDatabase {
             PRAGMA busy_timeout = 5000;
             PRAGMA secure_delete = ON;
             CREATE TABLE IF NOT EXISTS preferences (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS chat_conversations (username TEXT PRIMARY KEY, data TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS timetable_cache (
                 username TEXT NOT NULL, kind TEXT NOT NULL, data TEXT NOT NULL,
                 PRIMARY KEY (username, kind)
@@ -274,6 +275,16 @@ export class AppDatabase {
     setCloseAction(action: CloseAction) {
         this.db.prepare("INSERT INTO preferences (key, value) VALUES ('close_action', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
             .run(action)
+    }
+
+    getChatConversation(username: string): string | null {
+        const row = this.db.prepare('SELECT data FROM chat_conversations WHERE username = ?').get(username)
+        return row ? String(row.data) : null
+    }
+
+    saveChatConversation(username: string, data: string) {
+        this.db.prepare('INSERT INTO chat_conversations (username, data) VALUES (?, ?) ON CONFLICT(username) DO UPDATE SET data = excluded.data')
+            .run(username, data)
     }
 
     getCalendarEvents(username: string): CalendarEvent[] {

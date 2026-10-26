@@ -28,6 +28,8 @@ export interface Timetable {
 }
 
 export interface TimetableAPI {
+    cached(): Promise<Result<Timetable | null>>
+
     get(options?: { refresh?: boolean; semesterId?: string }): Promise<Result<Timetable>>
 
     setStartDate(date: string): Promise<Result<Timetable>>

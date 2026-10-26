@@ -30,7 +30,17 @@ type IconName =
     | 'sparkles'
     | 'todo'
     | 'grip'
+    | 'dashboard'
+    | 'chat'
+    | 'send'
+    | 'stop'
+    | 'pencil'
 const paths: Record<IconName, string> = {
+    chat: 'M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2V11.5A8.5 8.5 0 0 1 10.5 3h2a8.5 8.5 0 0 1 8.5 8.5ZM7 9h9M7 13h6',
+    send: 'm12 4-7 7m7-7 7 7M12 4v16',
+    stop: 'M6 6h12v12H6Z',
+    pencil: 'm16 3 5 5L8 21H3v-5L16 3Zm-3 3 5 5M3 16l5 5',
+    dashboard: 'M10 13a2 2 0 1 0 4 0a2 2 0 1 0-4 0M13.45 11.55l2.05-2.05M6.4 20a9 9 0 1 1 11.2 0l-11.2 0',
     grip: 'M9 5h.01M15 5h.01M9 12h.01M15 12h.01M9 19h.01M15 19h.01',
     todo: 'M10 6h11M10 12h11M10 18h11M3 6l1 1 2-2M3 12l1 1 2-2M3 18l1 1 2-2',
     search: 'M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Zm-2 5 6 6',
@@ -60,7 +70,7 @@ const paths: Record<IconName, string> = {
     maximize: 'M5 5h14v14H5Z',
     restore: 'M8 8V4h12v12h-4M4 8h12v12H4Z',
     filter: 'M4 5h16l-6 7v5l-4 2v-7L4 5Z',
-    clean: 'M10.5 13V3a1.5 1.5 0 0 1 3 0v10M9 14c1.5-1.5 4.5-1.5 6 0 .6 2 2 3 5 5-5 3-11 3-16 0 3-2 4.4-3 5-5ZM10 17q-.7 1.8-2.5 3M12 17v3M14 17q.7 1.8 2.5 3',
+    clean: 'M10 8V4a2 2 0 0 1 4 0v4h4a2 2 0 0 1 2 2v7a4 4 0 0 1-4 4H3c2-3 2-6 2-9v-2a2 2 0 0 1 2-2h3ZM5 12h15M10 16c0 2-1 4-2 5M15 16c0 2-1 4-2 5',
     sparkles: 'M12 3l1.9 4.6L18.5 9l-4.6 1.9L12 15.5l-1.9-4.6L5.5 9l4.6-1.4L12 3ZM5 15l.8 2.2L8 18l-2.2.8L5 21l-.8-2.2L2 18l2.2-.8L5 15ZM19 14l.6 1.6 1.6.6-1.6.6-.6 1.6-.6-1.6-1.6-.6 1.6-.6L19 14Z',
 }
 
@@ -68,6 +78,6 @@ export function Icon({name, className = ''}: { name: IconName; className?: strin
     return <svg className={`icon ${className}`} width="20" height="20" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round"
                 aria-hidden="true">
-        <path d={paths[name]} transform={name === 'clean' ? 'rotate(25 12 12)' : undefined}/>
+        <path d={paths[name]}/>
     </svg>
 }

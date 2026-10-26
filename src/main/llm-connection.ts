@@ -11,6 +11,38 @@ export interface ChatMessage {
     content: string
 }
 
+export interface ToolCall {
+    id: string
+    type: 'function'
+    function: {name: string; arguments: string}
+}
+export type ToolChatMessage = ChatMessage | {role: 'assistant'; content: string | null; tool_calls?: ToolCall[]} |
+    {role: 'tool'; tool_call_id: string; content: string}
+export interface ChatTool {
+    type: 'function'
+    function: {name: string; description: string; parameters: Record<string, unknown>}
+}
+
+export async function completeLlmWithTools(connection: Connection, messages: ToolChatMessage[], tools: ChatTool[],
+                                           signal: AbortSignal): Promise<Extract<ToolChatMessage, {role: 'assistant'}>> {
+    const data = await requestLlmJson(connection, '/chat/completions', {
+        method: 'POST', body: JSON.stringify({model: connection.model, messages, tools, tool_choice: 'auto', stream: false}),
+    }, fetch, 60_000, signal)
+    const payload = data as {error?: unknown; choices?: {message?: {content?: unknown; tool_calls?: unknown}}[]} | null
+    const message = Array.isArray(payload?.choices) ? payload.choices[0]?.message : undefined
+    if (payload?.error || !message) throw new Error('模型未返回有效回复，请确认模型支持工具调用。')
+    const content = typeof message.content === 'string' ? message.content.slice(0, 16000) : null
+    const calls = message.tool_calls ?? undefined
+    if (calls !== undefined && (!Array.isArray(calls) || calls.length > 8 || calls.some(call =>
+        !call || typeof call.id !== 'string' || !call.id || call.id.length > 200 || call.type !== 'function' ||
+        typeof call.function?.name !== 'string' || typeof call.function?.arguments !== 'string' ||
+        call.function.arguments.length > 16000) || new Set(calls.map(call => call.id)).size !== calls.length)) {
+        throw new Error('模型返回了无效的工具调用，请重试。')
+    }
+    if (!content?.trim() && !calls?.length) throw new Error('模型未返回有效回复。')
+    return {role: 'assistant', content, ...(calls?.length ? {tool_calls: calls as ToolCall[]} : {})}
+}
+
 export async function completeLlm(connection: Connection, messages: ChatMessage[], signal: AbortSignal,
                                   request: typeof fetch = fetch): Promise<string> {
     const data = await requestLlmJson(connection, '/chat/completions', {

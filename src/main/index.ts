@@ -19,6 +19,7 @@ import {registerMessagePreferenceHandlers} from './message-preferences'
 import {registerLlmHandlers} from './llm'
 import {registerTimetableHandlers} from './timetable'
 import {registerCalendarHandlers} from './calendar'
+import {registerChatHandlers} from './chat'
 import {registerTodoHandlers} from './todos'
 import {registerGeneralSettingsHandlers} from './general-settings'
 import {registerAppInfoHandlers} from './app-info'
@@ -169,10 +170,11 @@ app.whenReady().then(async () => {
         registerGeneralSettingsHandlers(database, trusted)
         const accounts = await registerAccountHandlers(database, trusted)
         registerTimetableHandlers(database, accounts, trusted)
-        registerCalendarHandlers(database, accounts, trusted, showMainWindow)
+        const calendar = registerCalendarHandlers(database, accounts, trusted, showMainWindow)
         registerTodoHandlers(database, accounts, trusted, showMainWindow)
         const llm = registerLlmHandlers(database, trusted)
-        registerNoticeHandlers(database, accounts, llm, trusted, showMainWindow)
+        const notices = registerNoticeHandlers(database, accounts, llm, trusted, showMainWindow)
+        registerChatHandlers(database, accounts, llm, notices, calendar, trusted)
         registerMessagePreferenceHandlers(database, trusted)
     } catch {
         dialog.showErrorBox('无法打开应用数据', 'SQLite 数据库初始化失败，请检查应用数据目录的访问权限。')
