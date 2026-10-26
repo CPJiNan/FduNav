@@ -26,6 +26,9 @@ let database: AppDatabase | undefined
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 let quitting = false
+const userDataPath = app.getPath('userData')
+app.setName('FduNav')
+app.setPath('userData', userDataPath)
 const primaryInstance = app.requestSingleInstanceLock()
 if (!primaryInstance) app.quit()
 if (process.platform === 'win32') app.setAppUserModelId('top.cpjinan.fdunav')

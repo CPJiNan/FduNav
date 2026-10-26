@@ -12,6 +12,7 @@ import {
 import {completeInteractiveAuthentication} from './interactive-auth'
 import {
     clearReaderSession,
+    openAuthenticatedPage,
     readAuthenticatedImage,
     readAuthenticatedPage,
     readExamPage as readExamPageFromBrowser
@@ -159,6 +160,10 @@ export class AccountService {
 
     async readExamPage(): Promise<string | null> {
         return readExamPageFromBrowser(this.jar)
+    }
+
+    async openPageWithBrowser(url: string, parent?: BrowserWindow): Promise<void> {
+        await openAuthenticatedPage(url, this.jar, parent)
     }
 
     async readImage(url: string, referer: string): Promise<string> {

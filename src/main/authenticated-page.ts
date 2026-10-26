@@ -95,6 +95,44 @@ export async function readAuthenticatedPage(value: string, jar: CookieJar | null
     }
 }
 
+let syllabusWindow: BrowserWindow | null = null
+
+export async function openAuthenticatedPage(value: string, jar: CookieJar | null,
+                                            parent?: BrowserWindow): Promise<void> {
+    if (!jar) throw new Error('请先登录账号。')
+    const url = validateUrl(value)
+    const reader = session.fromPartition(PARTITION)
+    await seedCookies(jar, reader)
+    if (!syllabusWindow || syllabusWindow.isDestroyed()) {
+        syllabusWindow = new BrowserWindow({
+            width: 1100,
+            height: 820,
+            minWidth: 720,
+            minHeight: 520,
+            show: false,
+            autoHideMenuBar: true,
+            title: '教学大纲',
+            parent,
+            webPreferences: {session: reader, sandbox: true, contextIsolation: true, nodeIntegration: false},
+        })
+        syllabusWindow.webContents.setWindowOpenHandler(() => ({action: 'deny'}))
+        syllabusWindow.webContents.on('will-navigate', (event, next) => {
+            try {
+                validateUrl(next)
+            } catch {
+                event.preventDefault()
+            }
+        })
+        syllabusWindow.once('ready-to-show', () => syllabusWindow?.show())
+        syllabusWindow.on('closed', () => {
+            syllabusWindow = null
+        })
+    }
+    await syllabusWindow.loadURL(url)
+    syllabusWindow.show()
+    syllabusWindow.focus()
+}
+
 export async function readExamPage(jar: CookieJar | null): Promise<string | null> {
     if (!jar) return null
     const reader = session.fromPartition(PARTITION)
