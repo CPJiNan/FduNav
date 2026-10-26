@@ -55,9 +55,9 @@ export interface NoticeSummary {
 }
 
 export interface NoticesAPI {
-    unreadState(): Promise<Result<{username: string | null; unread: boolean}>>
+    unreadState(): Promise<Result<{ username: string | null; unread: boolean }>>
 
-    onUnreadChanged(callback: (state: {username: string | null; unread: boolean}) => void): () => void
+    onUnreadChanged(callback: (state: { username: string | null; unread: boolean }) => void): () => void
 
     summaryQueue(): Promise<Result<SummaryTask[]>>
 

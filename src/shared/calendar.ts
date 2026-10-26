@@ -1,5 +1,5 @@
 import type {Result} from './accounts'
-import {isCalendarReminderMinutes, type CalendarReminderMinutes} from './calendar-reminders'
+import {type CalendarReminderMinutes, isCalendarReminderMinutes} from './calendar-reminders'
 import {courseStartTimes, dateAfter, type Timetable, type TimetableCourse, validDate} from './timetable'
 
 export type CalendarView = 'year' | 'month' | 'week' | 'day' | 'agenda'

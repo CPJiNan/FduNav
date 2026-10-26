@@ -105,10 +105,10 @@ export function SourcesPanel({active}: { active: boolean }) {
             <Icon name="search"/>
             <input type="search" aria-label="搜索消息来源" placeholder="搜索名称或网址"
                    value={query} disabled={!loaded} onChange={event => {
-                       setQuery(event.target.value)
-                       setDragging(null)
-                       setDropTarget(null)
-                   }}/>
+                setQuery(event.target.value)
+                setDragging(null)
+                setDropTarget(null)
+            }}/>
         </div>
         {loaded && search && !visibleSources.length && <p className="source-search-result source-status" role="status">
             未找到匹配的消息来源
@@ -123,26 +123,26 @@ export function SourcesPanel({active}: { active: boolean }) {
         </div>}
         <ul className="source-list" aria-label="消息来源">
             {visibleSources.map((source, index) => <li key={source.id}
-                                                className={`${dragging === source.id ? 'is-dragging' : ''} ${dropTarget?.id === source.id ? dropTarget.after ? 'drop-after' : 'drop-before' : ''}`}
-                                                onDragOver={event => {
-                                                    if (!dragging || busy) return
-                                                    event.preventDefault()
-                                                    event.dataTransfer.dropEffect = 'move'
-                                                    const bounds = event.currentTarget.getBoundingClientRect()
-                                                    setDropTarget({
-                                                        id: source.id,
-                                                        after: event.clientY > bounds.top + bounds.height / 2
-                                                    })
-                                                }}
-                                                onDragLeave={event => {
-                                                    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDropTarget(null)
-                                                }}
-                                                onDrop={event => {
-                                                    event.preventDefault()
-                                                    if (!dragging) return
-                                                    const bounds = event.currentTarget.getBoundingClientRect()
-                                                    void move(dragging, source.id, event.clientY > bounds.top + bounds.height / 2)
-                                                }}>
+                                                       className={`${dragging === source.id ? 'is-dragging' : ''} ${dropTarget?.id === source.id ? dropTarget.after ? 'drop-after' : 'drop-before' : ''}`}
+                                                       onDragOver={event => {
+                                                           if (!dragging || busy) return
+                                                           event.preventDefault()
+                                                           event.dataTransfer.dropEffect = 'move'
+                                                           const bounds = event.currentTarget.getBoundingClientRect()
+                                                           setDropTarget({
+                                                               id: source.id,
+                                                               after: event.clientY > bounds.top + bounds.height / 2
+                                                           })
+                                                       }}
+                                                       onDragLeave={event => {
+                                                           if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDropTarget(null)
+                                                       }}
+                                                       onDrop={event => {
+                                                           event.preventDefault()
+                                                           if (!dragging) return
+                                                           const bounds = event.currentTarget.getBoundingClientRect()
+                                                           void move(dragging, source.id, event.clientY > bounds.top + bounds.height / 2)
+                                                       }}>
                 <button type="button" className="icon-button source-drag-handle" draggable={!busy && !!api}
                         aria-label={`排序 ${source.name}`} aria-disabled={busy || !api}
                         title="拖动排序"

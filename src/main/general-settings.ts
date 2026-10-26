@@ -1,7 +1,7 @@
 import {app, ipcMain, type IpcMainInvokeEvent} from 'electron'
 import type {AppDatabase} from './database'
 import type {Result} from '../shared/accounts'
-import {isCloseAction, type GeneralSettings} from '../shared/general-settings'
+import {type GeneralSettings, isCloseAction} from '../shared/general-settings'
 
 export function registerGeneralSettingsHandlers(db: AppDatabase, trusted: (event: IpcMainInvokeEvent) => boolean) {
     const launchAtLoginAvailable = app.isPackaged && (process.platform === 'win32' || process.platform === 'darwin')

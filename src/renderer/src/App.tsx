@@ -34,7 +34,10 @@ export default function App() {
     const [noticeToOpen, setNoticeToOpen] = useState<Notice | null>(null)
     const [tab, setTab] = useState<Tab>('general')
     const [account, setAccount] = useState<AccountState | null>(null)
-    const [unreadState, setUnreadState] = useState<{username: string | null; unread: boolean}>({username: null, unread: false})
+    const [unreadState, setUnreadState] = useState<{ username: string | null; unread: boolean }>({
+        username: null,
+        unread: false
+    })
     const hasUnread = account?.status === 'signed-in' && unreadState.username === account.username && unreadState.unread
     const [accountLoaded, setAccountLoaded] = useState(!window.accounts)
     const [preferences, setPreferences] = useState<MessagePreferences | null>(null)
@@ -81,7 +84,8 @@ export default function App() {
         })
         void api.unreadState().then(result => {
             if (active && !changed && result.ok) setUnreadState(result.data)
-        }).catch(() => {})
+        }).catch(() => {
+        })
         return () => {
             active = false
             unsubscribe()
@@ -127,7 +131,8 @@ export default function App() {
             <nav className="app-rail" aria-label="应用导航">
                 <button type="button" className={`icon-button rail-button ${showNoticesPage ? 'is-active' : ''}`}
                         aria-label={hasUnread ? '通知，有未读消息' : noticesNavigation.label}
-                        title={hasUnread ? '通知（有未读消息）' : noticesNavigation.label} aria-current={showNoticesPage ? 'page' : undefined}
+                        title={hasUnread ? '通知（有未读消息）' : noticesNavigation.label}
+                        aria-current={showNoticesPage ? 'page' : undefined}
                         onClick={() => openPage('notices')}>
                     <span className="rail-notice-icon"><Icon name={noticesNavigation.icon}/>
                         {hasUnread && <span className="rail-unread-dot" aria-hidden="true"/>}
@@ -183,9 +188,10 @@ export default function App() {
                                     <div hidden={tab !== 'messages'}><MessagePreferencesPanel
                                         requiredProfile={account?.status === 'signed-in'}
                                         onChange={setPreferences} onSaved={value => {
-                                            if (needsPreferences && validateRequiredMessagePreferences(value).ok) setSettings(false)
-                                        }}/></div>
-                                    <div hidden={tab !== 'sources'}><SourcesPanel active={showSettings && tab === 'sources'}/></div>
+                                        if (needsPreferences && validateRequiredMessagePreferences(value).ok) setSettings(false)
+                                    }}/></div>
+                                    <div hidden={tab !== 'sources'}><SourcesPanel
+                                        active={showSettings && tab === 'sources'}/></div>
                                     <div hidden={tab !== 'llm'}><LlmPanel active={settings && tab === 'llm'}/></div>
                                 </section>
                             </div>

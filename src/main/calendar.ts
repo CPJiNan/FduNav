@@ -10,6 +10,7 @@ import {CalendarReminderService} from './calendar-reminders'
 export function registerCalendarHandlers(db: AppDatabase, accounts: AccountService,
                                          trusted: (event: IpcMainInvokeEvent) => boolean, onReminderClick: () => void) {
     const reminders = new CalendarReminderService(db, onReminderClick)
+
     function handle<T>(channel: string, action: (username: string, input: unknown) => T) {
         ipcMain.handle(channel, (event, input): Result<T> => {
             if (!trusted(event)) return {ok: false, error: '请求来源无效。'}

@@ -73,7 +73,10 @@ contextBridge.exposeInMainWorld('messagePreferences', messagePreferences)
 const notices: NoticesAPI = {
     unreadState: () => ipcRenderer.invoke('notices:unread-state'),
     onUnreadChanged: callback => {
-        const listener = (_event: IpcRendererEvent, state: {username: string | null; unread: boolean}) => callback(state)
+        const listener = (_event: IpcRendererEvent, state: {
+            username: string | null;
+            unread: boolean
+        }) => callback(state)
         ipcRenderer.on('notices:unread-changed', listener)
         return () => ipcRenderer.removeListener('notices:unread-changed', listener)
     },

@@ -1,4 +1,14 @@
-import {app, BrowserWindow, dialog, ipcMain, Menu, nativeImage, Tray, type IpcMainEvent, type IpcMainInvokeEvent} from 'electron'
+import {
+    app,
+    BrowserWindow,
+    dialog,
+    ipcMain,
+    type IpcMainEvent,
+    type IpcMainInvokeEvent,
+    Menu,
+    nativeImage,
+    Tray
+} from 'electron'
 import {join} from 'node:path'
 import {existsSync, mkdirSync} from 'node:fs'
 import {pathToFileURL} from 'node:url'
@@ -59,7 +69,9 @@ function ensureTray() {
 }
 
 app.on('second-instance', showMainWindow)
-app.on('before-quit', () => { quitting = true })
+app.on('before-quit', () => {
+    quitting = true
+})
 
 function isAppUrl(value: string) {
     try {
@@ -104,8 +116,12 @@ function createWindow(): void {
         }
     })
     mainWindow = window
-    window.on('closed', () => { mainWindow = null })
-    window.on('query-session-end', () => { quitting = true })
+    window.on('closed', () => {
+        mainWindow = null
+    })
+    window.on('query-session-end', () => {
+        quitting = true
+    })
     window.on('close', event => {
         if (quitting) return
         event.preventDefault()

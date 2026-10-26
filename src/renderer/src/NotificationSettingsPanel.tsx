@@ -2,8 +2,8 @@ import {useEffect, useState} from 'react'
 import {
     isNoticeRefreshInterval,
     isNoticeReminderMode,
-    noticeReminderOptions,
     noticeRefreshOptions,
+    noticeReminderOptions,
     type NotificationSettings,
 } from '../../shared/notification-settings'
 import {AutoSummaryDialog} from './AutoSummaryDialog'
@@ -33,7 +33,9 @@ export function NotificationSettingsPanel() {
         }).finally(() => {
             if (active) setBusy(false)
         })
-        return () => { active = false }
+        return () => {
+            active = false
+        }
     }, [api, retry])
 
     async function setRefreshInterval(interval: number) {
@@ -170,9 +172,9 @@ export function NotificationSettingsPanel() {
                         onClick={() => setRetry(value => value + 1)}>重试</button>}</p>}
         </div>
         {confirmAutoSummary && <AutoSummaryDialog busy={busy} error={error}
-                                                 onConfirm={() => void setAutoSummary(true)} onClose={() => {
-                                                     setConfirmAutoSummary(false)
-                                                     setError('')
-                                                 }}/>}
+                                                  onConfirm={() => void setAutoSummary(true)} onClose={() => {
+            setConfirmAutoSummary(false)
+            setError('')
+        }}/>}
     </div>
 }

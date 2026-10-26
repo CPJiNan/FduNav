@@ -6,7 +6,7 @@ import {todoReminderSchedule} from '../shared/todos'
 export class TodoReminderService {
     private timer: ReturnType<typeof setTimeout> | undefined
     private stopped = false
-    private active = new Map<Notification, {username: string; id: string}>()
+    private active = new Map<Notification, { username: string; id: string }>()
 
     constructor(private db: AppDatabase, private onClick: () => void) {
         powerMonitor.on('resume', this.check)

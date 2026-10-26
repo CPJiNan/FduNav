@@ -20,10 +20,12 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
     const refresh = new SourceRefreshService(db)
     const listSubscribers = new Set<WebContents>()
     const unreadSubscribers = new Set<WebContents>()
+
     function unreadState() {
         const username = db.getAccount()?.username ?? null
         return {username, unread: username !== null && db.hasUnreadNotices(username)}
     }
+
     function publishUnreadState() {
         const state = unreadState()
         for (const sender of unreadSubscribers) {
@@ -31,14 +33,15 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
             else sender.send('notices:unread-changed', state)
         }
     }
+
     let refreshTimer: ReturnType<typeof setInterval> | undefined
     let autoRefreshing = false
     const detailImages = new Map<string, Set<string>>()
     const detailKey = (notice: NoticeRef) => JSON.stringify([notice.sourceId, notice.url])
     let refreshing: Promise<void> | null = null
     let autoSummaryGeneration = 0
-    const pendingAutoSummaries = new Map<string, {notice: NoticeRef; username: string}>()
-    const pendingReminders = new Map<string, {notice: NoticeRef; username: string; receivedAt: number}>()
+    const pendingAutoSummaries = new Map<string, { notice: NoticeRef; username: string }>()
+    const pendingReminders = new Map<string, { notice: NoticeRef; username: string; receivedAt: number }>()
     const activeReminders = new Set<Notification>()
 
     function notificationSettings() {
@@ -100,7 +103,8 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
             try {
                 requireReady()
                 if (!summaries.needsSummary(pending.notice)) continue
-                void summaries.summarize(pending.notice).catch(() => { /* Errors are displayed in the summary queue. */ })
+                void summaries.summarize(pending.notice).catch(() => { /* Errors are displayed in the summary queue. */
+                })
             } catch (error) {
                 console.warn('无法加入自动摘要队列。', error)
             }

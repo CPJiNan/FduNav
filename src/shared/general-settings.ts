@@ -14,6 +14,8 @@ export interface GeneralSettings {
 
 export interface GeneralSettingsAPI {
     get(): Promise<Result<GeneralSettings>>
+
     setLaunchAtLogin(enabled: boolean): Promise<Result<GeneralSettings>>
+
     setCloseAction(action: CloseAction): Promise<Result<GeneralSettings>>
 }

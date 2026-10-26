@@ -443,7 +443,8 @@ export function NoticesPage({onLogin, noticeToOpen, onNoticeOpened}: {
         {!api && <p className="account-notice">请在桌面应用中查看通知。</p>}
         {readStatus && <p className="account-notice" role="status">{readStatus}</p>}
         {readCandidates && <NoticeReadDialog count={readCandidates.length} busy={markingRead} error={batchReadError}
-                                             onConfirm={() => void markAllRead()} onClose={() => setReadCandidates(null)}/>}
+                                             onConfirm={() => void markAllRead()}
+                                             onClose={() => setReadCandidates(null)}/>}
         {readError && <p className="account-error" role="alert">{readError}</p>}
         {error &&
             <p className="account-error" role="alert">{error}{list.items.length > 0 && ' 当前展示上次缓存的通知。'}</p>}

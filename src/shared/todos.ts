@@ -1,6 +1,6 @@
 import type {Result} from './accounts'
 import {validDate} from './timetable.ts'
-import {calendarReminderSchedule, isCalendarReminderMinutes, type CalendarReminderMinutes} from './calendar-reminders'
+import {type CalendarReminderMinutes, calendarReminderSchedule, isCalendarReminderMinutes} from './calendar-reminders'
 
 export interface TodoInput {
     id?: string
@@ -55,6 +55,8 @@ export function validateTodo(input: unknown): Result<TodoInput> {
 
 export function todoReminderSchedule(todo: TodoInput) {
     if (todo.completed || !todo.dueDate) return null
-    return calendarReminderSchedule({startDate: todo.dueDate, startTime: todo.dueTime,
-        allDay: false, reminderMinutes: todo.reminderMinutes})
+    return calendarReminderSchedule({
+        startDate: todo.dueDate, startTime: todo.dueTime,
+        allDay: false, reminderMinutes: todo.reminderMinutes
+    })
 }

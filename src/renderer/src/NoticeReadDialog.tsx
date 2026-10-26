@@ -17,8 +17,8 @@ export function NoticeReadDialog({count, busy, error, onConfirm, onClose}: {
                        event.preventDefault()
                        if (!busy) onClose()
                    }} onKeyDown={event => {
-                       if (event.key === 'Escape') event.stopPropagation()
-                   }}>
+        if (event.key === 'Escape') event.stopPropagation()
+    }}>
         <div className="calendar-dialog-header"><strong id="notice-read-title">一键已读</strong></div>
         <p id="notice-read-description">确认将当前 {count} 条未读通知标记为已读？</p>
         {error && <p className="account-error" role="alert">{error}</p>}

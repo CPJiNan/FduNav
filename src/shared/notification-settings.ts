@@ -43,9 +43,14 @@ export interface NotificationSettings {
 
 export interface NotificationSettingsAPI {
     get(): Promise<Result<NotificationSettings>>
+
     setReminderMode(mode: NoticeReminderMode): Promise<Result<NotificationSettings>>
+
     setRefreshInterval(interval: NoticeRefreshInterval): Promise<Result<NotificationSettings>>
+
     setAutoSummary(enabled: boolean): Promise<Result<NotificationSettings>>
+
     setCalendarDefaultReminder(minutes: CalendarReminderMinutes): Promise<Result<NotificationSettings>>
+
     setTodoDefaultReminder(minutes: CalendarReminderMinutes): Promise<Result<NotificationSettings>>
 }

@@ -17,8 +17,8 @@ export function AutoSummaryDialog({busy, error, onConfirm, onClose}: {
                        event.preventDefault()
                        if (!busy) onClose()
                    }} onKeyDown={event => {
-                       if (event.key === 'Escape') event.stopPropagation()
-                   }}>
+        if (event.key === 'Escape') event.stopPropagation()
+    }}>
         <div className="calendar-dialog-header"><strong id="auto-summary-title">开启自动 AI 摘要</strong></div>
         <p id="auto-summary-description">开启后，将自动为新通知生成 AI 摘要，可能产生 API 费用。确认开启？</p>
         {error && <p className="account-error" role="alert">{error}</p>}

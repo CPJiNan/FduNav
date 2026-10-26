@@ -20,7 +20,7 @@ export function isCalendarReminderMinutes(value: unknown): value is CalendarRemi
 
 export function calendarReminderSchedule(event: {
     startDate: string; startTime: string; allDay: boolean; reminderMinutes: CalendarReminderMinutes
-}): {startAt: number; remindAt: number} | null {
+}): { startAt: number; remindAt: number } | null {
     if (!isCalendarReminderMinutes(event.reminderMinutes) || event.reminderMinutes === -1) return null
     const startAt = new Date(`${event.startDate}T${event.allDay ? '00:00' : event.startTime}:00`).getTime()
     return Number.isFinite(startAt) ? {startAt, remindAt: startAt - event.reminderMinutes * 60_000} : null

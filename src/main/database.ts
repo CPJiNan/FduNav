@@ -1,11 +1,16 @@
 import {DatabaseSync} from 'node:sqlite'
 import type {Theme} from '../shared/accounts'
-import {isCloseAction, type CloseAction} from '../shared/general-settings'
-import {isNoticeRefreshInterval, isNoticeReminderMode, type NoticeRefreshInterval, type NoticeReminderMode} from '../shared/notification-settings'
+import {type CloseAction, isCloseAction} from '../shared/general-settings'
+import {
+    isNoticeRefreshInterval,
+    isNoticeReminderMode,
+    type NoticeRefreshInterval,
+    type NoticeReminderMode
+} from '../shared/notification-settings'
 import type {Notice, NoticeList, NoticeRef, NoticeRelevanceChoice, ParsedNotice} from '../shared/notices'
 import type {Timetable} from '../shared/timetable'
 import type {CalendarEvent} from '../shared/calendar'
-import {isCalendarReminderMinutes, type CalendarReminderMinutes} from '../shared/calendar-reminders'
+import {type CalendarReminderMinutes, isCalendarReminderMinutes} from '../shared/calendar-reminders'
 import type {Todo} from '../shared/todos'
 import {defaultSources, type MessageSource, type SourceId} from '../shared/sources.ts'
 import {

@@ -11,7 +11,14 @@ const filters = [{value: 'pending', label: '待完成'}, {value: 'completed', la
 }] as const
 type Filter = typeof filters[number]['value']
 type TodoTransition = { todo: Todo; stage: 'line' | 'exit' }
-const emptyTodo = (): TodoInput => ({title: '', notes: '', dueDate: '', dueTime: '23:59', reminderMinutes: 120, completed: false})
+const emptyTodo = (): TodoInput => ({
+    title: '',
+    notes: '',
+    dueDate: '',
+    dueTime: '23:59',
+    reminderMinutes: 120,
+    completed: false
+})
 
 export function TodosPage() {
     const [todos, setTodos] = useState<Todo[]>([])
@@ -59,11 +66,13 @@ export function TodosPage() {
         // Deferring the initial read also prevents duplicate requests under Strict Mode.
         const start = window.setTimeout(() => void load(), 0)
         let timer: number
+
         function updateClock() {
             setToday(localToday())
             setNow(Date.now())
             timer = window.setTimeout(updateClock, 60_000 - Date.now() % 60_000)
         }
+
         updateClock()
         return () => {
             active.current = false;
@@ -88,7 +97,10 @@ export function TodosPage() {
             if (window.notificationSettings) {
                 const result = await window.notificationSettings.get()
                 if (!active.current) return
-                if (!result.ok) {setError(result.error); return}
+                if (!result.ok) {
+                    setError(result.error);
+                    return
+                }
                 draft.reminderMinutes = result.data.todoDefaultReminder
             }
             openEditor(draft)

@@ -124,7 +124,8 @@ export function MessagePreferencesPanel({requiredProfile = false, onChange, onSa
                       disabled={!api || loading || saving || !saved}>
                 <div className="preference-grid">
                     {profileSelects.map(({field, label, options}) => <div className="preference-field" key={field}>
-                        <label htmlFor={`preference-${field}`}>{label}<span className="preference-required" aria-hidden="true">*</span></label>
+                        <label htmlFor={`preference-${field}`}>{label}<span className="preference-required"
+                                                                            aria-hidden="true">*</span></label>
                         <select id={`preference-${field}`} value={draft[field]} required={requiredProfile}
                                 aria-invalid={fieldError?.field === field}
                                 aria-describedby={fieldError?.field === field ? `preference-${field}-error` : undefined}
@@ -136,7 +137,8 @@ export function MessagePreferencesPanel({requiredProfile = false, onChange, onSa
                         {errorFor(field)}
                     </div>)}
                     <div className="preference-field">
-                        <label htmlFor="preference-grade">年级<span className="preference-required" aria-hidden="true">*</span></label>
+                        <label htmlFor="preference-grade">年级<span className="preference-required"
+                                                                    aria-hidden="true">*</span></label>
                         <select id="preference-grade" value={draft.grade ?? ''} required={requiredProfile}
                                 aria-invalid={fieldError?.field === 'grade'}
                                 aria-describedby={fieldError?.field === 'grade' ? 'preference-grade-error' : undefined}
@@ -147,7 +149,8 @@ export function MessagePreferencesPanel({requiredProfile = false, onChange, onSa
                         {errorFor('grade')}
                     </div>
                     <div className="preference-field">
-                        <label htmlFor="preference-major">专业<span className="preference-required" aria-hidden="true">*</span></label>
+                        <label htmlFor="preference-major">专业<span className="preference-required"
+                                                                    aria-hidden="true">*</span></label>
                         <input id="preference-major" value={draft.major} required={requiredProfile}
                                maxLength={preferenceLimits.majorLength}
                                aria-invalid={fieldError?.field === 'major'}
@@ -156,7 +159,8 @@ export function MessagePreferencesPanel({requiredProfile = false, onChange, onSa
                         {errorFor('major')}
                     </div>
                     <div className="preference-field">
-                        <label htmlFor="preference-campus">校区<span className="preference-required" aria-hidden="true">*</span></label>
+                        <label htmlFor="preference-campus">校区<span className="preference-required"
+                                                                     aria-hidden="true">*</span></label>
                         <select id="preference-campus" value={draft.campus} required={requiredProfile}
                                 aria-invalid={fieldError?.field === 'campus'}
                                 aria-describedby={fieldError?.field === 'campus' ? 'preference-campus-error' : undefined}

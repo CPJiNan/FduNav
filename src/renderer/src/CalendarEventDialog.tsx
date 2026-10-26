@@ -10,7 +10,7 @@ import {
 import {dateAfter} from '../../shared/timetable'
 import {eventTime} from './CalendarViews'
 import {Icon} from './Icon'
-import {calendarReminderOptions, type CalendarReminderMinutes} from '../../shared/calendar-reminders'
+import {type CalendarReminderMinutes, calendarReminderOptions} from '../../shared/calendar-reminders'
 
 export function CalendarEventDialog({date, startMinute = 9 * 60, item, create, onClose, onSaved, onRemoved}: {
     date: string; startMinute?: number; item: CalendarOccurrence | null; create: boolean; onClose: () => void;
@@ -50,14 +50,19 @@ export function CalendarEventDialog({date, startMinute = 9 * 60, item, create, o
         void window.notificationSettings.get().then(result => {
             if (!active) return
             if (result.ok) {
-                if (!reminderEdited.current) setDraft(current => ({...current, reminderMinutes: result.data.calendarDefaultReminder}))
+                if (!reminderEdited.current) setDraft(current => ({
+                    ...current,
+                    reminderMinutes: result.data.calendarDefaultReminder
+                }))
             } else setError(result.error)
         }).catch(() => {
             if (active) setError('无法读取默认提醒时间，请确认提醒时间后保存。')
         }).finally(() => {
             if (active) setLoadingDefaultReminder(false)
         })
-        return () => { active = false }
+        return () => {
+            active = false
+        }
     }, [create])
 
     function change<K extends keyof CalendarEventInput>(key: K, value: CalendarEventInput[K]) {
@@ -168,7 +173,8 @@ export function CalendarEventDialog({date, startMinute = 9 * 60, item, create, o
                                        reminderEdited.current = true
                                        change('reminderMinutes', Number(event.target.value) as CalendarReminderMinutes)
                                    }}>
-                {calendarReminderOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                {calendarReminderOptions.map(option => <option key={option.value}
+                                                               value={option.value}>{option.label}</option>)}
             </select></label>
             <label>地点<input value={draft.location} maxLength={500} disabled={busy}
                               onChange={event => change('location', event.target.value)}/></label>
@@ -177,7 +183,8 @@ export function CalendarEventDialog({date, startMinute = 9 * 60, item, create, o
             {error && <p className="account-error" role="alert">{error}</p>}
             <div className="calendar-dialog-actions">
                 <button type="button" className="secondary-button" disabled={busy} onClick={onClose}>取消</button>
-                <button type="submit" className="primary-button" disabled={busy || loadingDefaultReminder}>{busy ? '正在保存…' : '保存'}</button>
+                <button type="submit" className="primary-button"
+                        disabled={busy || loadingDefaultReminder}>{busy ? '正在保存…' : '保存'}</button>
             </div>
         </form> : <>
             <dl className="calendar-event-details">

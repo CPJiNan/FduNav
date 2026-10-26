@@ -1,6 +1,6 @@
 import {useEffect, useRef} from 'react'
 import type {TodoInput} from '../../shared/todos'
-import {calendarReminderOptions, type CalendarReminderMinutes} from '../../shared/calendar-reminders'
+import {type CalendarReminderMinutes, calendarReminderOptions} from '../../shared/calendar-reminders'
 import {Icon} from './Icon'
 import './styles/calendar.css'
 
@@ -48,7 +48,10 @@ export function TodoDialog({draft, busy, error, onChange, onSave, onClose}: {
                                   disabled={busy || !draft.dueDate}
                                   onChange={event => onChange({...draft, dueTime: event.target.value})}/></label>
             <label>提醒时间<select value={draft.reminderMinutes} disabled={busy || !draft.dueDate}
-                                  onChange={event => onChange({...draft, reminderMinutes: Number(event.target.value) as CalendarReminderMinutes})}>
+                                   onChange={event => onChange({
+                                       ...draft,
+                                       reminderMinutes: Number(event.target.value) as CalendarReminderMinutes
+                                   })}>
                 {calendarReminderOptions.map(option =>
                     <option key={option.value} value={option.value}>{option.label}</option>)}
             </select></label>

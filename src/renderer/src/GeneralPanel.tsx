@@ -35,7 +35,9 @@ export function GeneralPanel() {
         }).finally(() => {
             if (active) setBusy(false)
         })
-        return () => { active = false }
+        return () => {
+            active = false
+        }
     }, [api, retry])
 
     async function save(action: () => Promise<Result<GeneralSettings>>) {
@@ -82,8 +84,9 @@ export function GeneralPanel() {
             {!api && <p className="account-notice">请在桌面应用中设置。</p>}
             {busy && <p className="save-status" role="status">{settings ? '正在保存…' : '正在读取设置…'}</p>}
             {error && <p className="account-error" role="alert">{error}{!settings &&
-                <button type="button" className="text-button" disabled={busy} onClick={() => setRetry(value => value + 1)}>重试</button>}</p>}
-            </fieldset>
+                <button type="button" className="text-button" disabled={busy}
+                        onClick={() => setRetry(value => value + 1)}>重试</button>}</p>}
+        </fieldset>
         <fieldset className="general-setting-group theme-options">
             <legend>主题</legend>
             <div className="theme-grid">{themes.map(item => <label
