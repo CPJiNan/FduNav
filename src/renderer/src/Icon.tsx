@@ -1,6 +1,7 @@
 type IconName =
     'search'
     | 'refresh'
+    | 'reset'
     | 'map-pin'
     | 'external'
     | 'chevron'
@@ -48,6 +49,7 @@ const paths: Record<IconName, string> = {
     search: 'M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Zm-2 5 6 6',
     processor: 'M6 6h12v12H6ZM9 9h6v6H9ZM9 3v3m6-3v3M9 18v3m6-3v3M3 9h3m-3 6h3m12-6h3m-3 6h3',
     refresh: 'M20 4v5h-5M4 20v-5h5M4.9 9a7.5 7.5 0 0 1 12.4-2.3L20 9M4 15l2.7 2.3A7.5 7.5 0 0 0 19.1 15',
+    reset: 'M3 4v6h6M3 10l3-3a8 8 0 1 1-1 10',
     'map-pin': 'M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0ZM15 10a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z',
     external: 'M14 3h7v7m0-7L10 14M10 3H4v17h17v-6',
     chevron: 'm9 5 7 7-7 7',

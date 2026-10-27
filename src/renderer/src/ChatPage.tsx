@@ -4,22 +4,27 @@ import remarkGfm from 'remark-gfm'
 import remarkBreaks from 'remark-breaks'
 import type {ChatCard, ChatState} from '../../shared/chat'
 import type {Notice} from '../../shared/notices'
-import {calendarOccurrences, type CalendarOccurrence} from '../../shared/calendar'
+import {calendarOccurrences, timeLabel, type CalendarOccurrence} from '../../shared/calendar'
 import {CalendarEventDialog} from './CalendarEventDialog'
 import {Icon} from './Icon'
+import {ChatSummaryRequestCard} from './ChatSummaryRequestCard'
+import {ChatActionRequestCard} from './ChatActionRequestCard'
 import './styles/chat.css'
 import './styles/calendar.css'
 
-const suggestions = ['最近考试通知', '查看本周日程', '新增代办事项']
+const suggestions = ['本周通知摘要', '查询今天日程', '新增待办事项']
 export function ChatPage({username, onOpenNotice, onSettings}: {
     username: string; onOpenNotice: (notice: Notice) => void; onSettings: () => void
 }) {
     const [state, setState] = useState<ChatState>({username, turns: [], busy: false, status: ''})
     const [loading, setLoading] = useState(true)
+    const [syncing, setSyncing] = useState(true)
+    const [syncError, setSyncError] = useState('')
     const [draft, setDraft] = useState('')
     const [error, setError] = useState('')
     const [sending, setSending] = useState(false)
     const [opening, setOpening] = useState(false)
+    const [decidingRequest, setDecidingRequest] = useState(false)
     const [confirmClear, setConfirmClear] = useState(false)
     const [editor, setEditor] = useState<CalendarOccurrence | null>(null)
     const scroll = useRef<HTMLDivElement>(null)
@@ -27,12 +32,14 @@ export function ChatPage({username, onOpenNotice, onSettings}: {
     const mounted = useRef(true)
     const stickToBottom = useRef(true)
     const previousFocus = useRef<HTMLElement | null>(null)
+    const stateRevision = useRef(0)
 
     useEffect(() => {
         mounted.current = true
         let receivedUpdate = false
         const unsubscribe = window.chat?.onChanged(value => {
             if (value.username !== username) return
+            stateRevision.current++
             receivedUpdate = true
             setState(value)
         })
@@ -47,13 +54,42 @@ export function ChatPage({username, onOpenNotice, onSettings}: {
     }, [username])
 
     useEffect(() => {
+        let active = true
+        setSyncing(true)
+        setSyncError('')
+        const refreshNotices = async () => {
+            if (!window.notices) throw new Error('通知服务未加载。')
+            const result = await window.notices.list(true)
+            if (!result.ok) throw new Error(result.error)
+            const failed = result.data.sources.filter(source => source.enabled && source.lastError)
+            if (failed.length) throw new Error(`${failed.length} 个通知来源刷新失败，暂使用已有通知。`)
+        }
+        const refreshTimetable = async () => {
+            if (!window.messagePreferences || !window.timetable) throw new Error('课表服务未加载。')
+            const preferences = await window.messagePreferences.get()
+            if (!active) return
+            if (!preferences.ok) throw new Error(preferences.error)
+            if (preferences.data.identity !== 'student') return
+            const result = await window.timetable.get({refresh: true})
+            if (!result.ok) throw new Error(result.error)
+        }
+        void Promise.allSettled([refreshNotices(), refreshTimetable()]).then(results => {
+            if (!active) return
+            setSyncError(results.flatMap((result, index) => result.status === 'rejected'
+                ? [`${index === 0 ? '通知' : '课表'}刷新未完成：${result.reason instanceof Error ? result.reason.message : '请稍后重试。'}`] : []).join(' '))
+            setSyncing(false)
+        })
+        return () => { active = false }
+    }, [username])
+
+    useEffect(() => {
         if (stickToBottom.current) scroll.current?.scrollTo({top: scroll.current.scrollHeight})
     }, [state, loading])
 
     async function send(event: FormEvent) {
         event.preventDefault()
         const text = draft.trim()
-        if (!text || loading || state.busy || sending || !window.chat) return
+        if (!text || loading || syncing || state.busy || sending || !window.chat) return
         setSending(true); setError(''); setConfirmClear(false); stickToBottom.current = true
         try {
             const result = await window.chat.send(text)
@@ -90,6 +126,15 @@ export function ChatPage({username, onOpenNotice, onSettings}: {
                 if (!result) throw new Error('通知服务未加载。')
                 if (!result.ok) throw new Error(result.error)
                 if (mounted.current) onOpenNotice(result.data)
+            } else if (card.kind === 'course') {
+                const result = await window.timetable?.cached()
+                if (!result) throw new Error('课表服务未加载。')
+                if (!result.ok) throw new Error(result.error)
+                const date = card.occurrence.date
+                const item = calendarOccurrences(result.data, [], date, date)
+                    .find(item => item.key === card.occurrence.key)
+                if (!item) throw new Error('该课程安排已变化，请重新查询日程。')
+                if (mounted.current) setEditor(item)
             } else {
                 const result = await window.calendar?.list()
                 if (!result) throw new Error('日程服务未加载。')
@@ -101,6 +146,20 @@ export function ChatPage({username, onOpenNotice, onSettings}: {
             }
         } catch (error) { if (mounted.current) setError(error instanceof Error ? error.message : '无法打开详情。') }
         finally { if (mounted.current) setOpening(false) }
+    }
+    async function decideRequest(kind: 'summary' | 'action', turnId: string, requestId: string, allow: boolean) {
+        if (!window.chat || state.busy || decidingRequest) return
+        setDecidingRequest(true)
+        setError('')
+        const revision = stateRevision.current
+        try {
+            const result = await (kind === 'summary' ? window.chat.decideSummary(turnId, requestId, allow)
+                : window.chat.decideAction(turnId, requestId, allow))
+            if (!mounted.current) return
+            if (!result.ok) setError(result.error)
+            else if (stateRevision.current === revision) setState(result.data)
+        } catch { if (mounted.current) setError('无法处理请求，请重试。') }
+        finally { if (mounted.current) setDecidingRequest(false) }
     }
     function closeEditor() {
         setEditor(null); previousFocus.current?.focus()
@@ -142,19 +201,33 @@ export function ChatPage({username, onOpenNotice, onSettings}: {
                         {!!turn.cards.length && <div className="chat-cards">{turn.cards.map(card => {
                             const notice = card.kind === 'notice' ? card.notice : null
                             const event = card.kind === 'event' ? card.event : null
+                            const course = card.kind === 'course' ? card.occurrence : null
                             const deleted = card.kind === 'event' && card.deleted
-                            return <button type="button" className="chat-card" key={notice ? `${notice.sourceId}:${notice.url}` : event!.id}
+                            return <button type="button" className="chat-card" key={notice ? `${notice.sourceId}:${notice.url}` : course?.key ?? event!.id}
                                 disabled={opening || deleted} onClick={() => void openCard(card)}>
-                                <Icon name={notice ? 'notices' : 'calendar'}/><span>
+                                <Icon name={notice ? 'notices' : course ? 'book' : 'calendar'}/><span>
                                     <small>{notice ? `${notice.sourceName} · ${notice.published}` :
+                                        course ? `${course.date} ${timeLabel(course.startMinute)} — ${timeLabel(course.endMinute)} · 课程` :
                                         `${event!.startDate} ${event!.allDay ? '全天' : event!.startTime} — ${event!.endDate} ${event!.allDay ? '' : event!.endTime}`}</small>
-                                    <strong>{notice?.title ?? event!.title}</strong>
+                                    <strong>{notice?.title ?? course?.title ?? event!.title}</strong>
                                     {notice?.relevance && <em>{notice.relevance === 'related' ? '@与我有关' : '@可能有关'}</em>}
                                     {event?.location && <small>{event.location}</small>}
+                                    {course?.location && <small>{course.location}</small>}
                                     {deleted && <small>已删除</small>}
                                 </span><Icon name="chevron"/>
                             </button>
                         })}</div>}
+                        {!!turn.summaryRequests?.length && <div className="chat-summary-requests">
+                            {turn.summaryRequests.map(request => <ChatSummaryRequestCard key={request.id} request={request}
+                                disabled={state.busy || sending || decidingRequest}
+                                onDecide={allow => void decideRequest('summary', turn.id, request.id, allow)}
+                                onOpen={() => void openCard({kind: 'notice', notice: request.notice})}/>)}
+                        </div>}
+                        {!!turn.actionRequests?.length && <div className="chat-summary-requests">
+                            {turn.actionRequests.map(request => <ChatActionRequestCard key={request.id} request={request}
+                                disabled={state.busy || sending || decidingRequest}
+                                onDecide={allow => void decideRequest('action', turn.id, request.id, allow)}/>)}
+                        </div>}
                         {turn.error && <p className="chat-error" role="alert">{turn.error}</p>}
                     </article>
                 </div>)}
@@ -162,6 +235,8 @@ export function ChatPage({username, onOpenNotice, onSettings}: {
             </div>
         </div>
         <footer className="chat-footer">
+            {syncing && <p className="chat-status" role="status">正在刷新通知和课表…</p>}
+            {syncError && <p className="chat-error" role="alert">{syncError}</p>}
             {error && <p className="chat-error" role="alert">{error}</p>}
             <form className="chat-composer" onSubmit={event => void send(event)}>
                 <textarea ref={input} value={draft} maxLength={8000} rows={2} aria-label="聊天消息" placeholder="发送消息…"
@@ -172,7 +247,7 @@ export function ChatPage({username, onOpenNotice, onSettings}: {
                     }}/>
                 <div className="chat-composer-actions">
                     {state.busy ? <button type="button" className="icon-button" title="停止回复" aria-label="停止回复" onClick={() => void cancel()}><Icon name="stop"/></button> :
-                        <button type="submit" className="icon-button chat-send" title="发送" aria-label="发送" disabled={busy || loading || !draft.trim()}><Icon name="send"/></button>}
+                        <button type="submit" className="icon-button chat-send" title="发送" aria-label="发送" disabled={busy || loading || syncing || !draft.trim()}><Icon name="send"/></button>}
                 </div>
             </form>
         </footer>

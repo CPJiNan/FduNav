@@ -175,10 +175,10 @@ app.whenReady().then(async () => {
         registerCampusCardHandlers(accounts, trusted)
         registerLibraryHandlers(trusted)
         const calendar = registerCalendarHandlers(database, accounts, trusted, showMainWindow)
-        registerTodoHandlers(database, accounts, trusted, showMainWindow)
+        const todos = registerTodoHandlers(database, accounts, trusted, showMainWindow)
         const llm = registerLlmHandlers(database, trusted)
         const notices = registerNoticeHandlers(database, accounts, llm, trusted, showMainWindow)
-        registerChatHandlers(database, accounts, llm, notices, calendar, trusted)
+        registerChatHandlers(database, accounts, llm, notices, calendar, todos, trusted)
         registerMessagePreferenceHandlers(database, trusted)
     } catch {
         dialog.showErrorBox('无法打开应用数据', 'SQLite 数据库初始化失败，请检查应用数据目录的访问权限。')

@@ -1,4 +1,5 @@
 import {DatabaseSync} from 'node:sqlite'
+import {readAdditionalLlmPrompts, type AdditionalLlmPrompts} from '../shared/llm-prompts'
 import type {Theme} from '../shared/accounts'
 import {type CloseAction, isCloseAction} from '../shared/general-settings'
 import {
@@ -28,7 +29,7 @@ export interface SavedAccount {
     last_login: string
 }
 
-export interface SavedLlmSettings {
+export interface SavedLlmSettings extends AdditionalLlmPrompts {
     baseUrl: string;
     model: string;
     encryptedApiKey: Uint8Array | null
@@ -160,8 +161,12 @@ export class AppDatabase {
     }
 
     getLlmSettings(): SavedLlmSettings | null {
-        return this.db.prepare('SELECT base_url AS baseUrl, model, api_key AS encryptedApiKey, summary_prompt AS summaryPrompt FROM llm_settings WHERE id = 1')
-            .get() as unknown as SavedLlmSettings ?? null
+        const saved = this.db.prepare('SELECT base_url AS baseUrl, model, api_key AS encryptedApiKey, summary_prompt AS summaryPrompt FROM llm_settings WHERE id = 1')
+            .get() as unknown as SavedLlmSettings | undefined
+        if (!saved) return null
+        let prompts: unknown
+        try { prompts = JSON.parse(String(this.db.prepare("SELECT value FROM preferences WHERE key = 'llm_prompts'").get()?.value ?? 'null')) } catch { /* Use defaults for absent or unreadable prompt settings. */ }
+        return {...saved, ...readAdditionalLlmPrompts(prompts)}
     }
 
     getLlmEnabled(): boolean {
@@ -174,11 +179,22 @@ export class AppDatabase {
     }
 
     saveLlmSettings(value: SavedLlmSettings) {
-        this.db.prepare(`INSERT INTO llm_settings (id, base_url, model, api_key, summary_prompt)
+        this.db.exec('SAVEPOINT save_llm_settings')
+        try {
+            this.db.prepare(`INSERT INTO llm_settings (id, base_url, model, api_key, summary_prompt)
                          VALUES (1, ?, ?, ?, ?) ON CONFLICT(id) DO
         UPDATE SET base_url = excluded.base_url, model = excluded.model, api_key = excluded.api_key,
             summary_prompt = excluded.summary_prompt`)
-            .run(value.baseUrl, value.model, value.encryptedApiKey, value.summaryPrompt)
+                .run(value.baseUrl, value.model, value.encryptedApiKey, value.summaryPrompt)
+            const {chatPrompt, summaryFormatPrompt, connectionTestPrompt, toolDescriptions} = value
+            this.db.prepare("INSERT INTO preferences (key, value) VALUES ('llm_prompts', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+                .run(JSON.stringify({chatPrompt, summaryFormatPrompt, connectionTestPrompt, toolDescriptions}))
+            this.db.exec('RELEASE save_llm_settings')
+        } catch (error) {
+            this.db.exec('ROLLBACK TO save_llm_settings')
+            this.db.exec('RELEASE save_llm_settings')
+            throw error
+        }
     }
 
     getAccount(): SavedAccount | null {

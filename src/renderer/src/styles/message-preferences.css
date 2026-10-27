@@ -103,6 +103,10 @@
     margin: var(--space-5) 0;
 }
 
+.preference-save-row {
+    justify-content: flex-end;
+}
+
 @media (max-width: 760px) {
     .preference-profile .preference-field {
         grid-template-columns: 4rem minmax(0, 1fr);

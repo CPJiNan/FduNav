@@ -30,6 +30,8 @@ const chat: ChatAPI = {
     send: text => ipcRenderer.invoke('chat:send', text),
     cancel: () => ipcRenderer.invoke('chat:cancel'),
     clear: () => ipcRenderer.invoke('chat:clear'),
+    decideSummary: (turnId, requestId, allow) => ipcRenderer.invoke('chat:decide-summary', {turnId, requestId, allow}),
+    decideAction: (turnId, requestId, allow) => ipcRenderer.invoke('chat:decide-action', {turnId, requestId, allow}),
     onChanged: callback => {
         const listener = (_event: IpcRendererEvent, state: ChatState) => callback(state)
         ipcRenderer.on('chat:changed', listener)

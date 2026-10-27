@@ -13,8 +13,6 @@ import {
     validateRequiredMessagePreferences,
 } from '../shared/message-preferences.ts'
 
-const structuredOutputInstruction = '只输出一个 JSON 对象，不要输出 Markdown 代码块或额外文字：{"relevance":"related|maybe|none","summary":"摘要正文"}。relevance：related 明确相关，maybe 可能相关，none 无关或无法判断。summary 字段使用 Markdown 格式。'
-
 function normalizeRelevance(value: unknown): NoticeRelevance | null {
     if (value === 'related') return 'related'
     if (value === 'maybe') return 'maybe'
@@ -38,7 +36,7 @@ export function parseSummaryOutput(text: string): { content: string; relevance: 
 }
 
 export function summaryMessages(notice: Notice, content: string, preferences: MessagePreferences,
-                                prompt: string): ChatMessage[] {
+                                prompt: string, formatPrompt: string): ChatMessage[] {
     return [
         {role: 'system', content: prompt},
         {
@@ -59,7 +57,7 @@ export function summaryMessages(notice: Notice, content: string, preferences: Me
                     published: notice.published,
                     content: content.slice(0, 24_000)
                 },
-                outputFormat: structuredOutputInstruction
+                outputFormat: formatPrompt
             })
         }
     ]
@@ -70,7 +68,7 @@ export function summaryCacheKey(notice: Notice, preferences: MessagePreferences,
     return createHash('sha256').update(JSON.stringify({
         version: 3, username, sourceId: notice.sourceId, url: notice.url,
         // Use the same canonical preference fields as the model request, independent of object key order.
-        messages: summaryMessages(notice, '', preferences, settings.summaryPrompt),
+        messages: summaryMessages(notice, '', preferences, settings.summaryPrompt, settings.summaryFormatPrompt),
         baseUrl: settings.baseUrl, model: settings.model
     })).digest('hex')
 }
@@ -178,7 +176,8 @@ export class NoticeSummaryService {
             if (detail.requiresLogin) throw new Error('需要登录后才能生成摘要。')
             const content = detail.content.trim()
             if (!content) throw new Error('这条通知没有可摘要的正文，请查看学校原文。')
-            const messages = summaryMessages(context.notice, content, context.preferences, context.settings.summaryPrompt)
+            const messages = summaryMessages(context.notice, content, context.preferences,
+                context.settings.summaryPrompt, context.settings.summaryFormatPrompt)
             stage('generating')
             const result = (await this.complete(connection, messages, signal)).trim()
             assertCurrent()
