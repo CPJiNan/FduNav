@@ -223,7 +223,9 @@ export class AccountService {
         const previous = this.operationTail
         let release!: () => void
         // Reserve the next slot before waiting so concurrent service requests remain FIFO.
-        this.operationTail = new Promise<void>(resolve => { release = resolve })
+        this.operationTail = new Promise<void>(resolve => {
+            release = resolve
+        })
         await previous
         try {
             if (JSON.stringify([this.state.username, this.state.lastLogin]) !== owner) {

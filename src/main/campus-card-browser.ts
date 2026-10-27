@@ -23,11 +23,17 @@ export async function readCampusCardWithBrowser(jar: CookieJar, interactive: boo
             show: false, width: 1100, height: 820, minWidth: 480, minHeight: 540,
             title: '校园卡身份验证', autoHideMenuBar: true,
             ...(parent ? {parent, modal: interactive} : {}),
-            webPreferences: {session: reader, sandbox: true, contextIsolation: true, nodeIntegration: false, webviewTag: false},
+            webPreferences: {
+                session: reader,
+                sandbox: true,
+                contextIsolation: true,
+                nodeIntegration: false,
+                webviewTag: false
+            },
         })
         window = cardWindow
         cardWindow.setMenu(null)
-        return await new Promise<{balance: string; jar: CookieJar}>((resolve, reject) => {
+        return await new Promise<{ balance: string; jar: CookieJar }>((resolve, reject) => {
             let settled = false
             let checking = false
             let ready = false
@@ -35,7 +41,7 @@ export async function readCampusCardWithBrowser(jar: CookieJar, interactive: boo
             let cardSince = 0
             let detailRequested = false
             let parseError = ''
-            const finish = (error?: AuthError, result?: {balance: string; jar: CookieJar}) => {
+            const finish = (error?: AuthError, result?: { balance: string; jar: CookieJar }) => {
                 if (settled) return
                 settled = true
                 clearTimeout(timeout)
@@ -50,7 +56,12 @@ export async function readCampusCardWithBrowser(jar: CookieJar, interactive: boo
                 ? setTimeout(() => finish(new AuthError('校园卡身份验证超时，请重新刷新。')), 300_000)
                 : setTimeout(() => finish(new AuthError('校园卡查询超时，请点击刷新重试。')), 30_000)
             const allowed = (url: string) => {
-                try { validateUrl(url); return true } catch { return false }
+                try {
+                    validateUrl(url);
+                    return true
+                } catch {
+                    return false
+                }
             }
             const navigate = (url: string) => {
                 ready = false
@@ -64,7 +75,10 @@ export async function readCampusCardWithBrowser(jar: CookieJar, interactive: boo
                 if (!allowed(current)) return
                 if (isAuthUrl(current)) {
                     if (interactive) {
-                        if (!cardWindow.isVisible()) { cardWindow.show(); cardWindow.focus() }
+                        if (!cardWindow.isVisible()) {
+                            cardWindow.show();
+                            cardWindow.focus()
+                        }
                     } else {
                         authSince ||= Date.now()
                         if (Date.now() - authSince >= 2000) finish(new AuthError('校园卡需要身份验证，请点击刷新后完成验证。'))
@@ -115,8 +129,13 @@ export async function readCampusCardWithBrowser(jar: CookieJar, interactive: boo
                     finish(new AuthError('校园卡跳转到了非 HTTPS 复旦地址，已停止查询。'))
                 }
             })
-            cardWindow.webContents.on('dom-ready', () => { ready = true; void check() })
-            cardWindow.webContents.on('did-navigate-in-page', () => { void check() })
+            cardWindow.webContents.on('dom-ready', () => {
+                ready = true;
+                void check()
+            })
+            cardWindow.webContents.on('did-navigate-in-page', () => {
+                void check()
+            })
             cardWindow.webContents.on('render-process-gone', () => finish(new AuthError('校园卡认证窗口异常退出，请重试。')))
             cardWindow.webContents.on('did-fail-load', (_event, code, _description, _url, mainFrame) => {
                 if (mainFrame && code !== -3) finish(new AuthError('无法加载校园卡网站，请检查网络后重试。'))
@@ -125,7 +144,9 @@ export async function readCampusCardWithBrowser(jar: CookieJar, interactive: boo
         })
     } finally {
         if (window && !window.isDestroyed()) window.destroy()
-        await reader.clearStorageData().catch(() => {})
-        await reader.closeAllConnections().catch(() => {})
+        await reader.clearStorageData().catch(() => {
+        })
+        await reader.closeAllConnections().catch(() => {
+        })
     }
 }

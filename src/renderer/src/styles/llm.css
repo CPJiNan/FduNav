@@ -157,12 +157,6 @@
     font-size: var(--font-size-sm);
 }
 
-.llm-prompt-hint {
-    margin: 0 0 var(--space-2);
-    color: var(--color-text-muted);
-    font-size: var(--font-size-sm);
-}
-
 .llm-model-control {
     display: flex;
     flex-wrap: wrap;
@@ -221,7 +215,9 @@
 
 .llm-prompt-control textarea {
     display: block;
-    resize: vertical;
+    min-height: 72px;
+    resize: none;
+    field-sizing: content;
     line-height: var(--line-height-relaxed);
 }
 

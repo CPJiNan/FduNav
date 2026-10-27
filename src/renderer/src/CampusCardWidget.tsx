@@ -2,7 +2,7 @@ import {useCallback, useEffect, useRef, useState} from 'react'
 import type {CampusCardBalance} from '../../shared/campus-card'
 import {Icon} from './Icon'
 
-export function CampusCardWidget({refreshVersion}: {refreshVersion: number}) {
+export function CampusCardWidget({refreshVersion}: { refreshVersion: number }) {
     const [data, setData] = useState<CampusCardBalance | null>(null)
     const [busy, setBusy] = useState(true)
     const [refreshing, setRefreshing] = useState(false)
@@ -34,7 +34,10 @@ export function CampusCardWidget({refreshVersion}: {refreshVersion: number}) {
 
     const load = useCallback(async function load(force = false) {
         if (pending.current) {
-            if (force) { queuedRefresh.current = true; setRefreshing(true) }
+            if (force) {
+                queuedRefresh.current = true;
+                setRefreshing(true)
+            }
             return
         }
         if (!api) {
@@ -82,17 +85,26 @@ export function CampusCardWidget({refreshVersion}: {refreshVersion: number}) {
     return <div aria-busy={busy}>
         <div className="dashboard-widget-heading">
             <h2><Icon name="card"/>校园卡余额</h2>
-            <button type="button" className="dashboard-card-refresh" disabled={refreshing || !api} onClick={() => void load(true)} aria-label="刷新校园卡余额">
+            <button type="button" className="dashboard-card-refresh" disabled={refreshing || !api}
+                    onClick={() => void load(true)} aria-label="刷新校园卡余额">
                 <Icon name="refresh"/>{refreshing ? '查询中…' : '刷新'}
             </button>
         </div>
-        <div className="dashboard-card-balance" aria-label={data ? `校园卡余额 ${data.balance} 元` : '校园卡余额暂不可用'}>
+        <div className="dashboard-card-balance"
+             aria-label={data ? `校园卡余额 ${data.balance} 元` : '校园卡余额暂不可用'}>
             {data && <span aria-hidden="true">¥</span>}<strong aria-hidden="true">{data?.balance ?? '—'}</strong>
         </div>
         {busy && <p className="dashboard-widget-caption" role="status">正在查询校园卡余额…</p>}
-        {data && <p className="dashboard-widget-caption">上次查询：<time dateTime={data.updatedAt}>
-            {new Date(data.updatedAt).toLocaleString('zh-CN', {month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'})}
-        </time></p>}
+        {data && <p className="dashboard-widget-caption">上次查询：
+            <time dateTime={data.updatedAt}>
+                {new Date(data.updatedAt).toLocaleString('zh-CN', {
+                    month: 'numeric',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })}
+            </time>
+        </p>}
         {error && <p className="dashboard-error" role="alert">{error}</p>}
         {recordsError && <p className="dashboard-error" role="alert">{recordsError}</p>}
         <button type="button" className="dashboard-card-records" disabled={openingRecords || !api}

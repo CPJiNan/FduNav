@@ -26,6 +26,7 @@ export function registerCalendarHandlers(db: AppDatabase, accounts: AccountServi
     }
 
     handle('calendar:list', username => db.getCalendarEvents(username))
+
     function save(username: string, input: unknown) {
         const result = validateCalendarEvent(input)
         if (!result.ok) throw new AuthError(result.error)
@@ -35,12 +36,14 @@ export function registerCalendarHandlers(db: AppDatabase, accounts: AccountServi
         reminders.changed(username, event.id)
         return event
     }
+
     function remove(username: string, input: unknown) {
         if (typeof input !== 'string' || !db.hasCalendarEvent(username, input)) throw new AuthError('日程不存在或已被删除。')
         db.removeCalendarEvent(username, input)
         reminders.changed(username, input)
         return null
     }
+
     handle('calendar:save', save)
     handle('calendar:remove', remove)
 

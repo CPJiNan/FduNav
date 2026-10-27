@@ -213,8 +213,12 @@ export default function App() {
                             </div>
                         </div>
                         {showDashboardPage && accountLoaded && (!window.accounts || account?.status === 'signed-in') &&
-                            <DashboardPage key={`${account?.username}-${preferences?.educationLevel}`} onNavigate={openPage}
-                                           onOpenNotice={notice => { setNoticeToOpen(notice); openPage('notices') }}/>}
+                            <DashboardPage key={`${account?.username}-${preferences?.educationLevel}`}
+                                           onNavigate={openPage}
+                                           onOpenNotice={notice => {
+                                               setNoticeToOpen(notice);
+                                               openPage('notices')
+                                           }}/>}
                         {showNoticesPage && accountLoaded && (!window.accounts || account?.status === 'signed-in') &&
                             <NoticesPage key={account?.username} noticeToOpen={noticeToOpen}
                                          onNoticeOpened={() => setNoticeToOpen(null)}
@@ -224,10 +228,17 @@ export default function App() {
                                          }}/>}
                         {showChatPage && accountLoaded && (!window.accounts || account?.status === 'signed-in') &&
                             <ChatPage key={account?.username} username={account?.username ?? ''}
-                                      onOpenNotice={notice => { setNoticeToOpen(notice); openPage('notices') }}
-                                      onSettings={() => { setTab('llm'); setSettings(true) }}/>}
+                                      onOpenNotice={notice => {
+                                          setNoticeToOpen(notice);
+                                          openPage('notices')
+                                      }}
+                                      onSettings={() => {
+                                          setTab('llm');
+                                          setSettings(true)
+                                      }}/>}
                         {showCalendarPage && accountLoaded && (!window.accounts || account?.status === 'signed-in') &&
-                            <CalendarPage key={`${account?.username}-${preferences?.educationLevel}`} initialView={calendarInitialView}/>}
+                            <CalendarPage key={`${account?.username}-${preferences?.educationLevel}`}
+                                          initialView={calendarInitialView}/>}
                         {showTodosPage && accountLoaded && (!window.accounts || account?.status === 'signed-in') &&
                             <TodosPage key={account?.username}/>}
                     </main>

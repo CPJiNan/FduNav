@@ -36,7 +36,7 @@ export function parseSummaryOutput(text: string): { content: string; relevance: 
 }
 
 export function summaryMessages(notice: Notice, content: string, preferences: MessagePreferences,
-                                prompt: string, formatPrompt: string): ChatMessage[] {
+                                prompt: string): ChatMessage[] {
     return [
         {role: 'system', content: prompt},
         {
@@ -56,8 +56,7 @@ export function summaryMessages(notice: Notice, content: string, preferences: Me
                     source: notice.sourceName,
                     published: notice.published,
                     content: content.slice(0, 24_000)
-                },
-                outputFormat: formatPrompt
+                }
             })
         }
     ]
@@ -66,9 +65,9 @@ export function summaryMessages(notice: Notice, content: string, preferences: Me
 export function summaryCacheKey(notice: Notice, preferences: MessagePreferences,
                                 settings: LlmSettings, username: string): string {
     return createHash('sha256').update(JSON.stringify({
-        version: 3, username, sourceId: notice.sourceId, url: notice.url,
+        version: 4, username, sourceId: notice.sourceId, url: notice.url,
         // Use the same canonical preference fields as the model request, independent of object key order.
-        messages: summaryMessages(notice, '', preferences, settings.summaryPrompt, settings.summaryFormatPrompt),
+        messages: summaryMessages(notice, '', preferences, settings.summaryPrompt),
         baseUrl: settings.baseUrl, model: settings.model
     })).digest('hex')
 }
@@ -177,7 +176,7 @@ export class NoticeSummaryService {
             const content = detail.content.trim()
             if (!content) throw new Error('这条通知没有可摘要的正文，请查看学校原文。')
             const messages = summaryMessages(context.notice, content, context.preferences,
-                context.settings.summaryPrompt, context.settings.summaryFormatPrompt)
+                context.settings.summaryPrompt)
             stage('generating')
             const result = (await this.complete(connection, messages, signal)).trim()
             assertCurrent()

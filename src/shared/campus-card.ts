@@ -7,5 +7,6 @@ export interface CampusCardBalance {
 
 export interface CampusCardAPI {
     balance(refresh?: boolean): Promise<Result<CampusCardBalance>>
+
     openRecords(): Promise<Result<void>>
 }

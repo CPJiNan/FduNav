@@ -45,7 +45,10 @@ export function registerLlmHandlers(db: AppDatabase, trusted: (event: IpcMainInv
             const checked = validateLlmSettings(input)
             if (!checked.ok) throw new Error(checked.error)
             connection = await service.getDraftConnection(input)
-            return {ok: true, data: await testLlmConnection(connection, undefined, undefined, signal, checked.data.connectionTestPrompt)}
+            return {
+                ok: true,
+                data: await testLlmConnection(connection, undefined, undefined, signal, checked.data.connectionTestPrompt)
+            }
         } catch (error) {
             return {ok: false, error: error instanceof Error ? error.message : '连接测试失败，请重试。'}
         } finally {

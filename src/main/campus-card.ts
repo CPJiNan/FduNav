@@ -7,8 +7,8 @@ import type {Result} from '../shared/accounts'
 const cacheDuration = 5 * 60_000
 
 export function registerCampusCardHandlers(accounts: AccountService, trusted: (event: IpcMainInvokeEvent) => boolean) {
-    let cached: {key: string; data: CampusCardBalance} | null = null
-    let pending: {key: string; interactive: boolean; promise: Promise<Result<CampusCardBalance>>} | null = null
+    let cached: { key: string; data: CampusCardBalance } | null = null
+    let pending: { key: string; interactive: boolean; promise: Promise<Result<CampusCardBalance>> } | null = null
 
     function accountKey() {
         const account = accounts.getState()
@@ -55,7 +55,9 @@ export function registerCampusCardHandlers(accounts: AccountService, trusted: (e
             }).catch((error): Result<CampusCardBalance> => ({
                 ok: false,
                 error: error instanceof AuthError ? error.message : '校园卡余额查询失败，请稍后重试。',
-            })).finally(() => { pending = null })
+            })).finally(() => {
+                pending = null
+            })
             pending = {key, interactive: refresh === true, promise}
             return promise
         } catch (error) {

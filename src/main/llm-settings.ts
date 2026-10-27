@@ -28,7 +28,6 @@ export class LlmSettingsService {
                 model: saved.model,
                 summaryPrompt: saved.summaryPrompt,
                 chatPrompt: saved.chatPrompt,
-                summaryFormatPrompt: saved.summaryFormatPrompt,
                 connectionTestPrompt: saved.connectionTestPrompt,
                 toolDescriptions: saved.toolDescriptions,
                 hasApiKey: !!saved.encryptedApiKey?.length
@@ -133,7 +132,6 @@ export class LlmSettingsService {
             encryptedApiKey,
             summaryPrompt: value.summaryPrompt,
             chatPrompt: value.chatPrompt,
-            summaryFormatPrompt: value.summaryFormatPrompt,
             connectionTestPrompt: value.connectionTestPrompt,
             toolDescriptions: value.toolDescriptions,
         })

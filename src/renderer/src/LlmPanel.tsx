@@ -1,23 +1,17 @@
 import {type FormEvent, type ReactNode, useEffect, useRef, useState} from 'react'
 import {emptyLlmSettings, type LlmSettings, summaryPromptMaxLength, validateLlmSettings} from '../../shared/llm'
-import {defaultToolDescriptions, type ChatToolName} from '../../shared/llm-prompts'
+import {type ChatToolName, defaultToolDescriptions} from '../../shared/llm-prompts'
 import {Icon} from './Icon'
 import './styles/llm.css'
 
 const promptFields = [
-    {key: 'chatPrompt', label: '聊天提示词', rows: 16},
-    {key: 'summaryPrompt', label: '通知摘要提示词', rows: 8},
-    {key: 'summaryFormatPrompt', label: '摘要输出格式', rows: 5},
-    {key: 'connectionTestPrompt', label: '连接测试提示词', rows: 3},
+    {key: 'chatPrompt', label: '聊天提示词'},
+    {key: 'summaryPrompt', label: '通知摘要提示词'},
+    {key: 'connectionTestPrompt', label: '测试连接提示词'},
 ] as const
-const toolLabels: Record<ChatToolName, string> = {
-    search_notices: '检索通知', get_notice: '读取通知', generate_notice_summary: '申请通知摘要',
-    list_events: '查询日程', get_event: '读取日程',
-    create_event: '新增日程',
-    list_todos: '查询待办', create_todo: '新增待办',
-}
 
-function ResetPromptButton({label, onReset}: {label: string; onReset: () => void}) {
+
+function ResetPromptButton({label, onReset}: { label: string; onReset: () => void }) {
     return <button type="button" className="icon-button llm-prompt-reset" title="恢复默认"
                    aria-label={`恢复默认${label}`} onClick={onReset}><Icon name="reset"/></button>
 }
@@ -28,11 +22,13 @@ function PromptSection({id, label, onReset, children}: {
     const [expanded, setExpanded] = useState(false)
     return <section className={`llm-prompt-section${expanded ? ' is-expanded' : ''}`}>
         <div className="llm-prompt-heading">
-            <h4><button type="button" id={`${id}-label`} className="llm-prompt-toggle"
+            <h4>
+                <button type="button" id={`${id}-label`} className="llm-prompt-toggle"
                         aria-expanded={expanded} aria-controls={`${id}-body`}
                         onClick={() => setExpanded(value => !value)}>
-                <Icon name="chevron"/><span>{label}</span>
-            </button></h4>
+                    <Icon name="chevron"/><span>{label}</span>
+                </button>
+            </h4>
             {onReset && <ResetPromptButton label={label} onReset={onReset}/>}
         </div>
         <div id={`${id}-body`} className="llm-prompt-body" hidden={!expanded}>{children}</div>
@@ -261,17 +257,16 @@ export function LlmPanel({active}: { active: boolean }) {
             </div>
             <section className="llm-prompts" aria-labelledby="llm-prompts-heading">
                 <h3 id="llm-prompts-heading">提示词</h3>
-                {promptFields.map(({key, label, rows}) => <PromptSection key={key} id={`llm-${key}`} label={label}
-                    onReset={() => {
-                        setSettings(value => ({...value, [key]: emptyLlmSettings()[key]}));
-                        edited()
-                    }}>
+                {promptFields.map(({key, label}) => <PromptSection key={key} id={`llm-${key}`} label={label}
+                                                                   onReset={() => {
+                                                                       setSettings(value => ({
+                                                                           ...value,
+                                                                           [key]: emptyLlmSettings()[key]
+                                                                       }));
+                                                                       edited()
+                                                                   }}>
                     <div className="llm-prompt-control">
-                        {key === 'summaryFormatPrompt' && <p className="llm-prompt-hint" id="llm-format-hint">
-                            摘要结果需保留 JSON 的 relevance 和 summary 字段，供通知页面展示。
-                        </p>}
-                        <textarea aria-labelledby={`llm-${key}-label`} value={settings[key]} rows={rows}
-                                  aria-describedby={key === 'summaryFormatPrompt' ? 'llm-format-hint' : undefined}
+                        <textarea aria-labelledby={`llm-${key}-label`} value={settings[key]}
                                   maxLength={summaryPromptMaxLength} spellCheck={false}
                                   onChange={event => {
                                       setSettings({...settings, [key]: event.target.value});
@@ -281,25 +276,30 @@ export function LlmPanel({active}: { active: boolean }) {
                 </PromptSection>)}
                 <PromptSection id="llm-tools" label="工具提示词">
                     <div className="llm-tool-prompts">
-                    {(Object.keys(toolLabels) as ChatToolName[]).map(name => <div className="llm-prompt-control llm-tool-prompt" key={name}>
-                        <div className="llm-prompt-toolbar">
-                            <label htmlFor={`llm-tool-${name}`}>{toolLabels[name]}</label>
-                            <ResetPromptButton label={`${toolLabels[name]}提示词`} onReset={() => {
-                                        setSettings(value => ({...value, toolDescriptions: {
+                        {(Object.keys(defaultToolDescriptions) as ChatToolName[]).map(name => <div
+                            className="llm-prompt-control llm-tool-prompt" key={name}>
+                            <div className="llm-prompt-toolbar">
+                                <label htmlFor={`llm-tool-${name}`}>{name}</label>
+                                <ResetPromptButton label={`${name} 提示词`} onReset={() => {
+                                    setSettings(value => ({
+                                        ...value, toolDescriptions: {
                                             ...value.toolDescriptions, [name]: defaultToolDescriptions[name],
-                                        }}));
-                                        edited()
-                                    }}/>
-                        </div>
-                        <textarea id={`llm-tool-${name}`} value={settings.toolDescriptions[name]} rows={4}
-                                  maxLength={2000} spellCheck={false}
-                                  onChange={event => {
-                                      setSettings({...settings, toolDescriptions: {
-                                          ...settings.toolDescriptions, [name]: event.target.value,
-                                      }});
-                                      edited()
-                                  }}/>
-                    </div>)}
+                                        }
+                                    }));
+                                    edited()
+                                }}/>
+                            </div>
+                            <textarea id={`llm-tool-${name}`} value={settings.toolDescriptions[name]}
+                                      maxLength={2000} spellCheck={false}
+                                      onChange={event => {
+                                          setSettings({
+                                              ...settings, toolDescriptions: {
+                                                  ...settings.toolDescriptions, [name]: event.target.value,
+                                              }
+                                          });
+                                          edited()
+                                      }}/>
+                        </div>)}
                     </div>
                 </PromptSection>
             </section>

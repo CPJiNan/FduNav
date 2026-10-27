@@ -15,21 +15,29 @@ export interface ChatMessage {
 export interface ToolCall {
     id: string
     type: 'function'
-    function: {name: string; arguments: string}
+    function: { name: string; arguments: string }
 }
-export type ToolChatMessage = ChatMessage | {role: 'assistant'; content: string | null; tool_calls?: ToolCall[]} |
-    {role: 'tool'; tool_call_id: string; content: string}
+
+export type ToolChatMessage = ChatMessage | { role: 'assistant'; content: string | null; tool_calls?: ToolCall[] } |
+    { role: 'tool'; tool_call_id: string; content: string }
+
 export interface ChatTool {
     type: 'function'
-    function: {name: string; description: string; parameters: Record<string, unknown>}
+    function: { name: string; description: string; parameters: Record<string, unknown> }
 }
 
 export async function completeLlmWithTools(connection: Connection, messages: ToolChatMessage[], tools: ChatTool[],
-                                           signal: AbortSignal): Promise<Extract<ToolChatMessage, {role: 'assistant'}>> {
+                                           signal: AbortSignal): Promise<Extract<ToolChatMessage, {
+    role: 'assistant'
+}>> {
     const data = await requestLlmJson(connection, '/chat/completions', {
-        method: 'POST', body: JSON.stringify({model: connection.model, messages, tools, tool_choice: 'auto', stream: false}),
+        method: 'POST',
+        body: JSON.stringify({model: connection.model, messages, tools, tool_choice: 'auto', stream: false}),
     }, fetch, 60_000, signal)
-    const payload = data as {error?: unknown; choices?: {message?: {content?: unknown; tool_calls?: unknown}}[]} | null
+    const payload = data as {
+        error?: unknown;
+        choices?: { message?: { content?: unknown; tool_calls?: unknown } }[]
+    } | null
     const message = Array.isArray(payload?.choices) ? payload.choices[0]?.message : undefined
     if (payload?.error || !message) throw new Error('模型未返回有效回复，请确认模型支持工具调用。')
     const content = typeof message.content === 'string' ? message.content.slice(0, 16000) : null

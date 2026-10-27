@@ -300,6 +300,7 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
         const notice = db.getNotice(ref.sourceId, ref.url)!
         return {...notice, relevance: summaries.relevanceFor(notice)}
     })
+
     function setRelevance(input: unknown) {
         requireReady()
         knownUrl(input)
@@ -315,6 +316,7 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
         }
         return value.relevance === 'none' ? null : value.relevance
     }
+
     handle('notices:set-relevance', async input => setRelevance(input))
 
     handle('notices:mark-read', async (input: unknown) => {
@@ -366,6 +368,7 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
     handle('notices:detail', async (input: unknown) => {
         return readNoticePdfs(await readDetail(input))
     })
+
     async function summarize(input: unknown) {
         requireReady()
         knownUrl(input)
@@ -381,6 +384,7 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
             throw new AuthError(error instanceof Error ? error.message : '摘要生成失败，请稍后重试。')
         }
     }
+
     handle('notices:summary', summarize)
     handle('notices:image', async (input: unknown) => {
         const referer = knownUrl(input)
@@ -430,8 +434,10 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
         publishUnreadState()
         return sources
     }, false)
-    return {list: listNotices, detail: async (ref: NoticeRef) => {
-        requireReady()
-        return readNoticePdfs(await readDetail(ref))
-    }, setRelevance, summarize}
+    return {
+        list: listNotices, detail: async (ref: NoticeRef) => {
+            requireReady()
+            return readNoticePdfs(await readDetail(ref))
+        }, setRelevance, summarize
+    }
 }

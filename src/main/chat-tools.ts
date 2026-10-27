@@ -1,5 +1,11 @@
-import {defaultToolDescriptions, type ChatToolName} from '../shared/llm-prompts'
-import {calendarDate, calendarOccurrences, timeLabel, validateCalendarEvent, type CalendarEvent} from '../shared/calendar'
+import {type ChatToolName, defaultToolDescriptions} from '../shared/llm-prompts'
+import {
+    calendarDate,
+    type CalendarEvent,
+    calendarOccurrences,
+    timeLabel,
+    validateCalendarEvent
+} from '../shared/calendar'
 import {validateTodo} from '../shared/todos'
 import type {ChatAction, ChatCard} from '../shared/chat'
 import type {Notice} from '../shared/notices'
@@ -14,12 +20,25 @@ const eventFields = {
     title: str('日程名称'), startDate: str('开始日期 YYYY-MM-DD'), endDate: str('结束日期 YYYY-MM-DD'),
     startTime: str('开始时间 HH:mm'), endTime: str('结束时间 HH:mm'), allDay: {type: 'boolean'},
     location: str('地点'), notes: str('备注'),
-    reminderMinutes: {type: 'integer', enum: [-1, 0, 5, 10, 15, 30, 60, 120, 1440, 2880, 10080], description: '提前提醒分钟数，-1 不提醒；省略使用用户默认值'},
+    reminderMinutes: {
+        type: 'integer',
+        enum: [-1, 0, 5, 10, 15, 30, 60, 120, 1440, 2880, 10080],
+        description: '提前提醒分钟数，-1 不提醒；省略使用用户默认值'
+    },
 }
 const pagination = {offset: {type: 'integer', minimum: 0}, limit: {type: 'integer', minimum: 1, maximum: 10}}
+
 function tool(name: ChatToolName, properties: Fields, required: string[] = []): ChatTool {
-    return {type: 'function', function: {name, description: defaultToolDescriptions[name], parameters: {type: 'object', properties, required, additionalProperties: false}}}
+    return {
+        type: 'function',
+        function: {
+            name,
+            description: defaultToolDescriptions[name],
+            parameters: {type: 'object', properties, required, additionalProperties: false}
+        }
+    }
 }
+
 export const chatTools: ChatTool[] = [
     tool('search_notices', {
         query: str('标题或来源关键词，空字符串查询最新通知'), sourceId: str('可选来源 ID'),
@@ -29,7 +48,9 @@ export const chatTools: ChatTool[] = [
     tool('get_notice', ref, ['sourceId', 'url']),
     tool('generate_notice_summary', ref, ['sourceId', 'url']),
     tool('list_events', {
-        from: str('开始日期 YYYY-MM-DD'), to: str('结束日期 YYYY-MM-DD'), query: str('名称、地点、备注或授课教师关键词'), ...pagination,
+        from: str('开始日期 YYYY-MM-DD'),
+        to: str('结束日期 YYYY-MM-DD'),
+        query: str('名称、地点、备注或授课教师关键词'), ...pagination,
     }),
     tool('get_event', {id: str('个人日程 ID')}, ['id']),
     tool('create_event', eventFields,
@@ -44,9 +65,12 @@ export const chatTools: ChatTool[] = [
 ]
 
 export function configuredChatTools(descriptions: Record<ChatToolName, string>): ChatTool[] {
-    return chatTools.map(item => ({...item, function: {...item.function,
-        description: descriptions[item.function.name as ChatToolName],
-    }}))
+    return chatTools.map(item => ({
+        ...item, function: {
+            ...item.function,
+            description: descriptions[item.function.name as ChatToolName],
+        }
+    }))
 }
 
 export const chatToolLabels: Record<string, string> = {
@@ -62,11 +86,13 @@ function textArg(args: Fields, key: string, required = false, max = 500): string
     if (typeof value !== 'string' || value.length > max || (required && !value.trim())) throw new Error(`${key} 参数无效。`)
     return value.trim()
 }
+
 function range(args: Fields) {
     const from = textArg(args, 'from'), to = textArg(args, 'to')
     if ((from && !calendarDate(from)) || (to && !calendarDate(to)) || (from && to && from > to)) throw new Error('日期范围无效。')
     return {from, to}
 }
+
 function page<T>(items: T[], args: Fields) {
     const offset = args.offset ?? 0, limit = args.limit ?? 5
     if (typeof offset !== 'number' || !Number.isSafeInteger(offset) || offset < 0 ||
@@ -75,23 +101,28 @@ function page<T>(items: T[], args: Fields) {
 }
 
 export function createChatToolRunner(db: AppDatabase, username: string,
-    notices: ReturnType<typeof registerNoticeHandlers>,
-    addCard: (card: ChatCard) => void, assertCurrent: () => void,
-    requestSummary: (notice: Notice) => unknown, requestAction: (action: ChatAction) => unknown) {
+                                     notices: ReturnType<typeof registerNoticeHandlers>,
+                                     addCard: (card: ChatCard) => void, assertCurrent: () => void,
+                                     requestSummary: (notice: Notice) => unknown, requestAction: (action: ChatAction) => unknown) {
     const seenNotices = new Set<string>()
-    const noticeKey = (item: {sourceId: string; url: string}) => JSON.stringify([item.sourceId, item.url])
+    const noticeKey = (item: { sourceId: string; url: string }) => JSON.stringify([item.sourceId, item.url])
+
     function noticeCard(notice: Notice) {
-        seenNotices.add(noticeKey(notice)); addCard({kind: 'notice', notice})
+        seenNotices.add(noticeKey(notice));
+        addCard({kind: 'notice', notice})
     }
+
     function eventCard(event: CalendarEvent, deleted = false) {
         addCard({kind: 'event', event, deleted})
     }
+
     function knownNotice(args: Fields) {
         const sourceId = textArg(args, 'sourceId', true), url = textArg(args, 'url', true, 2048)
         const notice = notices.list().items.find(item => item.sourceId === sourceId && item.url === url)
         if (!notice || !seenNotices.has(noticeKey(notice))) throw new Error('请先检索这条通知，再进行读取或摘要。')
         return notice
     }
+
     function getEvent(args: Fields) {
         const id = textArg(args, 'id', true)
         if (id.startsWith('course:')) throw new Error('课表课程只读，请使用日程查询获取课程安排，不能修改或删除。')
@@ -102,6 +133,7 @@ export function createChatToolRunner(db: AppDatabase, username: string,
         }
         return event
     }
+
     return async (name: string, raw: string): Promise<unknown> => {
         assertCurrent()
         const schema = chatTools.find(item => item.function.name === name)?.function.parameters
@@ -144,18 +176,20 @@ export function createChatToolRunner(db: AppDatabase, username: string,
             const timetable = supported ? db.getTimetable(username, preferences.educationLevel === 'undergraduate' ? 'undergraduate' : 'postgraduate') : null
             const timetableWarning = preferences.identity !== 'student' ? '当前身份不支持课表查询。'
                 : !supported ? '请先设置学历阶段，才能查询课表。'
-                : !timetable ? '尚未获取课表，当前仅返回个人日程，请刷新课表后重试。'
-                : !timetable.startDate ? '课表缺少开学日期，请在日历设置第一周起始日期后查询具体上课日期。' : ''
+                    : !timetable ? '尚未获取课表，当前仅返回个人日程，请刷新课表后重试。'
+                        : !timetable.startDate ? '课表缺少开学日期，请在日历设置第一周起始日期后查询具体上课日期。' : ''
             const events = db.getCalendarEvents(username).filter(item => (!from || item.endDate >= from) && (!to || item.startDate <= to) &&
                 `${item.title} ${item.location} ${item.notes}`.toLocaleLowerCase().includes(query))
                 .map(event => ({...event, kind: 'event' as const, readOnly: false, event}))
             const courses = calendarOccurrences(timetable, [], from || '1900-01-01', to || '2100-12-31')
                 .filter(item => `${item.title} ${item.location} ${item.course!.teachers.join(' ')}`.toLocaleLowerCase().includes(query))
-                .map(occurrence => ({kind: 'course' as const, readOnly: true, id: occurrence.key, title: occurrence.title,
+                .map(occurrence => ({
+                    kind: 'course' as const, readOnly: true, id: occurrence.key, title: occurrence.title,
                     startDate: occurrence.date, endDate: occurrence.date, startTime: timeLabel(occurrence.startMinute),
                     endTime: timeLabel(occurrence.endMinute), allDay: false, location: occurrence.location,
                     teachers: occurrence.course!.teachers, startUnit: occurrence.course!.startUnit,
-                    endUnit: occurrence.course!.endUnit, occurrence}))
+                    endUnit: occurrence.course!.endUnit, occurrence
+                }))
             const items = [...events, ...courses]
                 .sort((a, b) => a.startDate.localeCompare(b.startDate) || Number(b.allDay) - Number(a.allDay) ||
                     a.startTime.localeCompare(b.startTime) || a.id.localeCompare(b.id))
@@ -164,13 +198,21 @@ export function createChatToolRunner(db: AppDatabase, username: string,
                 if (item.kind === 'course') addCard({kind: 'course', occurrence: item.occurrence})
                 else eventCard(item.event)
             })
-            return {...result, items: result.items.map(item => {
-                if (item.kind === 'course') { const {occurrence: _occurrence, ...fields} = item; return fields }
-                const {event: _event, ...fields} = item; return fields
-            }), timetableUpdatedAt: timetable?.updatedAt ?? null, timetableWarning}
+            return {
+                ...result, items: result.items.map(item => {
+                    if (item.kind === 'course') {
+                        const {occurrence: _occurrence, ...fields} = item;
+                        return fields
+                    }
+                    const {event: _event, ...fields} = item;
+                    return fields
+                }), timetableUpdatedAt: timetable?.updatedAt ?? null, timetableWarning
+            }
         }
         if (name === 'get_event') {
-            const event = getEvent(input); eventCard(event); return event
+            const event = getEvent(input);
+            eventCard(event);
+            return event
         }
         if (name === 'create_event') {
             if (input.allDay === false && (input.startTime === undefined || input.endTime === undefined)) {
@@ -194,8 +236,10 @@ export function createChatToolRunner(db: AppDatabase, username: string,
         if (name === 'create_todo') {
             if (input.dueDate && input.dueTime === undefined) throw new Error('请先明确待办截止时间（时、分）。')
             if (!input.dueDate && input.dueTime) throw new Error('请先明确待办截止日期。')
-            const checked = validateTodo({notes: '', dueDate: '', dueTime: '00:00',
-                reminderMinutes: db.getTodoDefaultReminder(), ...input, completed: false})
+            const checked = validateTodo({
+                notes: '', dueDate: '', dueTime: '00:00',
+                reminderMinutes: db.getTodoDefaultReminder(), ...input, completed: false
+            })
             if (!checked.ok) throw new Error(checked.error)
             return requestAction({kind: 'create_todo', todo: checked.data})
         }

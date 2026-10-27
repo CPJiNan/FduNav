@@ -47,7 +47,9 @@ export function registerLibraryHandlers(trusted: (event: IpcMainInvokeEvent) => 
             } catch {
                 return {ok: false, error: '无法获取图书馆人数，请检查网络或稍后刷新重试。'}
             }
-        })().finally(() => { pending = null })
+        })().finally(() => {
+            pending = null
+        })
         return pending
     })
 }

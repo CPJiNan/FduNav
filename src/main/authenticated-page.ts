@@ -133,7 +133,9 @@ export async function openAuthenticatedPage(value: string, jar: CookieJar | null
                 event.preventDefault()
             }
         })
-        pageWindow.once('ready-to-show', () => { if (!openedWindow.isDestroyed()) openedWindow.show() })
+        pageWindow.once('ready-to-show', () => {
+            if (!openedWindow.isDestroyed()) openedWindow.show()
+        })
         pageWindow.on('closed', () => {
             readerWindows.delete(title)
         })
@@ -145,7 +147,8 @@ export async function openAuthenticatedPage(value: string, jar: CookieJar | null
                 // Some authentication flows return to the account homepage instead of the requested page.
                 if (current.origin === new URL(url).origin && /^\/epay\/(?:myepay(?:\/index)?\/?)?$/.test(current.pathname)) {
                     returnedToRecords = true
-                    void openedWindow.loadURL(url).catch(() => {})
+                    void openedWindow.loadURL(url).catch(() => {
+                    })
                 }
             })
         }

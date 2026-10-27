@@ -7,19 +7,27 @@ import {Icon} from './Icon'
 const titles = {create_event: '新增日程', create_todo: '新增待办'}
 const statuses = {pending: '等待允许', executing: '正在执行', completed: '已完成', rejected: '已拒绝', failed: '未完成'}
 
-function Preview({value}: {value: CalendarEventInput | TodoInput}) {
+function Preview({value}: { value: CalendarEventInput | TodoInput }) {
     const todo = 'dueDate' in value
     const reminder = calendarReminderOptions.find(item => item.value === value.reminderMinutes)?.label ?? '无'
     return <div className="chat-action-preview">
         <strong>{value.title}</strong>
         <dl>
-            {todo ? <><dt>截止时间</dt><dd>{value.dueDate ? `${value.dueDate} ${value.dueTime}` : '无截止日期'}</dd></> : <>
-                <dt>开始</dt><dd>{value.startDate} {value.allDay ? '全天' : value.startTime}</dd>
-                <dt>结束</dt><dd>{value.endDate} {value.allDay ? '全天' : value.endTime}</dd>
-                <dt>地点</dt><dd>{value.location || '无'}</dd>
+            {todo ? <>
+                <dt>截止时间</dt>
+                <dd>{value.dueDate ? `${value.dueDate} ${value.dueTime}` : '无截止日期'}</dd>
+            </> : <>
+                <dt>开始</dt>
+                <dd>{value.startDate} {value.allDay ? '全天' : value.startTime}</dd>
+                <dt>结束</dt>
+                <dd>{value.endDate} {value.allDay ? '全天' : value.endTime}</dd>
+                <dt>地点</dt>
+                <dd>{value.location || '无'}</dd>
             </>}
-            <dt>提醒</dt><dd>{todo && !value.dueDate ? '无' : reminder}</dd>
-            <dt>备注</dt><dd>{value.notes || '无'}</dd>
+            <dt>提醒</dt>
+            <dd>{todo && !value.dueDate ? '无' : reminder}</dd>
+            <dt>备注</dt>
+            <dd>{value.notes || '无'}</dd>
         </dl>
     </div>
 }
@@ -33,8 +41,11 @@ export function ChatActionRequestCard({request, disabled, onDecide}: {
             <span role="status">{statuses[request.status]}</span></header>
         <Preview value={action.kind === 'create_todo' ? action.todo : action.after}/>
         {request.status === 'pending' && <div className="chat-summary-actions">
-            <button type="button" className="primary-button" disabled={disabled} onClick={() => onDecide(true)}>允许</button>
-            <button type="button" className="secondary-button" disabled={disabled} onClick={() => onDecide(false)}>拒绝</button>
+            <button type="button" className="primary-button" disabled={disabled} onClick={() => onDecide(true)}>允许
+            </button>
+            <button type="button" className="secondary-button" disabled={disabled}
+                    onClick={() => onDecide(false)}>拒绝
+            </button>
         </div>}
         {request.error && <p className="chat-error" role="alert">{request.error}</p>}
     </section>

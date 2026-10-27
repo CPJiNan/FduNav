@@ -18,7 +18,7 @@ import {CalendarEventDialog} from './CalendarEventDialog'
 import {Icon} from './Icon'
 import './styles/calendar.css'
 
-export function CalendarPage({initialView = 'week'}: {initialView?: CalendarView}) {
+export function CalendarPage({initialView = 'week'}: { initialView?: CalendarView }) {
     const [view, setView] = useState<CalendarView>(initialView)
     const [date, setDate] = useState(localToday)
     const [today, setToday] = useState(localToday)
