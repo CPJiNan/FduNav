@@ -19,6 +19,7 @@ import {
 } from './authenticated-page'
 import type {AccountState, LoginInput, Result, Theme} from '../shared/accounts'
 import {secureStorage} from './secure-storage'
+import {readCampusCardWithBrowser} from './campus-card-browser'
 
 const signedOut = (): AccountState => ({username: null, status: 'signed-out', lastLogin: null, message: ''})
 
@@ -166,8 +167,26 @@ export class AccountService {
         await openAuthenticatedPage(url, this.jar, parent)
     }
 
+    async openCampusCardRecords(parent?: BrowserWindow): Promise<void> {
+        if (this.state.status !== 'signed-in' || !this.jar) throw new AuthError('请先登录账号。')
+        await openAuthenticatedPage('https://ecard.fudan.edu.cn/epay/consume/index', this.jar, parent, '校园卡消费记录')
+    }
+
     async readImage(url: string, referer: string): Promise<string> {
         return readAuthenticatedImage(url, referer, this.jar)
+    }
+
+    async readCampusCardBalance(interactive: boolean, parent?: BrowserWindow): Promise<string> {
+        return this.exclusive(async () => {
+            if (this.state.status !== 'signed-in' || !this.jar) throw new AuthError('请先登录账号。')
+            const result = await readCampusCardWithBrowser(this.jar, interactive, parent)
+            this.db.saveAccount({
+                username: this.state.username!, target: this.target, last_login: this.state.lastLogin!,
+                cookies: await secureStorage.encrypt(JSON.stringify(result.jar.serializeSync())),
+            })
+            this.jar = result.jar
+            return result.balance
+        })
     }
 
     async withServiceSession<T>(work: (read: <R>(url: string, parse: (text: string) => R) => Promise<R>) => Promise<T>, parent?: BrowserWindow): Promise<T> {
@@ -186,7 +205,7 @@ export class AccountService {
                     page = await new FudanTransport(jar).request(url)
                 }
                 if (isAuthUrl(page.url) || new URL(page.url).origin !== new URL(url).origin) {
-                    throw new AuthError('课表会话已失效，请重试。')
+                    throw new AuthError('学校服务会话已失效，请重试。')
                 }
                 return parse(page.text)
             })

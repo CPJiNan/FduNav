@@ -35,7 +35,9 @@ type IconName =
     | 'send'
     | 'stop'
     | 'pencil'
+    | 'card'
 const paths: Record<IconName, string> = {
+    card: 'M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2ZM2 9h20M6 15h4',
     chat: 'M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2V11.5A8.5 8.5 0 0 1 10.5 3h2a8.5 8.5 0 0 1 8.5 8.5ZM7 9h9M7 13h6',
     send: 'm12 4-7 7m7-7 7 7M12 4v16',
     stop: 'M6 6h12v12H6Z',
