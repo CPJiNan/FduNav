@@ -1,12 +1,12 @@
 {
   "name": "fdunav",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "FduNav",
   "author": "CPJiNan",
   "contributors": [
     "yutong",
-    "fsyyt"
+    "SlothAdrift"
   ],
   "main": "./out/main/index.js",
   "engines": {
