@@ -18,6 +18,10 @@ win:
       arch:
         - x64
   artifactName: ${productName}-${version}-Setup-${arch}.${ext}
+mac:
+  icon: resources/icon.icns
+  category: public.app-category.productivity
+  identity: null
 nsis:
   oneClick: false
   perMachine: false
