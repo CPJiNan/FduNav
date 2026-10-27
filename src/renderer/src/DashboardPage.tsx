@@ -178,7 +178,7 @@ export function DashboardPage({onNavigate, onOpenNotice}: {
             {loading && <p className="dashboard-widget-caption">正在读取通知…</p>}
             {notices.error && <p className="dashboard-error">{notices.error}</p>}
             {!loading && !notices.error && !latest.length &&
-                <p className="dashboard-empty">暂无通知，可前往通知页刷新获取</p>}
+                <p className="dashboard-empty">暂无通知</p>}
             <ul>{latest.map(notice => <li key={`${notice.sourceId}:${notice.url}`}>
                 <button type="button" onClick={() => onOpenNotice(notice)}>
                     <span className="dashboard-news-meta">{notice.sourceName}
