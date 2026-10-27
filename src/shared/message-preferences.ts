@@ -81,7 +81,7 @@ export interface MessagePreferencesAPI {
 }
 
 export const emptyMessagePreferences = (): MessagePreferences => ({
-    identity: '', gender: '', department: '', educationLevel: '', grade: null, major: '', campus: '',
+    identity: 'student', gender: '', department: '', educationLevel: '', grade: null, major: '', campus: '邯郸校区',
 })
 
 export function validateRequiredMessagePreferences(input: unknown): ValidationResult {

@@ -15,11 +15,13 @@ import {
     openAuthenticatedPage,
     readAuthenticatedImage,
     readAuthenticatedPage,
-    readExamPage as readExamPageFromBrowser
+    readExamPage as readExamPageFromBrowser,
+    readMyFudanPage as readMyFudanPageFromBrowser
 } from './authenticated-page'
 import type {AccountState, LoginInput, Result, Theme} from '../shared/accounts'
 import {secureStorage} from './secure-storage'
 import {readCampusCardWithBrowser} from './campus-card-browser'
+import {syncMyFudanPreferences} from './my-fudan-preferences'
 
 const signedOut = (): AccountState => ({username: null, status: 'signed-out', lastLogin: null, message: ''})
 
@@ -163,6 +165,10 @@ export class AccountService {
         return readExamPageFromBrowser(this.jar)
     }
 
+    async readMyFudanPage(): Promise<string | null> {
+        return readMyFudanPageFromBrowser(this.jar)
+    }
+
     async openPageWithBrowser(url: string, parent?: BrowserWindow): Promise<void> {
         await openAuthenticatedPage(url, this.jar, parent)
     }
@@ -253,7 +259,15 @@ export async function registerAccountHandlers(db: AppDatabase, trusted: (event: 
     }
 
     handle('account:state', () => service.getState())
-    handle('account:login', (input: LoginInput, event) => service.login(input, BrowserWindow.fromWebContents(event.sender) ?? undefined))
+    handle('account:login', async (input: LoginInput, event) => {
+        const parent = BrowserWindow.fromWebContents(event.sender) ?? undefined
+        const state = await service.login(input, parent)
+        try {
+            await syncMyFudanPreferences(service, db, parent)
+        } catch {
+        }
+        return state
+    })
     handle('account:verify', () => service.verify())
     handle('account:logout', () => service.logout())
     handle('preferences:get-theme', () => db.getTheme())

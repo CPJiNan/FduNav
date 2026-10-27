@@ -202,6 +202,7 @@ export default function App() {
                                     {tab === 'account' && <AccountPanel account={account} onChange={setAccount}/>}
                                     {tab === 'about' && <AboutPanel/>}
                                     <div hidden={tab !== 'messages'}><MessagePreferencesPanel
+                                        key={account?.status === 'signed-in' ? account.username : 'signed-out'}
                                         requiredProfile={account?.status === 'signed-in'}
                                         onChange={setPreferences} onSaved={value => {
                                         if (needsPreferences && validateRequiredMessagePreferences(value).ok) setSettings(false)

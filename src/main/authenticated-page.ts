@@ -174,6 +174,53 @@ export async function openAuthenticatedPage(value: string, jar: CookieJar | null
     }
 }
 
+export async function readMyFudanPage(jar: CookieJar | null): Promise<string | null> {
+    if (!jar) return null
+    const url = validateUrl('https://my.fudan.edu.cn/')
+    const reader = session.fromPartition(PARTITION)
+    await seedCookies(jar, reader)
+    const window = new BrowserWindow({
+        show: false,
+        webPreferences: {session: reader, sandbox: true, contextIsolation: true, nodeIntegration: false},
+    })
+    window.webContents.setWindowOpenHandler(() => ({action: 'deny'}))
+    window.webContents.on('will-navigate', (event, next) => {
+        try {
+            validateUrl(next)
+        } catch {
+            event.preventDefault()
+        }
+    })
+    try {
+        void window.loadURL(url).catch(() => {
+        })
+        const deadline = Date.now() + 15_000
+        while (Date.now() < deadline) {
+            if (window.isDestroyed()) return null
+            const current = window.webContents.getURL()
+            if (isAuthUrl(current)) return null
+            if (current && !window.webContents.isLoading() && new URL(current).hostname === 'my.fudan.edu.cn') break
+            await wait(250)
+        }
+        await wait(1500)
+        const clicked = await window.webContents.executeJavaScript(`(() => {
+            const target = [...document.querySelectorAll('a,button')]
+                .find(element => /个人信息|我的信息|个人资料/.test(element.textContent || ''))
+            if (!target) return false
+            target.click()
+            return true
+        })()`).catch(() => false)
+        if (clicked) await wait(1500)
+        if (window.isDestroyed() || isAuthUrl(window.webContents.getURL())) return null
+        const html: unknown = await window.webContents.executeJavaScript('document.documentElement.outerHTML')
+        return typeof html === 'string' ? html : null
+    } catch {
+        return null
+    } finally {
+        if (!window.isDestroyed()) window.destroy()
+    }
+}
+
 export async function readExamPage(jar: CookieJar | null): Promise<string | null> {
     if (!jar) return null
     const reader = session.fromPartition(PARTITION)

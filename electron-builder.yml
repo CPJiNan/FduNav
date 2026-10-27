@@ -22,6 +22,14 @@ mac:
   icon: resources/icon.icns
   category: public.app-category.productivity
   identity: null
+  target:
+    - target: dmg
+      arch:
+        - arm64
+    - target: zip
+      arch:
+        - arm64
+  artifactName: ${productName}-${version}-${arch}.${ext}
 nsis:
   oneClick: false
   perMachine: false
