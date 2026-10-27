@@ -235,7 +235,7 @@ h2 {
     width: 8px;
     height: 8px;
     border-radius: var(--radius-full);
-    background: var(--color-accent);
+    background: var(--color-dot);
     pointer-events: none;
 }
 

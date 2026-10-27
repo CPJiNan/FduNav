@@ -214,7 +214,7 @@
 }
 
 .notice-read-indicator.is-unread {
-    background: var(--color-accent);
+    background: var(--color-dot);
 }
 
 .notice-open > div > span {

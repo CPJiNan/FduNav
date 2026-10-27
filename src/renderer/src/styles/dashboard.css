@@ -1,7 +1,7 @@
 .dashboard-page {
     min-height: 100%;
     padding: 8px clamp(20px, 4vw, 48px) clamp(20px, 4vw, 48px);
-    background: #fff;
+    background: var(--color-bg-canvas);
 }
 
 .dashboard-header, .dashboard-grid, .dashboard-widget-picker, .dashboard-layout-empty, .dashboard-layout-error {
@@ -18,7 +18,7 @@
 }
 
 .dashboard-header > .icon-button {
-    color: #667085;
+    color: var(--color-text-muted);
 }
 
 .dashboard-grid {
@@ -34,15 +34,15 @@
     gap: 6px;
     border: 0;
     border-radius: 16px;
-    background: #f2f4f7;
-    color: #344054;
+    background: var(--color-bg-hover);
+    color: var(--color-text-secondary);
     padding: 8px 14px;
     font: inherit;
     font-size: var(--font-size-sm);
 }
 
 .dashboard-edit-button:hover {
-    background: #e7ebf1;
+    background: var(--color-bg-pressed);
 }
 
 .dashboard-edit-button:disabled {
@@ -64,7 +64,7 @@
 }
 
 .dashboard-layout-error {
-    color: #b42318;
+    color: var(--color-danger);
     margin-bottom: 16px;
 }
 
@@ -432,7 +432,7 @@
     margin-left: 8px;
     vertical-align: middle;
     border-radius: 50%;
-    background: var(--color-accent);
+    background: var(--color-dot);
 }
 
 @media (max-width: 1000px) {
