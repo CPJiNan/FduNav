@@ -21,6 +21,8 @@ import {registerTimetableHandlers} from './timetable'
 import {registerCalendarHandlers} from './calendar'
 import {registerChatHandlers} from './chat'
 import {registerTodoHandlers} from './todos'
+import {registerCampusCardHandlers} from './campus-card'
+import {registerLibraryHandlers} from './library'
 import {registerGeneralSettingsHandlers} from './general-settings'
 import {registerAppInfoHandlers} from './app-info'
 
@@ -170,6 +172,8 @@ app.whenReady().then(async () => {
         registerGeneralSettingsHandlers(database, trusted)
         const accounts = await registerAccountHandlers(database, trusted)
         registerTimetableHandlers(database, accounts, trusted)
+        registerCampusCardHandlers(accounts, trusted)
+        registerLibraryHandlers(trusted)
         const calendar = registerCalendarHandlers(database, accounts, trusted, showMainWindow)
         registerTodoHandlers(database, accounts, trusted, showMainWindow)
         const llm = registerLlmHandlers(database, trusted)

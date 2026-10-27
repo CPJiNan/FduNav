@@ -5,11 +5,13 @@ import type {Todo} from '../../shared/todos'
 import type {Timetable} from '../../shared/timetable'
 import {calendarOccurrences, localToday, timeLabel, type CalendarEvent, type CalendarView} from '../../shared/calendar'
 import {Icon} from './Icon'
+import {CampusCardWidget} from './CampusCardWidget'
+import {LibraryWidget} from './LibraryWidget'
 import './styles/dashboard.css'
 
-const widgetNames = {agenda: '今日安排', todos: '待办事项', news: '通知速览'} as const
+const widgetNames = {agenda: '今日安排', todos: '待办事项', card: '校园卡余额', library: '图书馆人数', news: '通知速览'} as const
 type WidgetId = keyof typeof widgetNames
-const defaultLayout: WidgetId[] = ['agenda', 'todos', 'news']
+const defaultLayout: WidgetId[] = ['agenda', 'todos', 'news', 'card', 'library']
 const layoutStorageKey = 'fdunav.dashboard.layout'
 function readLayout(): WidgetId[] {
     try {
@@ -33,6 +35,7 @@ export function DashboardPage({onNavigate, onOpenNotice}: {
 }) {
     const [now, setNow] = useState(() => new Date())
     const [refresh, setRefresh] = useState(0)
+    const [widgetRefresh, setWidgetRefresh] = useState(0)
     const [loading, setLoading] = useState(true)
     const [layout, setLayout] = useState<WidgetId[]>(readLayout)
     const [editing, setEditing] = useState(false)
@@ -104,6 +107,8 @@ export function DashboardPage({onNavigate, onOpenNotice}: {
     const count = (value: number, error: string) => loading || error ? '—' : value
 
     const content: Record<WidgetId, ReactNode> = {
+        library: <LibraryWidget refreshVersion={widgetRefresh}/>,
+        card: <CampusCardWidget refreshVersion={widgetRefresh}/>,
         agenda: <>
                 <div className="dashboard-widget-heading"><h2><Icon name="calendar"/>今日安排</h2><button type="button" onClick={() => onNavigate('calendar', 'agenda')}>全部<Icon name="chevron"/></button></div>
                 {loading && <p className="dashboard-widget-caption">正在加载…</p>}
@@ -153,7 +158,7 @@ export function DashboardPage({onNavigate, onOpenNotice}: {
                 setEditing(value => !value); setAdding(false); setDragging(null); setDropTarget(null)
             }}>{editing ? '完成' : <Icon name="pencil"/>}</button>
             <button type="button" className="icon-button" title="刷新仪表盘" aria-label="刷新仪表盘" disabled={loading}
-                    onClick={() => setRefresh(value => value + 1)}><Icon name="refresh"/></button>
+                    onClick={() => { setRefresh(value => value + 1); setWidgetRefresh(value => value + 1) }}><Icon name="refresh"/></button>
         </header>
         {layoutError && <p className="dashboard-layout-error" role="alert">{layoutError}</p>}
         {editing && adding && <section id="dashboard-widget-picker" className="dashboard-widget-picker" aria-label="添加小组件">

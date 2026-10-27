@@ -11,6 +11,19 @@ import type {GeneralSettingsAPI} from '../shared/general-settings'
 import type {NotificationSettingsAPI} from '../shared/notification-settings'
 import type {AppInfoAPI} from '../shared/app-info'
 import type {ChatAPI, ChatState} from '../shared/chat'
+import type {CampusCardAPI} from '../shared/campus-card'
+import type {LibraryAPI} from '../shared/library'
+
+const library: LibraryAPI = {
+    crowding: refresh => ipcRenderer.invoke('library:crowding', refresh),
+}
+contextBridge.exposeInMainWorld('library', library)
+
+const campusCard: CampusCardAPI = {
+    balance: refresh => ipcRenderer.invoke('campus-card:balance', refresh),
+    openRecords: () => ipcRenderer.invoke('campus-card:open-records'),
+}
+contextBridge.exposeInMainWorld('campusCard', campusCard)
 
 const chat: ChatAPI = {
     get: () => ipcRenderer.invoke('chat:get'),

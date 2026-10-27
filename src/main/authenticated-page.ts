@@ -8,6 +8,8 @@ const PARTITION = 'fdunav-reader'
 const wait = (milliseconds: number) => new Promise(resolve => setTimeout(resolve, milliseconds))
 
 export async function clearReaderSession() {
+    for (const window of readerWindows.values()) if (!window.isDestroyed()) window.destroy()
+    readerWindows.clear()
     await session.fromPartition(PARTITION).clearStorageData({storages: ['cookies']})
 }
 
@@ -95,42 +97,79 @@ export async function readAuthenticatedPage(value: string, jar: CookieJar | null
     }
 }
 
-let syllabusWindow: BrowserWindow | null = null
+const readerWindows = new Map<string, BrowserWindow>()
 
 export async function openAuthenticatedPage(value: string, jar: CookieJar | null,
-                                            parent?: BrowserWindow): Promise<void> {
+                                            parent?: BrowserWindow, title = '教学大纲'): Promise<void> {
     if (!jar) throw new Error('请先登录账号。')
     const url = validateUrl(value)
     const reader = session.fromPartition(PARTITION)
     await seedCookies(jar, reader)
-    if (!syllabusWindow || syllabusWindow.isDestroyed()) {
-        syllabusWindow = new BrowserWindow({
+    let pageWindow = readerWindows.get(title)
+    if (pageWindow && !pageWindow.isDestroyed()) {
+        if (pageWindow.isMinimized()) pageWindow.restore()
+        pageWindow.show()
+        pageWindow.focus()
+        if (title === '校园卡消费记录') return
+    } else {
+        pageWindow = new BrowserWindow({
             width: 1100,
             height: 820,
             minWidth: 720,
             minHeight: 520,
             show: false,
             autoHideMenuBar: true,
-            title: '教学大纲',
+            title,
             parent,
             webPreferences: {session: reader, sandbox: true, contextIsolation: true, nodeIntegration: false},
         })
-        syllabusWindow.webContents.setWindowOpenHandler(() => ({action: 'deny'}))
-        syllabusWindow.webContents.on('will-navigate', (event, next) => {
+        readerWindows.set(title, pageWindow)
+        const openedWindow = pageWindow
+        pageWindow.webContents.setWindowOpenHandler(() => ({action: 'deny'}))
+        pageWindow.webContents.on('will-navigate', (event, next) => {
             try {
                 validateUrl(next)
             } catch {
                 event.preventDefault()
             }
         })
-        syllabusWindow.once('ready-to-show', () => syllabusWindow?.show())
-        syllabusWindow.on('closed', () => {
-            syllabusWindow = null
+        pageWindow.once('ready-to-show', () => { if (!openedWindow.isDestroyed()) openedWindow.show() })
+        pageWindow.on('closed', () => {
+            readerWindows.delete(title)
         })
+        if (title === '校园卡消费记录') {
+            let returnedToRecords = false
+            pageWindow.webContents.on('dom-ready', () => {
+                if (openedWindow.isDestroyed() || returnedToRecords) return
+                const current = new URL(openedWindow.webContents.getURL())
+                // Some authentication flows return to the account homepage instead of the requested page.
+                if (current.origin === new URL(url).origin && /^\/epay\/(?:myepay(?:\/index)?\/?)?$/.test(current.pathname)) {
+                    returnedToRecords = true
+                    void openedWindow.loadURL(url).catch(() => {})
+                }
+            })
+        }
     }
-    await syllabusWindow.loadURL(url)
-    syllabusWindow.show()
-    syllabusWindow.focus()
+    const loadingWindow = pageWindow
+    await new Promise<void>((resolve, reject) => {
+        const finish = (error?: Error) => {
+            loadingWindow.webContents.removeListener('dom-ready', ready)
+            loadingWindow.removeListener('closed', closed)
+            if (error) reject(error)
+            else resolve()
+        }
+        const ready = () => finish()
+        const closed = () => finish(new Error('窗口已关闭。'))
+        loadingWindow.webContents.once('dom-ready', ready)
+        loadingWindow.once('closed', closed)
+        void loadingWindow.loadURL(url).catch(error => {
+            if (error?.code !== 'ERR_ABORTED') finish(error)
+        })
+    })
+    if (!pageWindow.isDestroyed()) {
+        pageWindow.show()
+        pageWindow.focus()
+    }
 }
 
 export async function readExamPage(jar: CookieJar | null): Promise<string | null> {
