@@ -366,15 +366,22 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
     handle('notices:detail', async (input: unknown) => {
         return readNoticePdfs(await readDetail(input))
     })
-    handle('notices:summary', async (input: unknown) => {
+    async function summarize(input: unknown) {
+        requireReady()
         knownUrl(input)
         try {
-            return await summaries.summarize(input as NoticeRef, (input as { force?: unknown }).force === true)
+            const summary = await summaries.summarize(input as NoticeRef, (input as { force?: unknown }).force === true)
+            for (const sender of listSubscribers) {
+                if (sender.isDestroyed()) listSubscribers.delete(sender)
+                else sender.send('notices:changed')
+            }
+            return summary
         } catch (error) {
             if (error instanceof AuthError) throw error
             throw new AuthError(error instanceof Error ? error.message : '摘要生成失败，请稍后重试。')
         }
-    })
+    }
+    handle('notices:summary', summarize)
     handle('notices:image', async (input: unknown) => {
         const referer = knownUrl(input)
         const imageUrl = (input as Record<string, unknown>).imageUrl
@@ -426,5 +433,5 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
     return {list: listNotices, detail: async (ref: NoticeRef) => {
         requireReady()
         return readNoticePdfs(await readDetail(ref))
-    }, setRelevance}
+    }, setRelevance, summarize}
 }

@@ -24,14 +24,16 @@ export function registerTodoHandlers(db: AppDatabase, accounts: AccountService,
     }
 
     handle('todos:list', username => db.getTodos(username))
-    handle('todos:save', (username, input) => {
+    function save(username: string, input: unknown) {
         const todo = service.save(username, input)
         reminders.changed(username, todo.id)
         return todo
-    })
+    }
+    handle('todos:save', save)
     handle('todos:remove', (username, input) => {
         const result = service.remove(username, input)
         reminders.changed(username, input as string)
         return result
     })
+    return {save}
 }

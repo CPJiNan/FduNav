@@ -49,6 +49,118 @@
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2);
+    justify-content: flex-end;
+}
+
+.llm-prompts {
+    min-width: 0;
+}
+
+.llm-prompts h3 {
+    margin: var(--space-2) 0 var(--space-3);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-medium);
+}
+
+.llm-prompt-section {
+    margin-top: var(--space-3);
+    border: var(--border-width) solid var(--color-border-control);
+    border-radius: var(--radius-md);
+    background: light-dark(#fff, var(--color-bg-surface));
+}
+
+.llm-prompt-heading {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-2);
+    border-radius: inherit;
+    background: light-dark(#fff, var(--color-bg-surface));
+}
+
+.llm-prompt-heading h4 {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+}
+
+.llm-prompt-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    width: 100%;
+    min-height: var(--size-touch-target);
+    padding: var(--space-2);
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text-primary);
+    font: inherit;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    text-align: left;
+    cursor: pointer;
+}
+
+.llm-prompt-toggle > .icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    color: var(--color-text-muted);
+}
+
+.llm-prompt-toggle[aria-expanded="true"] > .icon {
+    transform: rotate(90deg);
+}
+
+.llm-prompt-toggle:hover:not(:disabled), .llm-prompt-reset:hover:not(:disabled) {
+    background: var(--color-bg-hover);
+}
+
+.llm-prompt-reset {
+    flex-shrink: 0;
+    color: var(--color-text-muted);
+}
+
+.llm-prompt-section.is-expanded > .llm-prompt-heading {
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    border-bottom: var(--border-width) solid var(--color-border-subtle);
+}
+
+.llm-prompt-body {
+    padding: var(--space-4);
+}
+
+.llm-tool-prompts {
+    display: grid;
+    gap: var(--space-4);
+    padding-left: var(--space-3);
+    border-left: 2px solid var(--color-border-subtle);
+}
+
+.llm-tool-prompt + .llm-tool-prompt {
+    padding-top: var(--space-3);
+    border-top: var(--border-width) solid var(--color-border-subtle);
+}
+
+.llm-prompt-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+}
+
+.llm-prompt-toolbar label {
+    margin-right: auto;
+    font-size: var(--font-size-sm);
+}
+
+.llm-prompt-hint {
+    margin: 0 0 var(--space-2);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
 }
 
 .llm-model-control {

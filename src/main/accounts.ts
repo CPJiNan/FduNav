@@ -27,7 +27,7 @@ export class AccountService {
     private state = signedOut()
     private jar: CookieJar | null = null
     private target = ''
-    private busy = false
+    private operationTail: Promise<void> = Promise.resolve()
 
     constructor(private db: AppDatabase) {
     }
@@ -219,12 +219,19 @@ export class AccountService {
     }
 
     private async exclusive<T>(work: () => Promise<T>): Promise<T> {
-        if (this.busy) throw new AuthError('账号操作正在进行，请等待完成。')
-        this.busy = true
+        const owner = JSON.stringify([this.state.username, this.state.lastLogin])
+        const previous = this.operationTail
+        let release!: () => void
+        // Reserve the next slot before waiting so concurrent service requests remain FIFO.
+        this.operationTail = new Promise<void>(resolve => { release = resolve })
+        await previous
         try {
+            if (JSON.stringify([this.state.username, this.state.lastLogin]) !== owner) {
+                throw new AuthError('账号已变化，请重新发起请求。')
+            }
             return await work()
         } finally {
-            this.busy = false
+            release()
         }
     }
 }

@@ -1,4 +1,5 @@
 import type {LlmConnectionTest} from '../shared/llm'
+import {defaultConnectionTestPrompt} from '../shared/llm-prompts'
 
 export interface Connection {
     baseUrl: string;
@@ -64,13 +65,14 @@ function statusError(status: number): string {
 }
 
 export async function testLlmConnection(connection: Connection, request: typeof fetch = fetch,
-                                        timeoutMs = 30_000, enabledSignal?: AbortSignal): Promise<LlmConnectionTest> {
+                                        timeoutMs = 30_000, enabledSignal?: AbortSignal,
+                                        prompt = defaultConnectionTestPrompt): Promise<LlmConnectionTest> {
     const start = performance.now()
     const data = await requestLlmJson(connection, '/chat/completions', {
         method: 'POST',
         body: JSON.stringify({
             model: connection.model,
-            messages: [{role: 'user', content: 'Reply with only OK.'}],
+            messages: [{role: 'user', content: prompt}],
             stream: false
         }),
     }, request, timeoutMs, enabledSignal)

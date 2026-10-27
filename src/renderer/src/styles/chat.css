@@ -28,6 +28,25 @@
 .chat-card strong { font-weight: 500; font-size: var(--font-size-sm); }
 .chat-card em { font-style: normal; color: var(--color-text-muted); font-size: var(--font-size-xs); }
 .chat-card:disabled { opacity: .6; cursor: default; }
+.chat-summary-requests { display: grid; gap: 12px; margin-top: 16px; }
+.chat-summary-request { min-width: 0; padding: 18px; border: 1px solid var(--color-border-control); border-radius: 16px; background: var(--color-bg-surface); }
+.chat-summary-request header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.chat-summary-request header strong { display: flex; align-items: center; gap: 8px; font-size: var(--font-size-sm); }
+.chat-summary-request header .icon { width: 18px; height: 18px; color: var(--color-accent); }
+.chat-summary-request header span, .chat-summary-request > p { color: var(--color-text-muted); font-size: var(--font-size-xs); }
+.chat-summary-request > p { margin-top: 12px; }
+.chat-summary-request > .chat-error { color: var(--color-danger); }
+.chat-summary-notice { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; width: 100%; margin: 12px 0; padding: 14px 16px; border: 1px solid #d9dfe6; border-radius: 12px; background: #fff; color: #242a30; text-align: left; font: inherit; overflow-wrap: anywhere; }
+.chat-summary-notice:hover { border-color: var(--color-accent); }
+.chat-summary-notice strong { font-size: var(--font-size-sm); font-weight: 500; }
+.chat-summary-notice small { color: #667085; font-size: var(--font-size-xs); }
+.chat-summary-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.chat-summary-actions button { min-height: 44px; min-width: 72px; }
+.chat-summary-request .chat-markdown { margin-top: 12px; }
+.chat-action-preview { min-width: 0; margin-top: 12px; padding: 14px 16px; border: 1px solid #d9dfe6; border-radius: 12px; background: #fff; color: #242a30; font-size: var(--font-size-sm); }
+.chat-action-preview dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 12px; margin: 10px 0 0; font-size: var(--font-size-xs); }
+.chat-action-preview dt { color: #667085; }
+.chat-action-preview dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .chat-status { display: flex; align-items: center; gap: 8px; color: var(--color-text-muted); font-size: var(--font-size-sm); }
 .chat-status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--color-accent); }
 .chat-error { color: var(--color-danger); font-size: var(--font-size-sm); margin: 8px 0; }

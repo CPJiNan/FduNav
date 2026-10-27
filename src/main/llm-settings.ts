@@ -27,6 +27,10 @@ export class LlmSettingsService {
                 baseUrl: saved.baseUrl,
                 model: saved.model,
                 summaryPrompt: saved.summaryPrompt,
+                chatPrompt: saved.chatPrompt,
+                summaryFormatPrompt: saved.summaryFormatPrompt,
+                connectionTestPrompt: saved.connectionTestPrompt,
+                toolDescriptions: saved.toolDescriptions,
                 hasApiKey: !!saved.encryptedApiKey?.length
             } : emptyLlmSettings()),
             enabled: this.db.getLlmEnabled()
@@ -127,7 +131,11 @@ export class LlmSettingsService {
             baseUrl: value.baseUrl,
             model: value.model,
             encryptedApiKey,
-            summaryPrompt: value.summaryPrompt
+            summaryPrompt: value.summaryPrompt,
+            chatPrompt: value.chatPrompt,
+            summaryFormatPrompt: value.summaryFormatPrompt,
+            connectionTestPrompt: value.connectionTestPrompt,
+            toolDescriptions: value.toolDescriptions,
         })
         return this.get()
     }
