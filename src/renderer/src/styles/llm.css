@@ -58,7 +58,7 @@
 
 .llm-prompts h3 {
     margin: var(--space-2) 0 var(--space-3);
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
 }
 
@@ -82,6 +82,8 @@
     flex: 1;
     min-width: 0;
     margin: 0;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
 }
 
 .llm-prompt-toggle {

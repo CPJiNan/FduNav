@@ -58,7 +58,7 @@ export class TodoReminderService {
 
     private show(username: string, todo: Todo, remindAt: number) {
         const notification = new Notification({
-            title: `FduNav 待办 · ${todo.title}`,
+            title: todo.title,
             body: `截止时间：${todo.dueDate} ${todo.dueTime}`,
         })
         this.db.markTodoReminderDelivered(username, todo.id, remindAt)

@@ -37,7 +37,7 @@ app.setPath('sessionData', userDataPath)
 app.setPath('cache', join(userDataPath, 'Cache'))
 const primaryInstance = app.requestSingleInstanceLock()
 if (!primaryInstance) app.quit()
-if (process.platform === 'win32') app.setAppUserModelId('top.cpjinan.fdunav')
+if (process.platform === 'win32' && app.isPackaged) app.setAppUserModelId('top.cpjinan.fdunav')
 
 function showMainWindow() {
     if (quitting) return

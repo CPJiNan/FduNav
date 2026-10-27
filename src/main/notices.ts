@@ -71,7 +71,7 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
         pendingReminders.delete(key)
         if (!Notification.isSupported()) return
         try {
-            const reminder = new Notification({title: `FduNav · ${notice.sourceName}`, body: notice.title})
+            const reminder = new Notification({title: notice.sourceName, body: notice.title})
             activeReminders.add(reminder)
             reminder.once('click', () => {
                 activeReminders.delete(reminder)

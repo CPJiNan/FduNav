@@ -58,7 +58,7 @@ export class CalendarReminderService {
 
     private show(username: string, event: CalendarEvent, remindAt: number) {
         const notification = new Notification({
-            title: `FduNav · ${event.title}`,
+            title: event.title,
             body: `${event.startDate} ${event.allDay ? '全天' : event.startTime}${event.location ? ` · ${event.location}` : ''}`,
         })
         this.db.markCalendarReminderDelivered(username, event.id, remindAt)

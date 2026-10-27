@@ -6,7 +6,8 @@
   "author": "CPJiNan",
   "contributors": [
     "yutong",
-    "SlothAdrift"
+    "SlothAdrift",
+    "Camellia"
   ],
   "main": "./out/main/index.js",
   "engines": {
