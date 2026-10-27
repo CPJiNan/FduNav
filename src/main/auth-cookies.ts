@@ -25,7 +25,6 @@ export function browserCookies(jar: CookieJar): CookiesSetDetails[] {
     })
 }
 
-// Rebuild from the browser's full snapshot so cookies deleted during verification stay deleted.
 export async function browserCookieJar(cookies: BrowserCookie[]): Promise<CookieJar> {
     const jar = new CookieJar()
     for (const value of cookies) {

@@ -1,7 +1,6 @@
 import {load} from 'cheerio'
 import {AuthError} from './fudan-auth'
 
-// DanXi's ecard repository reads this balance field from the epay account page.
 export function parseCampusCardBalance(html: string): string {
     const $ = load(html)
     if (!$('.custname').text().trim()) {

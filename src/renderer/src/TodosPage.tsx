@@ -63,7 +63,6 @@ export function TodosPage() {
 
     useEffect(() => {
         active.current = true
-        // Deferring the initial read also prevents duplicate requests under Strict Mode.
         const start = window.setTimeout(() => void load(), 0)
         let timer: number
 
@@ -191,7 +190,6 @@ export function TodosPage() {
             const result = await api.save({...todo, completed: !todo.completed})
             if (!active.current) return
             if (result.ok) {
-                // Keep the row in its current list until both animation stages finish.
                 animating = true
                 setTransitions(current => ({...current, [todo.id]: {todo: result.data, stage: 'line'}}))
             } else setError(result.error)

@@ -89,7 +89,6 @@ export async function readCampusCardWithBrowser(jar: CookieJar, interactive: boo
                 checking = true
                 cardSince ||= Date.now()
                 try {
-                    // Read the authenticated DOM even if unrelated images or subframes are still loading.
                     const html: unknown = await cardWindow.webContents.executeJavaScript('document.documentElement.outerHTML')
                     if (settled || cardWindow.isDestroyed() || cardWindow.webContents.getURL() !== current) return
                     if (typeof html !== 'string') return

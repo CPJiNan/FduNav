@@ -20,7 +20,6 @@ export function registerCampusCardHandlers(accounts: AccountService, trusted: (e
         if (!trusted(event)) return {ok: false, error: '请求来源无效。'}
         try {
             const key = accountKey()
-            // Let a balance query finish saving any newly authenticated cookies first.
             if (pending) await pending.promise
             if (accountKey() !== key) throw new AuthError('账号已变更，请重新打开消费记录。')
             await accounts.openCampusCardRecords(BrowserWindow.fromWebContents(event.sender) ?? undefined)

@@ -37,7 +37,6 @@ export function parseNoticeBody(nodes: AnyNode[], baseUrl?: string): NoticeBodyN
             if (!baseUrl) return []
             const width = dimension('width'), height = dimension('height')
             if (width === 0 || height === 0) return []
-            // WebPlus and common lazy loaders keep the actual image outside src.
             const candidates = [attrs['data-original'], attrs['data-src'], attrs['data-lazy-src'], attrs.src]
             const url = candidates.filter(Boolean).map(raw => noticeImageUrl(raw, baseUrl)).find(Boolean)
             return url ? [{type: 'image', url, alt: (attrs.alt ?? attrs.title ?? '').slice(0, 500), width, height}] : []

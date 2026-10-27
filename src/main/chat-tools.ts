@@ -75,9 +75,9 @@ export function configuredChatTools(descriptions: Record<ChatToolName, string>):
 
 export const chatToolLabels: Record<string, string> = {
     search_notices: '正在检索通知', get_notice: '正在读取通知',
-    generate_notice_summary: '正在申请通知摘要',
-    list_events: '正在获取日程', get_event: '正在读取日程', create_event: '正在申请新增日程',
-    list_todos: '正在查询待办', create_todo: '正在申请新增待办',
+    generate_notice_summary: '正在请求通知摘要',
+    list_events: '正在获取日程', get_event: '正在读取日程', create_event: '正在请求新增日程',
+    list_todos: '正在查询待办', create_todo: '正在请求新增待办',
 }
 
 function textArg(args: Fields, key: string, required = false, max = 500): string {

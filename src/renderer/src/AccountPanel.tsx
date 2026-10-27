@@ -39,7 +39,6 @@ export function AccountPanel({account, onChange}: {
                 setError(result.error)
                 const state = await api?.getState().catch(() => null)
                 if (state?.ok) {
-                    // Refresh account details without restoring an older session warning.
                     handledAccount.current = state.data
                     onChange(state.data)
                 }

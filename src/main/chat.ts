@@ -52,7 +52,7 @@ export function registerChatHandlers(db: AppDatabase, accounts: AccountService, 
         for (const turn of turns) for (const request of turn.actionRequests ?? []) {
             if (request.status === 'executing') {
                 request.status = 'failed'
-                request.error = '上次操作中断，结果未确认，请查询实际状态后重新申请。'
+                request.error = '上次操作中断，结果未确认，请查询实际状态后重新请求。'
             }
         }
         return turns
@@ -102,7 +102,6 @@ export function registerChatHandlers(db: AppDatabase, accounts: AccountService, 
 
     function persist(user: string, active: RunningChat, completed = false) {
         db.saveChatConversation(user, JSON.stringify(active.turns.map((turn, index) => {
-            // A crash during a tool batch must not leave orphaned calls in the next request.
             const context: ToolChatMessage[] = []
             const pending = new Set<string>()
             const finish = () => {
@@ -154,7 +153,6 @@ export function registerChatHandlers(db: AppDatabase, accounts: AccountService, 
                     messagePreferences: db.getMessagePreferences(),
                 })
             }]
-            // Keep complete turns so tool calls are never separated from their results.
             const history = active.turns.slice(0, -1).slice(-8)
             while (history.length && JSON.stringify(history.map(item => item.context)).length > 60000) history.shift()
             context.push(...history.flatMap(item => item.context), ...turn.context)
@@ -177,7 +175,7 @@ export function registerChatHandlers(db: AppDatabase, accounts: AccountService, 
                 const requests = turn.summaryRequests ??= []
                 let request = requests.find(item => item.notice.sourceId === notice.sourceId && item.notice.url === notice.url)
                 if (!request) {
-                    if (requests.length >= 20) throw new Error('本轮最多申请 20 条通知摘要，请缩小范围。')
+                    if (requests.length >= 20) throw new Error('本轮最多请求 20 条通知摘要，请缩小范围。')
                     request = {id: randomUUID(), notice, status: 'pending'}
                     requests.push(request)
                 }
@@ -189,7 +187,7 @@ export function registerChatHandlers(db: AppDatabase, accounts: AccountService, 
                 const requests = turn.actionRequests ??= []
                 let request = requests.find(item => JSON.stringify(item.action) === JSON.stringify(action))
                 if (!request) {
-                    if (requests.length >= 20) throw new Error('本轮最多申请 20 个操作，请缩小范围。')
+                    if (requests.length >= 20) throw new Error('本轮最多请求 20 个操作，请缩小范围。')
                     request = {id: randomUUID(), action, status: 'pending'}
                     requests.push(request)
                 }
@@ -270,7 +268,7 @@ export function registerChatHandlers(db: AppDatabase, accounts: AccountService, 
                     requestId, status: request.status,
                     notice: request.notice, summary: request.summary, error: request.error
                 })
-            } catch { /* Other tool results do not belong to this request. */
+            } catch {
             }
         }
         if (active) persist(user, active)
@@ -296,7 +294,7 @@ export function registerChatHandlers(db: AppDatabase, accounts: AccountService, 
         }
         llm.getRequestSignal()
         const notice = notices.list().items.find(item => item.sourceId === request.notice.sourceId && item.url === request.notice.url)
-        if (!notice) throw new Error('通知不存在或来源已停用，请重新查询后申请摘要。')
+        if (!notice) throw new Error('通知不存在或来源已停用，请重新查询后请求摘要。')
         const key = summaryJobKey(user, turnId, requestId)
         if (summaryJobs.has(key)) return snapshot(user)
         summaryJobs.add(key)
@@ -309,7 +307,6 @@ export function registerChatHandlers(db: AppDatabase, accounts: AccountService, 
             summaryJobs.delete(key);
             throw error
         }
-        // Only this trusted user-decision handler may submit a chat summary to the generation service.
         void notices.summarize({sourceId: notice.sourceId, url: notice.url}).then(summary => {
             updateSummaryRequest(user, turnId, requestId, item => {
                 item.status = 'completed';
@@ -321,7 +318,7 @@ export function registerChatHandlers(db: AppDatabase, accounts: AccountService, 
                 item.status = 'failed';
                 item.error = error instanceof Error ? error.message : '摘要生成失败，请重试。'
             })
-        }).finally(() => summaryJobs.delete(key)).catch(() => { /* A failed persistence leaves the request recoverable on reload. */
+        }).finally(() => summaryJobs.delete(key)).catch(() => {
         })
         return snapshot(user)
     })
@@ -339,7 +336,7 @@ export function registerChatHandlers(db: AppDatabase, accounts: AccountService, 
                     requestId,
                     status: request.status, action: request.action, result: request.result, error: request.error
                 })
-            } catch { /* Other tool results do not belong to this request. */
+            } catch {
             }
         }
         db.saveChatConversation(user, JSON.stringify(turns))
@@ -358,7 +355,6 @@ export function registerChatHandlers(db: AppDatabase, accounts: AccountService, 
                 item.status = 'rejected'
             })
         } else {
-            // Persist consumption before applying changes; an interrupted request is never automatically replayed.
             updateActionRequest(user, turnId, requestId, item => {
                 item.status = 'executing'
             })
@@ -377,7 +373,7 @@ export function registerChatHandlers(db: AppDatabase, accounts: AccountService, 
             } catch (error) {
                 updateActionRequest(user, turnId, requestId, item => {
                     item.status = 'failed'
-                    item.error = `${error instanceof Error ? error.message : '操作未完成。'} 请查询实际状态后再申请。`
+                    item.error = `${error instanceof Error ? error.message : '操作未完成。'} 请查询实际状态后再请求。`
                 })
             }
         }
@@ -406,7 +402,7 @@ export function registerChatHandlers(db: AppDatabase, accounts: AccountService, 
         persist(user, active)
         running.set(user, active)
         publish(user)
-        void run(user, active).catch(() => { /* The persisted interrupted turn remains available if storage fails. */
+        void run(user, active).catch(() => {
         })
         return snapshot(user)
     })

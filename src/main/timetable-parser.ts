@@ -10,7 +10,6 @@ export function parseSemesters(html: string): { semesters: Semester[]; defaultId
     if (!expression) throw invalid()
     let rows: unknown
     try {
-        // Decode the JS string literal without executing school-provided JavaScript.
         const text = expression[0] === '"' ? JSON.parse(expression)
             : expression.slice(1, -1).replace(/\\([\\'"/])/g, '$1').replace(/\\x([0-9a-f]{2})/gi, (_m, hex) => String.fromCharCode(parseInt(hex, 16)))
         rows = JSON.parse(text)
@@ -97,7 +96,6 @@ export function parsePostgraduateCourses(body: string): TimetableCourse[] {
             weeks: [...row.ZCBH].flatMap((bit, week) => bit === '1' ? [week + 1] : []),
         }
     })
-    // Some responses represent each teaching unit as its own row.
     const merged: TimetableCourse[] = []
     for (const course of courses.sort((a, b) => a.weekday - b.weekday || a.startUnit - b.startUnit)) {
         const previous = merged.find(item => item.name === course.name && item.room === course.room && item.weekday === course.weekday &&

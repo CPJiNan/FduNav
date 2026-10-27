@@ -2,7 +2,6 @@ import {ipcMain, type IpcMainInvokeEvent} from 'electron'
 import type {Result} from '../shared/accounts'
 import type {LibraryCrowding} from '../shared/library'
 
-// DanXi uses this public endpoint's campusName and inNum fields.
 const endpoint = 'https://mlibrary.fudan.edu.cn/api/common/h5/getspaceseat'
 
 export function parseLibraryCrowding(value: unknown): LibraryCrowding['items'] {

@@ -167,7 +167,7 @@ export class AppDatabase {
         let prompts: unknown
         try {
             prompts = JSON.parse(String(this.db.prepare("SELECT value FROM preferences WHERE key = 'llm_prompts'").get()?.value ?? 'null'))
-        } catch { /* Use defaults for absent or unreadable prompt settings. */
+        } catch {
         }
         return {...saved, ...readAdditionalLlmPrompts(prompts)}
     }
@@ -185,9 +185,9 @@ export class AppDatabase {
         this.db.exec('SAVEPOINT save_llm_settings')
         try {
             this.db.prepare(`INSERT INTO llm_settings (id, base_url, model, api_key, summary_prompt)
-                         VALUES (1, ?, ?, ?, ?) ON CONFLICT(id) DO
-        UPDATE SET base_url = excluded.base_url, model = excluded.model, api_key = excluded.api_key,
-            summary_prompt = excluded.summary_prompt`)
+                             VALUES (1, ?, ?, ?, ?) ON CONFLICT(id) DO
+            UPDATE SET base_url = excluded.base_url, model = excluded.model, api_key = excluded.api_key,
+                summary_prompt = excluded.summary_prompt`)
                 .run(value.baseUrl, value.model, value.encryptedApiKey, value.summaryPrompt)
             const {chatPrompt, connectionTestPrompt, toolDescriptions} = value
             this.db.prepare("INSERT INTO preferences (key, value) VALUES ('llm_prompts', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")

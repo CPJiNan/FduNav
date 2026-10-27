@@ -36,7 +36,6 @@ export class SummaryQueue {
         if (this.activeCount >= 200) {
             return Promise.reject(new Error('摘要队列已满，请等待部分任务完成。'))
         }
-        // Keep recent results available without retaining an unbounded task history.
         if (this.entries.length >= 400) this.entries = this.entries.filter(entry => !summaryTaskFinished(entry.task))
         const promise = new Promise<NoticeSummary>((resolve, reject) => {
             this.entries.push({

@@ -22,7 +22,6 @@ export function calendarEventColor(id: string): string {
     return color
 }
 
-// Match index.vue's randomSoftHex: independent H 0–359, S 20–40, B 100.
 function randomSoftHex(): string {
     const hue = Math.floor(Math.random() * 360)
     const saturation = Math.floor(Math.random() * 21) + 20

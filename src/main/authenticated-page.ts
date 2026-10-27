@@ -144,7 +144,6 @@ export async function openAuthenticatedPage(value: string, jar: CookieJar | null
             pageWindow.webContents.on('dom-ready', () => {
                 if (openedWindow.isDestroyed() || returnedToRecords) return
                 const current = new URL(openedWindow.webContents.getURL())
-                // Some authentication flows return to the account homepage instead of the requested page.
                 if (current.origin === new URL(url).origin && /^\/epay\/(?:myepay(?:\/index)?\/?)?$/.test(current.pathname)) {
                     returnedToRecords = true
                     void openedWindow.loadURL(url).catch(() => {

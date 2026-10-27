@@ -12,7 +12,6 @@ export async function completeInteractiveAuthentication(
     const loginUrl = validateUrl(challenge.loginUrl)
     const target = validateUrl(challenge.target)
     const targetOrigin = new URL(target).origin
-    // Each attempt has its own memory-only session, independent of saved accounts and the article reader.
     const browserSession = session.fromPartition(`fdunav-auth-${randomUUID()}`, {cache: false})
     browserSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false))
     browserSession.setPermissionCheckHandler(() => false)
@@ -85,7 +84,6 @@ export async function completeInteractiveAuthentication(
                 try {
                     const cookies = await browserCookieJar(await browserSession.cookies.get({}))
                     if (settled) return
-                    // A host redirect alone does not prove login succeeded. Use a fresh timeout after manual verification.
                     const transport = new FudanTransport(cookies, AbortSignal.any([controller.signal, AbortSignal.timeout(30_000)]))
                     if (!await verify(transport)) {
                         throw new AuthError('认证后未能建立目标网站会话，请重新登录。')

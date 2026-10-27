@@ -222,7 +222,6 @@ export class AccountService {
         const owner = JSON.stringify([this.state.username, this.state.lastLogin])
         const previous = this.operationTail
         let release!: () => void
-        // Reserve the next slot before waiting so concurrent service requests remain FIFO.
         this.operationTail = new Promise<void>(resolve => {
             release = resolve
         })

@@ -63,7 +63,6 @@ export function NoticesPage({onLogin, noticeToOpen, onNoticeOpened}: {
         if (readNotices.current.has(key)) return
         readNotices.current.add(key)
         setReadError('')
-        // Keep local read markers even if a previously requested list arrives later.
         setList(current => ({...current}))
         void api.markRead({sourceId: selected.sourceId, url: selected.url}).then(result => {
             if (!result.ok) throw new Error(result.error)

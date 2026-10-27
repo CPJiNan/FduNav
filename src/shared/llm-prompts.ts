@@ -5,7 +5,7 @@ export const defaultConnectionTestPrompt = 'Reply with only OK.'
 export const defaultToolDescriptions = {
     "search_notices": "检索已启用来源的通知标题：关键词按空格拆分，结果按发布时间倒序，返回通知卡片。若无结果，可建议用户刷新通知。",
     "get_notice": "读取检索结果中的通知正文。",
-    "generate_notice_summary": "为本轮已检索到的通知创建 AI 摘要请求卡片。返回 requestId 和请求状态；pending 表示等待。同一通知不重复申请。",
+    "generate_notice_summary": "为本轮已检索到的通知创建 AI 摘要请求卡片。返回 requestId 和请求状态；pending 表示等待。同一通知不重复请求。",
     "list_events": "查询日历中的日程、考试和课程，按开始时间升序。不查询待办列表。返回卡片及课表状态。",
     "get_event": "通过日程 ID 获取详情及卡片。",
     "create_event": "请求新建日程。缺少起止时间时询问，用户明确要求待办/TODO 时禁止使用。展示新建日程请求卡片。",

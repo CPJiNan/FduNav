@@ -24,7 +24,7 @@ function readLayout(): WidgetId[] {
     try {
         const saved: unknown = JSON.parse(localStorage.getItem(layoutStorageKey) ?? 'null')
         if (Array.isArray(saved) && saved.every(id => defaultLayout.includes(id)) && new Set(saved).size === saved.length) return saved
-    } catch { /* Use the default layout when storage cannot be read. */
+    } catch {
     }
     return [...defaultLayout]
 }

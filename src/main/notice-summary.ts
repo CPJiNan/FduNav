@@ -66,7 +66,6 @@ export function summaryCacheKey(notice: Notice, preferences: MessagePreferences,
                                 settings: LlmSettings, username: string): string {
     return createHash('sha256').update(JSON.stringify({
         version: 4, username, sourceId: notice.sourceId, url: notice.url,
-        // Use the same canonical preference fields as the model request, independent of object key order.
         messages: summaryMessages(notice, '', preferences, settings.summaryPrompt),
         baseUrl: settings.baseUrl, model: settings.model
     })).digest('hex')

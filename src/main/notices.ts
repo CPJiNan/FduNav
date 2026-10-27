@@ -103,7 +103,7 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
             try {
                 requireReady()
                 if (!summaries.needsSummary(pending.notice)) continue
-                void summaries.summarize(pending.notice).catch(() => { /* Errors are displayed in the summary queue. */
+                void summaries.summarize(pending.notice).catch(() => {
                 })
             } catch (error) {
                 console.warn('无法加入自动摘要队列。', error)
@@ -278,7 +278,7 @@ export function registerNoticeHandlers(db: AppDatabase, accounts: AccountService
         const settings = llm.get()
         if (!settings.enabled || !settings.model) throw new AuthError('请先配置并启用 LLM。')
         if (summaries.queue.activeCount + notices.length > 200) throw new AuthError('队列最多容纳 200 条待完成任务，请减少选择或等待任务完成。')
-        for (const ref of notices) void summaries.summarize(ref).catch(() => { /* Task errors are shown in the queue. */
+        for (const ref of notices) void summaries.summarize(ref).catch(() => {
         })
     })
     handle('notices:cancel-summaries', async (input: unknown) => {
