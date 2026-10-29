@@ -1,7 +1,7 @@
 .dashboard-page {
     min-height: 100%;
     padding: 8px clamp(20px, 4vw, 48px) clamp(20px, 4vw, 48px);
-    background: var(--color-bg-canvas);
+    background: var(--color-bg-surface);
 }
 
 .dashboard-header, .dashboard-grid, .dashboard-widget-picker, .dashboard-layout-empty, .dashboard-layout-error {

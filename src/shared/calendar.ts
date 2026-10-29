@@ -100,7 +100,7 @@ export function lunarDate(date: string, full = false) {
     const digits = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十']
     const label = day === 10 ? '初十' : day === 20 ? '二十' : day === 30 ? '三十'
         : (day < 10 ? '初' : day < 20 ? '十' : '廿') + digits[(day - 1) % 10]
-    return full ? `${month}${label}` : day === 1 ? month : label
+    return full ? `${month}${label}` : label
 }
 
 export function validateCalendarEvent(input: unknown): Result<CalendarEventInput> {
